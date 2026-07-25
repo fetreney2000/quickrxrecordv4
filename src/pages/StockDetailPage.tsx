@@ -37,7 +37,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FoldableCard } from "@/components/ui/foldable-card";
@@ -680,21 +679,20 @@ export default function StockDetailPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05, duration: 0.15 }}
       >
-        <Card>
-          <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-[#f0f2f5]">
-            <div className="flex items-center gap-2">
+        <FoldableCard
+          title={
+            <span className="flex items-center gap-2">
               <Pill className="w-4 h-4" style={{ color: "#7c3aed" }} />
-              <h2 className="text-base font-bold" style={{ color: "#1c1e21" }}>
-                Maklumat Item
-              </h2>
-            </div>
-            {canEditItem && !editMode && item.aktif && (
+              Maklumat Item
+            </span>
+          }
+          headerExtra={
+            canEditItem && !editMode && item.aktif ? (
               <Button size="sm" variant="outline" onClick={startEdit}>
                 <Edit className="w-3.5 h-3.5" />
                 Edit
               </Button>
-            )}
-            {editMode && (
+            ) : editMode ? (
               <div className="flex items-center gap-2">
                 <Button size="sm" variant="outline" onClick={cancelEdit}>
                   Batal
@@ -715,9 +713,10 @@ export default function StockDetailPage() {
                   Simpan
                 </Button>
               </div>
-            )}
-          </div>
-          <CardContent className="pt-5">
+            ) : null
+          }
+        >
+          <div className="pt-3">
             {editMode ? (
               <ItemEditForm
                 editData={editData}
@@ -726,45 +725,41 @@ export default function StockDetailPage() {
                 categories={categories}
               />
             ) : (
-              <ItemView item={item} />
+              <>
+                <ItemView item={item} />
+                {/* Stat cards inside info section */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+                  <StatCardMini
+                    icon={Package}
+                    color="#1877f2"
+                    label="Jumlah Stok"
+                    value={formatNumber(totalStock)}
+                  />
+                  <StatCardMini
+                    icon={BarChart3}
+                    color="#7c3aed"
+                    label="Kuota"
+                    value={item.quota != null ? formatNumber(item.quota) : "—"}
+                  />
+                  <StatCardMini
+                    icon={Users}
+                    color="#16a34a"
+                    label="Jumlah Pesakit"
+                    value={activePatientCount}
+                  />
+                  <StatCardMini
+                    icon={Activity}
+                    color="#d97706"
+                    label="Baki Kuota"
+                    value={
+                      quotaRemaining != null ? formatNumber(quotaRemaining) : "—"
+                    }
+                  />
+                </div>
+              </>
             )}
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      {/* Stat cards for item */}
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.15 }}
-        className="grid grid-cols-2 sm:grid-cols-4 gap-3"
-      >
-        <StatCardMini
-          icon={Package}
-          color="#1877f2"
-          label="Jumlah Stok"
-          value={formatNumber(totalStock)}
-        />
-        <StatCardMini
-          icon={BarChart3}
-          color="#7c3aed"
-          label="Kuota"
-          value={item.quota != null ? formatNumber(item.quota) : "—"}
-        />
-        <StatCardMini
-          icon={Users}
-          color="#16a34a"
-          label="Jumlah Pesakit"
-          value={activePatientCount}
-        />
-        <StatCardMini
-          icon={Activity}
-          color="#d97706"
-          label="Baki Kuota"
-          value={
-            quotaRemaining != null ? formatNumber(quotaRemaining) : "—"
-          }
-        />
+          </div>
+        </FoldableCard>
       </motion.div>
 
       {/* 2. PESAKIT YANG MENGGUNAKAN */}

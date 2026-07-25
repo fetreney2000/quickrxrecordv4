@@ -1,0 +1,605 @@
+/**
+ * QuickDispensePage — Halaman Dispen Pantas.
+ * 3 langkah linear: Cari pesakit → Pilih item → Bekal.
+ */
+import { useEffect, useMemo, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Zap,
+  Search,
+  Loader2,
+  Pill,
+  CheckCircle2,
+  ShieldAlert,
+  X,
+  Plus,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Breadcrumb } from "@/components/layout/breadcrumb";
+import { useAuth } from "@/hooks/use-auth";
+import { getInitials, formatMyKad } from "@/lib/utils";
+import {
+  usePatientSearch,
+  usePatientAssignments,
+  useFrequentItems,
+  useQuickDispenseBatches,
+  useSupplyDurationsList,
+  useQuickSupply,
+} from "@/hooks/use-quick-dispense";
+import type { Patient } from "@/types";
+
+const inputStyle: React.CSSProperties = {
+  background: "white",
+  border: "1px solid #dddfe2",
+  borderRadius: 12,
+  fontSize: 13,
+  fontWeight: 500,
+  color: "#1c1e21",
+  height: 40,
+  padding: "0 12px",
+  width: "100%",
+  outline: "none",
+};
+const labelStyle: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 600,
+  color: "#65676b",
+  marginBottom: 4,
+  display: "block",
+};
+
+export default function QuickDispensePage() {
+  const { can } = useAuth();
+  const hasAccess = can("manage_supply");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showResults, setShowResults] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [itemSearch, setItemSearch] = useState("");
+  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState("");
+  const [dose, setDose] = useState("");
+  const [tempoh, setTempoh] = useState("30 Hari");
+  const [catatan, setCatatan] = useState("");
+  const [successPatient, setSuccessPatient] = useState<string | null>(null);
+
+  const { data: searchResults = [], isFetching: searching } =
+    usePatientSearch(searchQuery);
+  const { data: assignedItems = [] } = usePatientAssignments(
+    selectedPatient?.id ?? null
+  );
+  const assignedItemIds = useMemo(
+    () => new Set(assignedItems.map((a: any) => a.item_id)),
+    [assignedItems]
+  );
+  const { data: frequentItems = [] } = useFrequentItems(assignedItemIds);
+  const { data: availableBatches = [] } = useQuickDispenseBatches(
+    selectedItem?.item_id ?? null
+  );
+  useSupplyDurationsList();
+  const supplyMut = useQuickSupply(selectedPatient?.id ?? null);
+
+  useEffect(() => {
+    searchInputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    if (availableBatches.length > 0) {
+      setSelectedBatchId((cur) =>
+        cur && availableBatches.some((b) => b.id === cur)
+          ? cur
+          : availableBatches[0].id
+      );
+    } else {
+      setSelectedBatchId(null);
+    }
+  }, [availableBatches]);
+
+  useEffect(() => {
+    setDose(selectedItem?.dos ?? "");
+  }, [selectedItem?.assignment_id]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (selectedItem) setSelectedItem(null);
+      else if (selectedPatient) {
+        setSelectedPatient(null);
+        setTimeout(() => searchInputRef.current?.focus(), 50);
+      } else if (searchQuery) {
+        setSearchQuery("");
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedPatient, selectedItem, searchQuery]);
+
+  const filteredItems = useMemo(() => {
+    if (!itemSearch.trim()) return assignedItems;
+    const term = itemSearch.toLowerCase();
+    return (assignedItems as any[]).filter(
+      (a) =>
+        a.item?.nama_item.toLowerCase().includes(term) ||
+        a.item?.kod_item.toLowerCase().includes(term)
+    );
+  }, [assignedItems, itemSearch]);
+
+  if (!hasAccess) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-2 text-muted-foreground">
+        <ShieldAlert className="w-10 h-10 opacity-40" />
+        <p className="text-sm font-medium">Akses Terhad</p>
+        <p className="text-xs">Anda tiada kebenaran untuk mendispens.</p>
+      </div>
+    );
+  }
+
+  const canSubmit =
+    !!selectedPatient &&
+    !!selectedItem &&
+    quantity.trim() !== "" &&
+    parseInt(quantity) > 0 &&
+    selectedBatchId !== null &&
+    dose.trim() !== "";
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canSubmit) return;
+    supplyMut.mutate(
+      {
+        assignmentId: selectedItem.assignment_id,
+        itemId: selectedItem.item_id,
+        dos: dose.trim(),
+        kuantiti: parseInt(quantity),
+        tempoh: tempoh.trim(),
+        batchId: selectedBatchId!,
+        catatan: catatan.trim(),
+      },
+      {
+        onSuccess: () => {
+          setSuccessPatient(selectedPatient!.nama);
+          setSelectedItem(null);
+          setQuantity("");
+          setCatatan("");
+          setTimeout(() => setSuccessPatient(null), 2500);
+        },
+      }
+    );
+  };
+
+  return (
+    <div className="space-y-4 max-w-3xl mx-auto" style={{ padding: "0 4px" }}>
+      <Breadcrumb items={[{ label: "Dispen Pantas" }]} icon={Zap} />
+
+      <motion.div
+        initial={{ opacity: 0, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.15 }}
+        className="flex items-center gap-3"
+      >
+        <div
+          className="w-11 h-11 rounded-2xl flex items-center justify-center text-white flex-shrink-0"
+          style={{
+            background: "linear-gradient(135deg, #f0932b, #e07a1f)",
+            boxShadow: "0 4px 12px rgba(240,147,43,0.3)",
+          }}
+        >
+          <Zap className="w-5 h-5" strokeWidth={2.5} />
+        </div>
+        <div>
+          <h1
+            className="text-[22px] sm:text-[18px] font-bold"
+            style={{ color: "#1c1e21" }}
+          >
+            Dispen Pantas
+          </h1>
+          <p
+            className="text-[12px] font-medium mt-0.5"
+            style={{ color: "#65676b" }}
+          >
+            Bekal ubat dalam 3 langkah mudah
+          </p>
+        </div>
+      </motion.div>
+
+      <AnimatePresence>
+        {successPatient && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="flex items-center gap-3 p-4 rounded-2xl"
+            style={{
+              background: "rgba(16,185,129,0.10)",
+              border: "1px solid rgba(16,185,129,0.30)",
+            }}
+          >
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-white flex-shrink-0"
+              style={{
+                background: "linear-gradient(135deg, #10b981, #059669)",
+              }}
+            >
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div>
+              <p
+                className="text-[13px] font-bold"
+                style={{ color: "#065f46" }}
+              >
+                Bekalan direkodkan untuk {successPatient}
+              </p>
+              <p
+                className="text-[11px]"
+                style={{ color: "#059669" }}
+              >
+                Sedia untuk pendispensan seterusnya.
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {!selectedPatient && (
+        <Card>
+          <CardContent className="p-6 sm:p-8">
+            <h2
+              className="text-[15px] font-bold mb-3"
+              style={{ color: "#1c1e21" }}
+            >
+              Cari Pesakit
+            </h2>
+            <div className="relative">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
+                style={{ color: searchFocused ? "#f0932b" : "#9ca3af" }}
+              />
+              <Input
+                ref={searchInputRef}
+                type="search"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowResults(true);
+                }}
+                onFocus={() => {
+                  setSearchFocused(true);
+                  setShowResults(true);
+                }}
+                onBlur={() => setTimeout(() => setShowResults(false), 200)}
+                placeholder="Cari nama, No. KP, atau No. Hospital..."
+                className="h-11 pl-10 text-sm font-medium"
+                style={{
+                  background: searchFocused
+                    ? "white"
+                    : "rgba(240,147,43,0.04)",
+                  border: searchFocused
+                    ? "1px solid rgba(240,147,43,0.3)"
+                    : "1px solid transparent",
+                  borderRadius: 14,
+                  boxShadow: searchFocused
+                    ? "0 0 0 4px rgba(240,147,43,0.08)"
+                    : "0 4px 16px rgba(240,147,43,0.06)",
+                }}
+              />
+              {searching && (
+                <Loader2
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin"
+                  style={{ color: "#f0932b" }}
+                />
+              )}
+              {showResults && searchQuery.trim().length >= 2 && (
+                <div
+                  className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl border z-50 overflow-y-auto"
+                  style={{
+                    borderColor: "rgba(240,147,43,0.2)",
+                    boxShadow: "0 12px 40px rgba(0,0,0,0.12)",
+                    maxHeight: 320,
+                  }}
+                >
+                  {searchResults.length === 0 && !searching ? (
+                    <div
+                      className="text-center text-xs py-6"
+                      style={{ color: "#9ca3af" }}
+                    >
+                      Tiada pesakit dijumpai.
+                    </div>
+                  ) : (
+                    searchResults.map((p) => (
+                      <button
+                        type="button"
+                        key={p.id}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setSelectedPatient(p);
+                          setSearchQuery("");
+                          setShowResults(false);
+                          setSelectedItem(null);
+                        }}
+                        className="w-full text-left px-4 py-2.5 hover:bg-orange-50/50 border-b border-orange-50 last:border-b-0"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-6 h-6 rounded-lg flex items-center justify-center text-white text-2xs font-bold"
+                            style={{
+                              background:
+                                "linear-gradient(135deg, #f0932b, #e07a1f)",
+                            }}
+                          >
+                            {getInitials(p.nama)}
+                          </div>
+                          <p
+                            className="text-[13px] font-semibold truncate"
+                            style={{ color: "#1c1e21" }}
+                          >
+                            {p.nama}
+                          </p>
+                        </div>
+                        {p.nombor_kad_pengenalan && (
+                          <p
+                            className="text-2xs mt-0.5 ml-8"
+                            style={{ color: "#65676b" }}
+                          >
+                            KP: {formatMyKad(p.nombor_kad_pengenalan)}
+                          </p>
+                        )}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedPatient && !selectedItem && (
+        <Card>
+          <CardContent className="pt-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3
+                className="text-[14px] font-bold"
+                style={{ color: "#1c1e21" }}
+              >
+                {selectedPatient.nama}
+              </h3>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setSelectedPatient(null)}
+                className="h-7"
+              >
+                <X className="w-3.5 h-3.5" /> Tukar
+              </Button>
+            </div>
+            {frequentItems.length > 0 && (
+              <div className="mb-3">
+                <p
+                  className="text-2xs font-semibold uppercase tracking-wider mb-1.5"
+                  style={{ color: "#65676b" }}
+                >
+                  Item Kerap
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {frequentItems.map((it: any) => (
+                    <button
+                      key={it.id}
+                      onClick={() =>
+                        setSelectedItem({
+                          assignment_id: "",
+                          item_id: it.id,
+                          dos: null,
+                          item: {
+                            id: it.id,
+                            kod_item: it.kod_item,
+                            nama_item: it.nama_item,
+                            kekuatan: it.kekuatan,
+                          },
+                        })
+                      }
+                      className="text-[12px] font-medium px-2.5 py-1 rounded-full"
+                      style={{
+                        background: "rgba(24,119,242,0.08)",
+                        color: "#1877f2",
+                        border: "1px solid rgba(24,119,242,0.2)",
+                      }}
+                    >
+                      {it.nama_item}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <Input
+              value={itemSearch}
+              onChange={(e) => setItemSearch(e.target.value)}
+              placeholder="Cari item..."
+              className="mb-2"
+              style={inputStyle}
+            />
+            <div
+              className="border rounded-xl overflow-y-auto"
+              style={{ borderColor: "#e4e6eb", maxHeight: 200 }}
+            >
+              {filteredItems.length === 0 ? (
+                <div
+                  className="text-center text-xs py-6"
+                  style={{ color: "#9ca3af" }}
+                >
+                  Tiada padanan.
+                </div>
+              ) : (
+                filteredItems.map((a: any) => (
+                  <button
+                    key={a.assignment_id}
+                    onClick={() => setSelectedItem(a)}
+                    className="w-full text-left px-3 py-2 text-xs border-b last:border-b-0 hover:bg-blue-50/50"
+                    style={{ borderColor: "#f0f2f5" }}
+                  >
+                    <p
+                      className="font-semibold"
+                      style={{ color: "#1c1e21" }}
+                    >
+                      {a.item?.nama_item}
+                    </p>
+                    <p style={{ color: "#65676b" }}>
+                      {a.item?.kod_item} · Dos: {a.dos}
+                    </p>
+                  </button>
+                ))
+              )}
+            </div>
+            <button
+              type="button"
+              className="mt-3 w-full text-xs font-semibold flex items-center justify-center gap-1.5 py-2 rounded-xl border-2 border-dashed"
+              style={{
+                borderColor: "rgba(16,185,129,0.4)",
+                color: "#059669",
+              }}
+            >
+              <Plus className="w-3.5 h-3.5" /> Daftar Item Baharu
+            </button>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedItem && (
+        <Card>
+          <CardContent className="pt-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <Pill className="w-4 h-4 text-blue-500" />
+                <p
+                  className="text-[14px] font-bold truncate"
+                  style={{ color: "#1c1e21" }}
+                >
+                  {selectedItem.item?.nama_item}
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setSelectedItem(null)}
+                className="h-7"
+              >
+                <X className="w-3.5 h-3.5" /> Tukar
+              </Button>
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div>
+                <Label style={labelStyle}>Pilih Kelompok (FEFO)</Label>
+                {availableBatches.length === 0 ? (
+                  <div
+                    className="text-xs p-2 rounded-lg"
+                    style={{
+                      background: "rgba(220,38,38,0.08)",
+                      color: "#991b1b",
+                    }}
+                  >
+                    Tiada kelompok tersedia.
+                  </div>
+                ) : (
+                  <div className="space-y-1 max-h-40 overflow-y-auto">
+                    {availableBatches.map((b: any) => (
+                      <label
+                        key={b.id}
+                        className="flex items-center gap-2 px-3 py-2 text-xs border rounded-lg cursor-pointer"
+                        style={{
+                          borderColor:
+                            selectedBatchId === b.id ? "#f59e0b" : "#e4e6eb",
+                          background:
+                            selectedBatchId === b.id
+                              ? "rgba(245,158,11,0.06)"
+                              : "white",
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="batch"
+                          checked={selectedBatchId === b.id}
+                          onChange={() => setSelectedBatchId(b.id)}
+                          style={{ accentColor: "#f59e0b" }}
+                        />
+                        <div className="flex-1">
+                          <p
+                            className="font-mono font-semibold"
+                            style={{ color: "#1c1e21" }}
+                          >
+                            {b.nombor_kelompok}
+                          </p>
+                          <p style={{ color: "#65676b" }}>
+                            Luput: {b.tarikh_luput} · Stok: {b.kuantiti}
+                          </p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <Label style={labelStyle}>Dos</Label>
+                  <Input
+                    value={dose}
+                    onChange={(e) => setDose(e.target.value.toUpperCase())}
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <Label style={labelStyle}>Kuantiti *</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    required
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <Label style={labelStyle}>Tempoh</Label>
+                  <Input
+                    value={tempoh}
+                    onChange={(e) => setTempoh(e.target.value)}
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <Label style={labelStyle}>Catatan</Label>
+                  <Input
+                    value={catatan}
+                    onChange={(e) => setCatatan(e.target.value)}
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+              <Button
+                type="submit"
+                disabled={!canSubmit || supplyMut.isPending}
+                className="w-full h-12 text-sm font-bold"
+                style={{
+                  background: canSubmit
+                    ? "linear-gradient(135deg, #1877f2, #0d5bd4)"
+                    : "#9ca3af",
+                  color: "white",
+                }}
+              >
+                {supplyMut.isPending && (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                )}
+                <Zap className="w-4 h-4 mr-2" />
+                Bekal {quantity && `(${quantity})`}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}

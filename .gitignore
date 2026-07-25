@@ -37,3 +37,9 @@ out
 
 # PWA generated
 dev-dist
+
+# TypeScript build info
+*.tsbuildinfo
+vite.config.d.ts
+vite/api-mock.d.ts
+vite/api-mock.js

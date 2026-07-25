@@ -57,7 +57,7 @@ interface StatCardMiniProps {
   icon: LucideIcon;
   color: string;
   label: string;
-  value: number | string;
+  value: number | string | null;
   isText?: boolean;
 }
 

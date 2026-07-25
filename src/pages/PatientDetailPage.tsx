@@ -199,7 +199,7 @@ export default function PatientDetailPage() {
         ...editData,
         nama: toTitleCase(editData.nama ?? ""),
         nombor_kad_pengenalan: formatMyKad(editData.nombor_kad_pengenalan),
-        nombor_telefon: formatPhone(editData.nomor_telefon),
+        nombor_telefon: formatPhone(editData.nombor_telefon),
         nombor_pendaftaran_hospital:
           editData.nombor_pendaftaran_hospital?.toUpperCase(),
         alamat: toTitleCase(editData.alamat),
@@ -387,7 +387,7 @@ export default function PatientDetailPage() {
           icon={User}
           color="#f59e0b"
           label="Tarikh Daftar"
-          value={patient.tarikh_daftar}
+          value={patient.tarikh_daftar ?? ""}
         />
       </motion.div>
 
@@ -632,14 +632,14 @@ function ViewInfo({ patient }: { patient: Patient }) {
           icon={User}
           label="No. Telefon"
           value={
-            patient.nombor_telefon ? formatPhone(patient.nomor_telefon) : null
+            patient.nombor_telefon ? formatPhone(patient.nombor_telefon) : null
           }
         />
       </div>
       <InfoField
         icon={User}
         label="Tarikh Daftar"
-        value={patient.tarikh_daftar}
+        value={patient.tarikh_daftar ?? ""}
       />
       <InfoField icon={User} label="Alamat" value={patient.alamat} block />
      

@@ -213,9 +213,9 @@ export function useAddBatch(itemId: string | undefined) {
         return { id: created!.id, action: "created" as const };
       }
     },
-    onSuccess: (_, vars) => {
+    onSuccess: (result) => {
       toast.success(
-        vars.action === "created"
+        result.action === "created"
           ? "Kelompok baharu ditambah."
           : "Stok ditambah ke kelompok sedia ada."
       );
@@ -290,11 +290,11 @@ export function useItemPatients(itemId: string | undefined) {
       if (!assignments || assignments.length === 0) return [];
 
       // Get patients
-      const patientIds = assignments.map((a) => a.patient_id);
+      const patientIds = assignments.map((a: any) => String(a.patient_id));
       const { data: patients, error: pErr } = await supabase
         .from("patients")
         .select("id, nama, nombor_kad_pengenalan")
-        .in("patient_id" as any, patientIds as any);
+        .in("id", patientIds.length > 0 ? patientIds : [""]);
       if (pErr) throw pErr;
       void patients;
 

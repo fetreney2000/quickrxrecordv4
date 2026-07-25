@@ -8,8 +8,9 @@ import { apiMockPlugin } from "./vite/api-mock";
 export default defineConfig({
   plugins: [
     react(),
-    // API mock untuk pembangunan tempatan (/api/login, /api/session, dll.)
-    apiMockPlugin(),
+    // API mock untuk pembangunan tempatan sahaja (/api/login, /api/session, dll.)
+    // Tidak dimuatkan dalam binaan produksi (Vercel menggunakan serverless functions)
+    ...(process.env.NODE_ENV === "production" ? [] : [apiMockPlugin()]),
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "robots.txt", "apple-touch-icon.png"],

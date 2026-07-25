@@ -41,7 +41,7 @@ export function useItems({
       let query = supabase
         .from("items")
         .select(
-          "*, item_batches(kuantiti), item_forms(id,nama)",
+          "*, item_batches(kuantiti)",
           { count: "exact" }
         )
         .eq("aktif", true);
@@ -85,18 +85,32 @@ export function useItem(id: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("items")
-        .select(
-          "*, item_categories(id,nama), item_forms(id,nama)"
-        )
+        .select("*")
         .eq("id", id!)
         .maybeSingle();
       if (error) throw error;
-      return data as
-        | (Item & {
-            item_categories: { id: string; nama: string } | null;
-            item_forms: { id: string; nama: string } | null;
-          })
-        | null;
+      // Fetch related data separately to avoid join issues
+      let itemCategories: { id: string; nama: string } | null = null;
+      let itemForms: { id: string; nama: string } | null = null;
+      if (data?.id_kategori) {
+        const { data: cat } = await supabase
+          .from("item_categories")
+          .select("id, nama")
+          .eq("id", data.id_kategori)
+          .maybeSingle();
+        itemCategories = cat ?? null;
+      }
+      if (data?.id_bentuk) {
+        const { data: form } = await supabase
+          .from("item_forms")
+          .select("id, nama")
+          .eq("id", data.id_bentuk)
+          .maybeSingle();
+        itemForms = form ?? null;
+      }
+      return data
+        ? { ...data, item_categories: itemCategories, item_forms: itemForms }
+        : null;
     },
   });
 }

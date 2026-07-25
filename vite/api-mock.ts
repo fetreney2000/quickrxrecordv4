@@ -7,17 +7,53 @@
  *  - DELETE /api/session      — kosongkan sesi
  *  - POST   /api/reset-request — cipta permintaan reset kata laluan
  *
- * Untuk pembangunan sahaja. Dalam produksi, gunakan Supabase Edge Functions
- * (lihat supabase/functions/).
+ * Untuk pembangunan sahaja. Dalam produksi, gunakan Vercel serverless functions
+ * (lihat api/).
  */
 import { createClient } from "@supabase/supabase-js";
-import { createHash } from "node:crypto";
+import { createHash, pbkdf2Sync } from "node:crypto";
 import type { Plugin } from "vite";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 // Helper: hash kata laluan dengan SHA-256 (dev only fallback)
 function devHashPassword(password: string): string {
   return createHash("sha256").update(password).digest("hex");
+}
+
+/**
+ * Sahkan kata laluan terhadap hash yang disimpan.
+ * Menyokong: bcrypt, PBKDF2 (pbkdf2:iterations:salt:key), SHA-256 fallback
+ */
+async function verifyPassword(
+  password: string,
+  storedHash: string
+): Promise<boolean> {
+  // 1. Cuba bcrypt dahulu
+  if (storedHash.startsWith("$2a$") || storedHash.startsWith("$2b$")) {
+    try {
+      const bcrypt = await import("bcryptjs");
+      return bcrypt.compare(password, storedHash);
+    } catch {
+      // fallthrough ke bawah
+    }
+  }
+
+  // 2. Cuba PBKDF2 (format: pbkdf2:iterations:salt_hex:derived_key_hex)
+  if (storedHash.startsWith("pbkdf2:")) {
+    const parts = storedHash.split(":");
+    if (parts.length === 4) {
+      const iterations = parseInt(parts[1], 10);
+      const salt = Buffer.from(parts[2], "hex");
+      const expectedKey = parts[3].toLowerCase();
+      const derivedKey = pbkdf2Sync(password, salt, iterations, 32, "sha256");
+      return derivedKey.toString("hex") === expectedKey;
+    }
+    return false;
+  }
+
+  // 3. Fallback: SHA-256 atau plaintext
+  const hash = devHashPassword(password);
+  return hash === storedHash || storedHash === password;
 }
 
 // Simple session store (in-memory, dev only)
@@ -101,15 +137,7 @@ export function apiMockPlugin(): Plugin {
               });
             }
 
-            // Cuba bcryptjs dahulu, kemudian fallback ke SHA-256/plain (dev)
-            let valid = false;
-            try {
-              const bcrypt = await import("bcryptjs");
-              valid = await bcrypt.compare(kata_laluan, stored);
-            } catch {
-              const hash = devHashPassword(kata_laluan);
-              valid = hash === stored || stored === kata_laluan;
-            }
+            const valid = await verifyPassword(kata_laluan, stored);
 
             if (!valid) {
               return sendJson(res, 401, {

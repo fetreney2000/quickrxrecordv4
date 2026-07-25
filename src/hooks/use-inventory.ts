@@ -20,6 +20,12 @@ import type {
 // ============================================================================
 export const INVENTORY_PAGE_SIZE = 50;
 
+export type SortDir = "asc" | "desc";
+export interface SortState {
+  key: string;
+  dir: SortDir;
+}
+
 export function useItems({
   search,
   page,
@@ -34,7 +40,10 @@ export function useItems({
     queryFn: async () => {
       let query = supabase
         .from("items")
-        .select("*, item_batches(kuantiti)", { count: "exact" })
+        .select(
+          "*, item_batches(kuantiti), item_forms(id,nama)",
+          { count: "exact" }
+        )
         .eq("aktif", true);
 
       if (search.trim()) {
@@ -56,7 +65,10 @@ export function useItems({
       if (error) throw error;
 
       return {
-        items: (data ?? []) as (Item & { item_batches: { kuantiti: number }[] })[],
+        items: (data ?? []) as (Item & {
+          item_batches: { kuantiti: number }[];
+          item_forms: { id: string; nama: string } | null;
+        })[],
         total: count ?? 0,
         totalPages: Math.max(1, Math.ceil((count ?? 0) / INVENTORY_PAGE_SIZE)),
       };
@@ -73,12 +85,55 @@ export function useItem(id: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("items")
-        .select("*")
+        .select(
+          "*, item_categories(id,nama), item_forms(id,nama)"
+        )
         .eq("id", id!)
         .maybeSingle();
       if (error) throw error;
-      return data as Item | null;
+      return data as
+        | (Item & {
+            item_categories: { id: string; nama: string } | null;
+            item_forms: { id: string; nama: string } | null;
+          })
+        | null;
     },
+  });
+}
+
+/** Senarai pesakit (untuk penapis sejarah transaksi). */
+export function usePatientsList() {
+  return useQuery({
+    queryKey: ["patients-list-min"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("patients")
+        .select("id, nama")
+        .eq("aktif", true)
+        .is("merged_into", null)
+        .order("nama", { ascending: true })
+        .limit(500);
+      if (error) throw error;
+      return (data ?? []) as { id: string; nama: string }[];
+    },
+    staleTime: 60_000,
+  });
+}
+
+/** Senarai kakitangan (untuk penapis sejarah transaksi). */
+export function useStaffList() {
+  return useQuery({
+    queryKey: ["staff-list-min"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, nama")
+        .eq("aktif", true)
+        .order("nama", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as { id: string; nama: string }[];
+    },
+    staleTime: 60_000,
   });
 }
 

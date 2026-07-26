@@ -1,7 +1,7 @@
 /**
  * PatientDetailPage — Halaman butiran pesakit.
  */
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -15,12 +15,18 @@ import {
   ChevronRight,
   Stethoscope,
   User,
-  type LucideIcon,
+  Users,
+  Activity,
+  Calendar,
+  Merge,
+  Activity as ActivityIcon,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { FoldableCard } from "@/components/ui/foldable-card";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { useAuth } from "@/hooks/use-auth";
@@ -35,6 +41,7 @@ import {
 import {
   usePatient,
   usePatientAssignments,
+  useItemForms,
   useUpdatePatient,
   useDeactivatePatient,
   useAddAssignment,
@@ -59,6 +66,7 @@ import {
   EditSupplyDialog,
   DeleteSupplyDialog,
 } from "@/components/patient/patient-dialogs-extra";
+import { MergeDialog } from "@/components/patient/merge-dialog";
 import type { Patient } from "@/types";
 
 const ASSIGNMENT_PAGE_SIZE = 50;
@@ -89,13 +97,25 @@ export default function PatientDetailPage() {
   const setNavSource = useNavStore((s) => s.setNavSource);
   const canEdit = can("manage_patients");
 
+  // Responsive state
+  const [isMobile, setIsMobile] = useState(false);
+
   useEffect(() => {
     setNavSource("list");
   }, [setNavSource]);
 
+  // Resize listener for isMobile
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   const { data: patient, isLoading } = usePatient(id);
   const { data: assignments = [] } = usePatientAssignments(id);
   const { data: itemsWithStats = [] } = useItemsWithStats();
+  const { data: itemForms = [] } = useItemForms();
 
   const updatePatient = useUpdatePatient(id);
   const deactivatePatient = useDeactivatePatient(id);
@@ -126,18 +146,55 @@ export default function PatientDetailPage() {
     id: string;
     assignmentId: string;
   } | null>(null);
+  const [openMerge, setOpenMerge] = useState(false);
 
   const [assignmentPage, setAssignmentPage] = useState(0);
   const [expandedAssignment, setExpandedAssignment] = useState<string | null>(
     null
   );
 
+  // ---- useMemo ----
+
+  // Forms map: id_bentuk → nama
+  const formsMap = useMemo(() => {
+    const map = new Map<string, string>();
+    itemForms.forEach((f) => map.set(f.id, f.nama));
+    return map;
+  }, [itemForms]);
+
+  // Active item IDs set
+  const activeItemIds = useMemo(() => {
+    const set = new Set<string>();
+    assignments
+      .filter((a) => a.aktif)
+      .forEach((a) => set.add(a.item_id));
+    return set;
+  }, [assignments]);
+
+  // getItemDisplayName callback
+  const getItemDisplayName = useCallback(
+    (item: AssignmentWithItem["item"]) => {
+      if (!item) return "Item Tidak Dikenali";
+      const parts = [item.nama_item];
+      if (item.kekuatan) parts.push(item.kekuatan);
+      if (item.id_bentuk) {
+        const formName = formsMap.get(item.id_bentuk);
+        if (formName) parts.push(formName);
+      }
+      return parts.join(" · ");
+    },
+    [formsMap]
+  );
+
+  // Stats
   const stats = useMemo(() => {
     const total = assignments.length;
     const active = assignments.filter((a) => a.aktif).length;
-    return { total, active };
+    const inactive = total - active;
+    return { total, active, inactive };
   }, [assignments]);
 
+  // Sorted assignments (active first, then by start date desc)
   const sortedAssignments = useMemo(() => {
     return [...assignments].sort((a, b) => {
       if (a.aktif !== b.aktif) return a.aktif ? -1 : 1;
@@ -157,14 +214,6 @@ export default function PatientDetailPage() {
     Math.ceil(sortedAssignments.length / ASSIGNMENT_PAGE_SIZE)
   );
 
-  const activeAssignmentItems = useMemo(() => {
-    const set = new Set<string>();
-    assignments
-      .filter((a) => a.aktif)
-      .forEach((a) => set.add(a.item_id));
-    return set;
-  }, [assignments]);
-
   const supplyAssignment = useMemo(
     () => assignments.find((a) => a.id === openSupply) ?? null,
     [assignments, openSupply]
@@ -173,6 +222,8 @@ export default function PatientDetailPage() {
     () => assignments.find((a) => a.id === openUpdateDose) ?? null,
     [assignments, openUpdateDose]
   );
+
+  // ---- Handlers ----
 
   const startEdit = () => {
     if (!patient) return;
@@ -213,6 +264,8 @@ export default function PatientDetailPage() {
     );
   };
 
+  // ---- Loading / Not Found ----
+
   if (isLoading) {
     return (
       <div
@@ -250,8 +303,37 @@ export default function PatientDetailPage() {
     );
   }
 
+  // ---- Render ----
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" style={{ paddingBottom: isMobile ? 100 : 0 }}>
+      {/* Mobile dialog CSS */}
+      <style>{`
+        @media (max-width: 640px) {
+          [role="dialog"] {
+            max-width: calc(100vw - 32px) !important;
+            overflow-y: auto;
+            max-height: 80vh;
+          }
+        }
+      `}</style>
+
+      {/* Background glow decoration */}
+      <div
+        style={{
+          position: "absolute",
+          top: -80,
+          right: -80,
+          width: 300,
+          height: 300,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(24,119,242,0.08) 0%, transparent 70%)",
+          filter: "blur(30px)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+
       <Breadcrumb
         items={[
           { label: "Senarai Pesakit", href: "/pesakit" },
@@ -279,8 +361,12 @@ export default function PatientDetailPage() {
           </div>
           <div className="min-w-0">
             <h1
-              className="text-[22px] sm:text-[20px] font-bold leading-tight truncate"
-              style={{ color: "#1c1e21", letterSpacing: "-0.01em" }}
+              className="font-bold leading-tight truncate"
+              style={{
+                color: "#1c1e21",
+                letterSpacing: "-0.01em",
+                fontSize: isMobile ? 18 : 22,
+              }}
             >
               {patient.nama}
             </h1>
@@ -300,6 +386,15 @@ export default function PatientDetailPage() {
             <ArrowLeft className="w-3.5 h-3.5" />
             Kembali
           </Button>
+          {canEdit && (
+            <Button
+              variant="outline"
+              onClick={() => setOpenMerge(true)}
+            >
+              <Merge className="w-3.5 h-3.5" />
+              Gabung
+            </Button>
+          )}
           {canEdit && patient.aktif && (
             <Button
               variant="destructive"
@@ -312,27 +407,26 @@ export default function PatientDetailPage() {
         </div>
       </motion.div>
 
-      {/* Patient Info Card */}
+      {/* Patient Info Card — FoldableCard */}
       <motion.div
         initial={{ opacity: 0, y: 5 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05, duration: 0.15 }}
       >
-        <Card>
-          <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-[#f0f2f5]">
-            <div className="flex items-center gap-2">
+        <FoldableCard
+          title={
+            <span className="flex items-center gap-2">
               <User className="w-4 h-4" style={{ color: "#1877f2" }} />
-              <h2 className="text-base font-bold" style={{ color: "#1c1e21" }}>
-                Maklumat Pesakit
-              </h2>
-            </div>
-            {canEdit && !editMode && patient.aktif && (
+              Maklumat Pesakit
+            </span>
+          }
+          headerExtra={
+            canEdit && !editMode && patient.aktif ? (
               <Button size="sm" variant="outline" onClick={startEdit}>
                 <Edit className="w-3.5 h-3.5" />
                 Edit
               </Button>
-            )}
-            {editMode && (
+            ) : editMode ? (
               <div className="flex items-center gap-2">
                 <Button size="sm" variant="outline" onClick={cancelEdit}>
                   Batal
@@ -346,16 +440,15 @@ export default function PatientDetailPage() {
                   Simpan
                 </Button>
               </div>
-            )}
-          </div>
-          <CardContent className="pt-5">
-            {editMode ? (
-              <EditForm editData={editData} setEditData={setEditData} />
-            ) : (
-              <ViewInfo patient={patient} />
-            )}
-          </CardContent>
-        </Card>
+            ) : null
+          }
+        >
+          {editMode ? (
+            <EditForm editData={editData} setEditData={setEditData} />
+          ) : (
+            <ViewInfo patient={patient} />
+          )}
+        </FoldableCard>
       </motion.div>
 
       {/* Stats Row */}
@@ -372,19 +465,19 @@ export default function PatientDetailPage() {
           value={stats.total}
         />
         <StatCardMini
-          icon={User}
+          icon={Activity}
           color="#10b981"
           label="Item Aktif"
           value={stats.active}
         />
         <StatCardMini
-          icon={User}
+          icon={Users}
           color="#7c3aed"
           label="Status"
           value={patient.aktif ? "Aktif" : "Tidak Aktif"}
         />
         <StatCardMini
-          icon={User}
+          icon={Calendar}
           color="#f59e0b"
           label="Tarikh Daftar"
           value={patient.tarikh_daftar ?? ""}
@@ -402,6 +495,14 @@ export default function PatientDetailPage() {
             <span className="flex items-center gap-2">
               <Pill className="w-4 h-4" style={{ color: "#1877f2" }} />
               Item Didaftarkan
+              <Badge variant="green" className="text-2xs">
+                {stats.active} aktif
+              </Badge>
+              {stats.inactive > 0 && (
+                <Badge variant="slate" className="text-2xs">
+                  {stats.inactive} tamat
+                </Badge>
+              )}
             </span>
           }
           headerExtra={
@@ -453,6 +554,7 @@ export default function PatientDetailPage() {
                       setDeleteSupplyId({ id, assignmentId: a.id })
                     }
                     canEdit={canEdit && patient.aktif}
+                    formsMap={formsMap}
                   />
                 ))}
               </div>
@@ -517,7 +619,7 @@ export default function PatientDetailPage() {
         open={openAddAssignment}
         onOpenChange={setOpenAddAssignment}
         items={itemsWithStats}
-        activeItemIds={activeAssignmentItems}
+        activeItemIds={activeItemIds}
         onSubmit={(data) =>
           addAssignment.mutate(data, {
             onSuccess: () => setOpenAddAssignment(false),
@@ -604,6 +706,12 @@ export default function PatientDetailPage() {
           )
         }
         isPending={deleteSupplyMut.isPending}
+      />
+
+      <MergeDialog
+        open={openMerge}
+        onOpenChange={setOpenMerge}
+        primaryPatient={patient}
       />
     </div>
   );
@@ -758,4 +866,3 @@ function EditForm({
     </div>
   );
 }
-

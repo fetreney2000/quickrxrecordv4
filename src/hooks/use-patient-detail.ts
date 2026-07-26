@@ -1,5 +1,5 @@
 /**
- * Hook untuk data pesakit + tugasan + bekalan.
+ * Hook untuk data pesakit + tugasan + bekalan + penggabungan.
  */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -14,6 +14,8 @@ import type {
   DoseHistory,
   SupplyDuration,
   Item,
+  ItemForm,
+  Profile,
 } from "@/types";
 
 // ============================================================================
@@ -36,10 +38,13 @@ export function usePatient(id: string | undefined) {
 }
 
 // ============================================================================
-// 2. Patient assignments with item + profiles
+// 2. Patient assignments with item + profiles×3
 // ============================================================================
 export interface AssignmentWithItem extends PatientItemAssignment {
-  item: Pick<Item, "id" | "kod_item" | "nama_item" | "nama_dagangan" | "kekuatan"> | null;
+  item: Pick<Item, "id" | "kod_item" | "nama_item" | "nama_dagangan" | "kekuatan" | "id_bentuk"> | null;
+  dimulakan_oleh_profile: Pick<Profile, "id" | "nama"> | null;
+  ditamatkan_oleh_profile: Pick<Profile, "id" | "nama"> | null;
+  kakitangan_farmasi_perekod_profile: Pick<Profile, "id" | "nama"> | null;
 }
 
 export function usePatientAssignments(id: string | undefined) {
@@ -57,7 +62,20 @@ export function usePatientAssignments(id: string | undefined) {
             kod_item,
             nama_item,
             nama_dagangan,
-            kekuatan
+            kekuatan,
+            id_bentuk
+          ),
+          dimulakan_oleh_profile:profiles!patient_item_assignments_dimulakan_oleh_fkey (
+            id,
+            nama
+          ),
+          ditamatkan_oleh_profile:profiles!patient_item_assignments_ditamatkan_oleh_fkey (
+            id,
+            nama
+          ),
+          kakitangan_farmasi_perekod_profile:profiles!patient_item_assignments_kakitangan_farmasi_perekod_fkey (
+            id,
+            nama
           )
         `
         )
@@ -70,8 +88,29 @@ export function usePatientAssignments(id: string | undefined) {
 }
 
 // ============================================================================
-// 3. Dose history for an assignment
+// 2b. Item forms (lookup)
 // ============================================================================
+export function useItemForms() {
+  return useQuery({
+    queryKey: ["item_forms"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("item_forms")
+        .select("*")
+        .order("nama", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as ItemForm[];
+    },
+  });
+}
+
+// ============================================================================
+// 3. Dose history for an assignment (with profile join)
+// ============================================================================
+export interface DoseHistoryWithProfile extends DoseHistory {
+  dikemaskini_oleh_profile: Pick<Profile, "id" | "nama"> | null;
+}
+
 export function useDoseHistory(assignmentId: string | null) {
   return useQuery({
     queryKey: ["dose-history", assignmentId],
@@ -79,18 +118,31 @@ export function useDoseHistory(assignmentId: string | null) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("dose_history")
-        .select("*")
+        .select(
+          `
+          *,
+          dikemaskini_oleh_profile:profiles!dose_history_dikemaskini_oleh_fkey (
+            id,
+            nama
+          )
+        `
+        )
         .eq("assignment_id", assignmentId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as DoseHistory[];
+      return (data ?? []) as unknown as DoseHistoryWithProfile[];
     },
   });
 }
 
 // ============================================================================
-// 4. Supply history for an assignment
+// 4. Supply history for an assignment (with item_batches + profile joins)
 // ============================================================================
+export interface SupplyRecordWithJoins extends SupplyRecord {
+  batch: Pick<ItemBatch, "id" | "nombor_kelompok" | "tarikh_luput"> | null;
+  kakitangan_pembekal_profile: Pick<Profile, "id" | "nama"> | null;
+}
+
 export function useSupplyHistory(assignmentId: string | null) {
   return useQuery({
     queryKey: ["supply-history", assignmentId],
@@ -98,11 +150,24 @@ export function useSupplyHistory(assignmentId: string | null) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("supply_records")
-        .select("*")
+        .select(
+          `
+          *,
+          batch:item_batches (
+            id,
+            nombor_kelompok,
+            tarikh_luput
+          ),
+          kakitangan_pembekal_profile:profiles!supply_records_kakitangan_pembekal_fkey (
+            id,
+            nama
+          )
+        `
+        )
         .eq("assignment_id", assignmentId!)
         .order("tarikh_dibekal", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as SupplyRecord[];
+      return (data ?? []) as unknown as SupplyRecordWithJoins[];
     },
   });
 }
@@ -176,6 +241,29 @@ export function useItemsWithStats() {
         ...item,
         active_assignments: countMap.get(item.id) ?? 0,
       }));
+    },
+  });
+}
+
+// ============================================================================
+// 8. Search patients (for merge dialog)
+// ============================================================================
+export function useSearchPatients(query: string) {
+  return useQuery({
+    queryKey: ["search-patients", query],
+    enabled: query.trim().length >= 2,
+    queryFn: async () => {
+      const term = query.trim();
+      const { data, error } = await supabase
+        .from("patients")
+        .select("id, nama, nombor_kad_pengenalan, nombor_pendaftaran_hospital, aktif")
+        .or(
+          `nama.ilike.%${term}%,nombor_kad_pengenalan.ilike.%${term}%,nombor_pendaftaran_hospital.ilike.%${term}%`
+        )
+        .eq("merged_into", null)
+        .limit(50);
+      if (error) throw error;
+      return (data ?? []) as Pick<Patient, "id" | "nama" | "nombor_kad_pengenalan" | "nombor_pendaftaran_hospital" | "aktif">[];
     },
   });
 }
@@ -319,6 +407,7 @@ export function useStopAssignment(patientId: string | undefined) {
       toast.success("Item ditamatkan.");
       queryClient.invalidateQueries({ queryKey: ["assignments", patientId] });
       queryClient.invalidateQueries({ queryKey: ["items-with-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["patient", patientId] });
     },
     onError: (err: any) => {
       toast.error(err?.message || "Gagal menamatkan item.");
@@ -535,6 +624,101 @@ export function useUpdateSupplyRecord(patientId: string | undefined) {
     },
     onError: (err: any) => {
       toast.error(err?.message || "Gagal mengemaskini rekod bekalan.");
+    },
+  });
+}
+
+// ============================================================================
+// 9. Merge patients mutation
+// ============================================================================
+export function useMergePatients() {
+  const queryClient = useQueryClient();
+  const { profile } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({
+      primaryPatientId,
+      duplicateIds,
+    }: {
+      primaryPatientId: string;
+      duplicateIds: string[];
+    }) => {
+      const today = new Date().toISOString().split("T")[0];
+
+      for (const dupId of duplicateIds) {
+        // 1. Get duplicate assignments
+        const { data: dupAssignments } = await supabase
+          .from("patient_item_assignments")
+          .select("id, item_id, dos, catatan_penggunaan, tarikh_mula_guna, aktif")
+          .eq("patient_id", dupId);
+
+        if (!dupAssignments?.length) continue;
+
+        // 2. Get primary active assignments
+        const { data: primaryAssignments } = await supabase
+          .from("patient_item_assignments")
+          .select("id, item_id, aktif")
+          .eq("patient_id", primaryPatientId)
+          .eq("aktif", true);
+
+        const primaryActiveMap = new Map(
+          (primaryAssignments ?? []).map((a) => [a.item_id, a.id])
+        );
+
+        for (const dupA of dupAssignments) {
+          const primaryActiveId = primaryActiveMap.get(dupA.item_id);
+
+          if (primaryActiveId) {
+            // Duplicate has item that also exists in primary — transfer history
+            // Transfer dose history
+            await supabase
+              .from("dose_history")
+              .update({ assignment_id: primaryActiveId })
+              .eq("assignment_id", dupA.id);
+
+            // Transfer supply records
+            await supabase
+              .from("supply_records")
+              .update({ assignment_id: primaryActiveId })
+              .eq("assignment_id", dupA.id);
+
+            // Terminate duplicate assignment
+            await supabase
+              .from("patient_item_assignments")
+              .update({
+                aktif: false,
+                tarikh_tamat_guna: today,
+                sebab_tamat: "Digabungkan ke pesakit lain",
+                ditamatkan_oleh: profile?.id ?? null,
+              })
+              .eq("id", dupA.id);
+          } else {
+            // Unique item — transfer assignment to primary
+            await supabase
+              .from("patient_item_assignments")
+              .update({ patient_id: primaryPatientId })
+              .eq("id", dupA.id);
+          }
+        }
+
+        // 3. Mark duplicate patient as merged and deactivate
+        await supabase
+          .from("patients")
+          .update({
+            merged_into: primaryPatientId,
+            aktif: false,
+            dikemaskini_oleh: profile?.id ?? null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", dupId);
+      }
+    },
+    onSuccess: () => {
+      toast.success("Pesakit berjaya digabungkan.");
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Gagal menggabungkan pesakit.");
     },
   });
 }

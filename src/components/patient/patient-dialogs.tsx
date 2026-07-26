@@ -677,7 +677,17 @@ export function UpdateDoseDialog({
             disabled={isPending}
           >
             Batal
-                   </Button>
+          </Button>
+          <Button
+            onClick={() => {
+              if (!dos.trim()) return;
+              onSubmit({ dos: dos.trim(), catatan: catatan.trim() });
+            }}
+            disabled={!dos.trim() || isPending}
+          >
+            {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            Simpan
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -2,7 +2,7 @@
  * AssignmentItem — Item tugasan yang boleh dikembangkan.
  * Paparkan butiran tugasan, sejarah dos, dan sejarah bekalan.
  */
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Pill,
@@ -10,17 +10,21 @@ import {
   Edit,
   X,
   ChevronDown,
+  ChevronUp,
   Trash2,
   Calendar,
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { FoldableCard } from "@/components/ui/foldable-card";
 import { formatDate } from "@/lib/utils";
 import {
   useDoseHistory,
   useSupplyHistory,
   type AssignmentWithItem,
+  type DoseHistoryWithProfile,
+  type SupplyRecordWithJoins,
 } from "@/hooks/use-patient-detail";
 
 interface AssignmentItemProps {
@@ -40,8 +44,57 @@ interface AssignmentItemProps {
   }) => void;
   onDeleteSupply: (id: string) => void;
   canEdit: boolean;
+  formsMap: Map<string, string>;
 }
 
+// ============================================================================
+// SortableHeader
+// ============================================================================
+type SortDir = "asc" | "desc";
+
+function SortableHeader({
+  label,
+  sortKey,
+  currentSort,
+  onSort,
+}: {
+  label: string;
+  sortKey: string;
+  currentSort: { key: string; dir: SortDir } | null;
+  onSort: (key: string) => void;
+}) {
+  const isActive = currentSort?.key === sortKey;
+  const dir = isActive ? currentSort!.dir : null;
+
+  return (
+    <th
+      onClick={() => onSort(sortKey)}
+      className="text-left text-2xs font-semibold uppercase tracking-wider px-2 py-1.5 cursor-pointer select-none hover:bg-muted/50 transition-colors"
+      style={{ color: "#65676b" }}
+    >
+      <span className="flex items-center gap-1">
+        {label}
+        {isActive ? (
+          dir === "asc" ? (
+            <ChevronUp className="w-3 h-3" />
+          ) : (
+            <ChevronDown className="w-3 h-3" />
+          )
+        ) : (
+          <ChevronDown className="w-3 h-3 opacity-30" />
+        )}
+      </span>
+    </th>
+  );
+}
+
+function cn(...classes: (string | false | undefined | null)[]) {
+  return classes.filter(Boolean).join(" ");
+}
+
+// ============================================================================
+// AssignmentItem
+// ============================================================================
 export function AssignmentItem({
   assignment,
   expanded,
@@ -52,9 +105,11 @@ export function AssignmentItem({
   onEditSupply,
   onDeleteSupply,
   canEdit,
+  formsMap,
 }: AssignmentItemProps) {
-  const [showDoseHistory, setShowDoseHistory] = useState(false);
-  const [showSupplyHistory, setShowSupplyHistory] = useState(false);
+  const [doseSort, setDoseSort] = useState<{ key: string; dir: SortDir } | null>(null);
+  const [supplySort, setSupplySort] = useState<{ key: string; dir: SortDir } | null>(null);
+
   const { data: doseHistory = [], isLoading: doseLoading } = useDoseHistory(
     expanded ? assignment.id : null
   );
@@ -62,6 +117,60 @@ export function AssignmentItem({
     useSupplyHistory(expanded ? assignment.id : null);
 
   const item = assignment.item;
+  const formName = item?.id_bentuk ? formsMap.get(item.id_bentuk) : null;
+
+  // Sorted dose history
+  const sortedDose = useMemo(() => {
+    if (!doseSort) return doseHistory;
+    const sorted = [...doseHistory].sort((a, b) => {
+      const key = doseSort.key;
+      const av = (a as any)[key] ?? "";
+      const bv = (b as any)[key] ?? "";
+      if (typeof av === "string" && typeof bv === "string") {
+        return av.localeCompare(bv);
+      }
+      return 0;
+    });
+    return doseSort.dir === "asc" ? sorted : sorted.reverse();
+  }, [doseHistory, doseSort]);
+
+  // Sorted supply history
+  const sortedSupply = useMemo(() => {
+    if (!supplySort) return supplyHistory;
+    const sorted = [...supplyHistory].sort((a, b) => {
+      const key = supplySort.key;
+      let av: any = (a as any)[key] ?? "";
+      let bv: any = (b as any)[key] ?? "";
+      if (key === "kuantiti") {
+        av = Number(av);
+        bv = Number(bv);
+        return supplySort.dir === "asc" ? av - bv : bv - av;
+      }
+      if (typeof av === "string" && typeof bv === "string") {
+        return av.localeCompare(bv);
+      }
+      return 0;
+    });
+    return supplySort.dir === "asc" ? sorted : sorted.reverse();
+  }, [supplyHistory, supplySort]);
+
+  const toggleSort = (type: "dose" | "supply", key: string) => {
+    if (type === "dose") {
+      setDoseSort((prev) => {
+        if (prev?.key === key) {
+          return prev.dir === "asc" ? { key, dir: "desc" } : null;
+        }
+        return { key, dir: "asc" };
+      });
+    } else {
+      setSupplySort((prev) => {
+        if (prev?.key === key) {
+          return prev.dir === "asc" ? { key, dir: "desc" } : null;
+        }
+        return { key, dir: "asc" };
+      });
+    }
+  };
 
   return (
     <div className="py-3 px-2">
@@ -95,6 +204,14 @@ export function AssignmentItem({
                     · {item.kekuatan}
                   </span>
                 ) : null}
+                {formName ? (
+                  <span
+                    className="text-xs font-medium ml-1"
+                    style={{ color: "#65676b" }}
+                  >
+                    · {formName}
+                  </span>
+                ) : null}
               </p>
               <div className="flex items-center gap-2 mt-0.5 text-xs flex-wrap" style={{ color: "#65676b" }}>
                 {item?.kod_item && (
@@ -104,19 +221,24 @@ export function AssignmentItem({
                   <span>· Dos: <strong style={{ color: "#1c1e21" }}>{assignment.dos}</strong></span>
                 )}
               </div>
+              {/* Assignment details grid (4-col desktop, 2-col mobile) */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 mt-2 text-2xs" style={{ color: "#65676b" }}>
+                <span>Mula: <strong style={{ color: "#1c1e21" }}>{formatDate(assignment.tarikh_mula_guna)}</strong></span>
+                {assignment.tarikh_tamat_guna && (
+                  <span>Tamat: <strong style={{ color: "#1c1e21" }}>{formatDate(assignment.tarikh_tamat_guna)}</strong></span>
+                )}
+                {assignment.dimulakan_oleh_profile?.nama && (
+                  <span>Dimulai: <strong style={{ color: "#1c1e21" }}>{assignment.dimulakan_oleh_profile.nama}</strong></span>
+                )}
+                {assignment.ditamatkan_oleh_profile?.nama && (
+                  <span>Ditamatkan: <strong style={{ color: "#1c1e21" }}>{assignment.ditamatkan_oleh_profile.nama}</strong></span>
+                )}
+              </div>
               <div className="flex items-center gap-2 mt-1">
                 {assignment.aktif ? (
                   <Badge variant="green" className="text-2xs">Aktif</Badge>
                 ) : (
                   <Badge variant="slate" className="text-2xs">Tidak Aktif</Badge>
-                )}
-                <span className="text-2xs" style={{ color: "#9ca3af" }}>
-                  Mula: {formatDate(assignment.tarikh_mula_guna)}
-                </span>
-                {assignment.tarikh_tamat_guna && (
-                  <span className="text-2xs" style={{ color: "#9ca3af" }}>
-                    · Tamat: {formatDate(assignment.tarikh_tamat_guna)}
-                  </span>
                 )}
               </div>
             </div>
@@ -209,166 +331,138 @@ export function AssignmentItem({
             style={{ overflow: "hidden" }}
           >
             <div className="ml-12 mt-2 space-y-2">
-              {/* Dose history */}
-              <div
-                className="rounded-xl p-3"
-                style={{ background: "rgba(0,0,0,0.02)" }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setShowDoseHistory((s) => !s)}
-                  className="w-full flex items-center justify-between text-xs font-semibold"
-                >
-                  <span style={{ color: "#1c1e21" }}>
+              {/* Dose history — FoldableCard with sortable table */}
+              <FoldableCard
+                title={
+                  <span className="flex items-center gap-2">
+                    <Calendar className="w-3.5 h-3.5" style={{ color: "#1877f2" }} />
                     Sejarah Dos ({doseHistory.length})
                   </span>
-                  <ChevronDown
-                    className={cn(
-                      "w-3 h-3 transition-transform",
-                      showDoseHistory && "rotate-180"
-                    )}
-                    style={{ color: "#65676b" }}
-                  />
-                </button>
-                {showDoseHistory && (
-                  <div className="mt-2 space-y-1">
-                    {doseLoading ? (
-                      <Loader2
-                        className="w-3 h-3 animate-spin"
-                        style={{ color: "#1877f2" }}
-                      />
-                    ) : doseHistory.length === 0 ? (
-                      <p className="text-2xs" style={{ color: "#9ca3af" }}>
-                        Tiada sejarah dos.
-                      </p>
-                    ) : (
-                      <div className="space-y-1">
-                        {doseHistory.slice(0, 5).map((d) => (
-                          <div
-                            key={d.id}
-                            className="flex items-center gap-2 text-2xs"
-                          >
-                            <Calendar
-                              className="w-3 h-3"
-                              style={{ color: "#65676b" }}
-                            />
-                            <span style={{ color: "#1c1e21" }}>
-                              {formatDate(d.tarikh)}
-                            </span>
-                            <span style={{ color: "#1877f2" }} className="font-semibold">
-                              {d.dos}
-                            </span>
-                            {d.catatan && (
-                              <span
-                                className="truncate italic"
-                                style={{ color: "#9ca3af" }}
-                              >
-                                · {d.catatan}
-                              </span>
-                            )}
-                          </div>
+                }
+                defaultOpen={true}
+              >
+                {doseLoading ? (
+                  <div className="flex items-center gap-2 py-3">
+                    <Loader2 className="w-3 h-3 animate-spin" style={{ color: "#1877f2" }} />
+                    <span className="text-2xs" style={{ color: "#65676b" }}>Memuatkan...</span>
+                  </div>
+                ) : doseHistory.length === 0 ? (
+                  <p className="text-2xs py-2" style={{ color: "#9ca3af" }}>
+                    Tiada sejarah dos.
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto mt-1">
+                    <table className="w-full text-2xs">
+                      <thead>
+                        <tr className="border-b" style={{ borderColor: "#f0f2f5" }}>
+                          <SortableHeader label="Tarikh" sortKey="tarikh" currentSort={doseSort} onSort={(k) => toggleSort("dose", k)} />
+                          <SortableHeader label="Dos" sortKey="dos" currentSort={doseSort} onSort={(k) => toggleSort("dose", k)} />
+                          <SortableHeader label="Dikemaskini Oleh" sortKey="dikemaskini_oleh" currentSort={doseSort} onSort={(k) => toggleSort("dose", k)} />
+                          <SortableHeader label="Catatan" sortKey="catatan" currentSort={doseSort} onSort={(k) => toggleSort("dose", k)} />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sortedDose.map((d) => (
+                          <tr key={d.id} className="border-b last:border-b-0" style={{ borderColor: "#f0f2f5" }}>
+                            <td className="px-2 py-1.5" style={{ color: "#1c1e21" }}>{formatDate(d.tarikh)}</td>
+                            <td className="px-2 py-1.5 font-semibold" style={{ color: "#1877f2" }}>{d.dos}</td>
+                            <td className="px-2 py-1.5" style={{ color: "#65676b" }}>
+                              {(d as DoseHistoryWithProfile).dikemaskini_oleh_profile?.nama ?? "—"}
+                            </td>
+                            <td className="px-2 py-1.5 italic" style={{ color: "#9ca3af" }}>
+                              {d.catatan || "—"}
+                            </td>
+                          </tr>
                         ))}
-                      </div>
-                    )}
+                      </tbody>
+                    </table>
                   </div>
                 )}
-              </div>
+              </FoldableCard>
 
-              {/* Supply history */}
-              <div
-                className="rounded-xl p-3"
-                style={{ background: "rgba(0,0,0,0.02)" }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setShowSupplyHistory((s) => !s)}
-                  className="w-full flex items-center justify-between text-xs font-semibold"
-                >
-                  <span style={{ color: "#1c1e21" }}>
+              {/* Supply history — FoldableCard with sortable table */}
+              <FoldableCard
+                title={
+                  <span className="flex items-center gap-2">
+                    <Package className="w-3.5 h-3.5" style={{ color: "#1877f2" }} />
                     Sejarah Bekalan ({supplyHistory.length})
                   </span>
-                  <ChevronDown
-                    className={cn(
-                      "w-3 h-3 transition-transform",
-                      showSupplyHistory && "rotate-180"
-                    )}
-                    style={{ color: "#65676b" }}
-                  />
-                </button>
-                {showSupplyHistory && (
-                  <div className="mt-2 space-y-1">
-                    {supplyLoading ? (
-                      <Loader2
-                        className="w-3 h-3 animate-spin"
-                        style={{ color: "#1877f2" }}
-                      />
-                    ) : supplyHistory.length === 0 ? (
-                      <p className="text-2xs" style={{ color: "#9ca3af" }}>
-                        Tiada sejarah bekalan.
-                      </p>
-                    ) : (
-                      <div className="space-y-1">
-                        {supplyHistory.slice(0, 5).map((s) => (
-                          <div
-                            key={s.id}
-                            className="flex items-center gap-2 text-2xs"
-                          >
-                            <Calendar
-                              className="w-3 h-3"
-                              style={{ color: "#65676b" }}
-                            />
-                            <span style={{ color: "#1c1e21" }}>
-                              {formatDate(s.tarikh_dibekal)}
-                            </span>
-                            <span style={{ color: "#65676b" }}>·</span>
-                            <span style={{ color: "#1c1e21" }}>
-                              {s.kuantiti} unit
-                            </span>
-                            <span style={{ color: "#1877f2" }} className="font-semibold">
-                              {s.dos}
-                            </span>
-                            {s.tempoh_dibekal && (
-                              <span style={{ color: "#65676b" }}>· {s.tempoh_dibekal}</span>
-                            )}
+                }
+                defaultOpen={true}
+              >
+                {supplyLoading ? (
+                  <div className="flex items-center gap-2 py-3">
+                    <Loader2 className="w-3 h-3 animate-spin" style={{ color: "#1877f2" }} />
+                    <span className="text-2xs" style={{ color: "#65676b" }}>Memuatkan...</span>
+                  </div>
+                ) : supplyHistory.length === 0 ? (
+                  <p className="text-2xs py-2" style={{ color: "#9ca3af" }}>
+                    Tiada sejarah bekalan.
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto mt-1">
+                    <table className="w-full text-2xs">
+                      <thead>
+                        <tr className="border-b" style={{ borderColor: "#f0f2f5" }}>
+                          <SortableHeader label="Tarikh" sortKey="tarikh_dibekal" currentSort={supplySort} onSort={(k) => toggleSort("supply", k)} />
+                          <SortableHeader label="Kuantiti" sortKey="kuantiti" currentSort={supplySort} onSort={(k) => toggleSort("supply", k)} />
+                          <SortableHeader label="Dos" sortKey="dos" currentSort={supplySort} onSort={(k) => toggleSort("supply", k)} />
+                          <SortableHeader label="Tempoh" sortKey="tempoh_dibekal" currentSort={supplySort} onSort={(k) => toggleSort("supply", k)} />
+                          <SortableHeader label="Kakitangan" sortKey="kakitangan_pembekal" currentSort={supplySort} onSort={(k) => toggleSort("supply", k)} />
+                          <SortableHeader label="Catatan" sortKey="catatan_bekalan" currentSort={supplySort} onSort={(k) => toggleSort("supply", k)} />
+                          {canEdit && <th className="text-left text-2xs font-semibold uppercase tracking-wider px-2 py-1.5" style={{ color: "#65676b" }}>Tindakan</th>}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sortedSupply.map((s) => (
+                          <tr key={s.id} className="border-b last:border-b-0" style={{ borderColor: "#f0f2f5" }}>
+                            <td className="px-2 py-1.5" style={{ color: "#1c1e21" }}>{formatDate(s.tarikh_dibekal)}</td>
+                            <td className="px-2 py-1.5" style={{ color: "#1c1e21" }}>{s.kuantiti}</td>
+                            <td className="px-2 py-1.5 font-semibold" style={{ color: "#1877f2" }}>{s.dos}</td>
+                            <td className="px-2 py-1.5" style={{ color: "#65676b" }}>{s.tempoh_dibekal || "—"}</td>
+                            <td className="px-2 py-1.5" style={{ color: "#65676b" }}>
+                              {(s as SupplyRecordWithJoins).kakitangan_pembekal_profile?.nama ?? "—"}
+                            </td>
+                            <td className="px-2 py-1.5 italic" style={{ color: "#9ca3af" }}>
+                              {s.catatan_bekalan || "—"}
+                            </td>
                             {canEdit && (
-                              <div className="ml-auto flex items-center gap-1">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onEditSupply(s);
-                                  }}
-                                  className="hover:opacity-70"
-                                  style={{ color: "#1877f2" }}
-                                >
-                                  <Edit className="w-3 h-3" />
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onDeleteSupply(s.id);
-                                  }}
-                                  className="hover:opacity-70"
-                                  style={{ color: "#dc2626" }}
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              </div>
+                              <td className="px-2 py-1.5">
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onEditSupply(s);
+                                    }}
+                                    className="hover:opacity-70"
+                                    style={{ color: "#1877f2" }}
+                                  >
+                                    <Edit className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onDeleteSupply(s.id);
+                                    }}
+                                    className="hover:opacity-70"
+                                    style={{ color: "#dc2626" }}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </td>
                             )}
-                          </div>
+                          </tr>
                         ))}
-                      </div>
-                    )}
+                      </tbody>
+                    </table>
                   </div>
                 )}
-              </div>
+              </FoldableCard>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
     </div>
   );
-}
-
-function cn(...classes: (string | false | undefined | null)[]) {
-  return classes.filter(Boolean).join(" ");
 }

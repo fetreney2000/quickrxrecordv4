@@ -93,10 +93,9 @@ export function StopAssignmentDialog({
               className="w-4 h-4 flex-shrink-0 mt-0.5"
               style={{ color: "#dc2626" }}
             />
-            <p className="text-xs" style={{ color: "#991b1b" }}>
-              Tindakan ini akan menandakan item sebagai tidak aktif. Pesakit
-              tidak akan dibekalkan ubat ini lagi melainkan anda mendaftarkan
-              semula.
+              <p className="text-xs" style={{ color: "#991b1b" }}>
+              Tindakan ini tidak boleh dibatalkan. Pesakit tidak akan
+              dibekalkan ubat ini lagi melainkan anda mendaftarkan semula.
             </p>
           </div>
           <div>

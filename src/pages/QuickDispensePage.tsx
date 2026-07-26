@@ -628,8 +628,8 @@ export default function QuickDispensePage() {
                   <Label style={labelStyle}>Dos</Label>
                   <Input
                     value={dose}
-                    onChange={(e) => setDose(e.target.value.toUpperCase())}
-                    style={inputStyle}
+                    readOnly
+                    style={{ ...inputStyle, opacity: 0.6, cursor: "default" }}
                   />
                 </div>
                 <div>

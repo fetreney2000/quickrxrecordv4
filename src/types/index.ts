@@ -39,7 +39,7 @@ export interface Item {
   kekuatan: string | null;
   id_kategori: string | null;
   id_bentuk: string | null;
-  quota: number | null;
+  kuota: number | null;
   catatan: string | null;
   aktif: boolean;
   created_at: string;

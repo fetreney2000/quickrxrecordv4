@@ -42,7 +42,7 @@ interface NewItemForm {
   kekuatan: string;
   id_kategori: string;
   id_bentuk: string;
-  quota: string; // string untuk input
+  kuota: string; // string untuk input
   catatan: string;
 }
 
@@ -53,7 +53,7 @@ const EMPTY_FORM: NewItemForm = {
   kekuatan: "",
   id_kategori: "",
   id_bentuk: "",
-  quota: "",
+  kuota: "",
   catatan: "",
 };
 
@@ -117,7 +117,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!form.kod_item.trim() || !form.nama_item.trim()) return;
-    const quota = form.quota.trim() ? parseInt(form.quota, 10) : null;
+    const kuota = form.kuota.trim() ? parseInt(form.kuota, 10) : null;
     addItem.mutate(
       {
         kod_item: form.kod_item.trim().toUpperCase(),
@@ -126,7 +126,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
         kekuatan: form.kekuatan.trim() ? form.kekuatan.trim().toUpperCase() : null,
         id_kategori: form.id_kategori || null,
         id_bentuk: form.id_bentuk || null,
-        quota: isNaN(quota as number) ? null : quota,
+        kuota: isNaN(kuota as number) ? null : kuota,
         catatan: form.catatan.trim() || null,
         aktif: true,
       } as any,
@@ -295,17 +295,17 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
               id="quota"
               type="number"
               min={0}
-              value={form.quota}
-              onChange={(e) => updateField("quota", e.target.value)}
+              value={form.kuota}
+              onChange={(e) => updateField("kuota", e.target.value)}
               placeholder="Cth: 1000"
               style={inputStyle}
             />
-            {form.quota && !isNaN(parseInt(form.quota, 10)) && (
+            {form.kuota && !isNaN(parseInt(form.kuota, 10)) && (
               <p
                 className="text-2xs mt-1"
                 style={{ color: "#9ca3af" }}
               >
-                {formatNumber(parseInt(form.quota, 10))} unit
+                {formatNumber(parseInt(form.kuota, 10))} unit
               </p>
             )}
           </div>

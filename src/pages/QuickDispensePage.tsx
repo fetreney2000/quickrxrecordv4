@@ -803,7 +803,7 @@ export default function QuickDispensePage() {
                               ) : it.baki_kuota != null ? (
                                 <div className="text-[10px] leading-tight" style={{ color: "#65676b" }}>
                                   <div className="font-medium">Baki: {it.baki_kuota}</div>
-                                  <div>{it.patient_count ?? 0}/{it.quota}</div>
+                                  <div>{it.patient_count ?? 0}/{it.kuota}</div>
                                 </div>
                               ) : (
                                 <span className="text-[10px] font-medium" style={{ color: "#65676b" }}>

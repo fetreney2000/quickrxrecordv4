@@ -91,7 +91,7 @@ export function StockRow({ item, index, onClick }: StockRowProps) {
           className="text-[13px] font-medium tabular-nums"
           style={{ color: "#1c1e21" }}
         >
-          {item.quota != null ? formatNumber(item.quota) : (
+          {item.kuota != null ? formatNumber(item.kuota) : (
             <em style={{ color: "#9ca3af" }}>-</em>
           )}
         </span>

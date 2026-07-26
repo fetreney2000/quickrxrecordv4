@@ -175,9 +175,9 @@ export default function StockDetailPage() {
   const activePatientCount = useMemo(() => patients.length, [patients]);
 
   const quotaRemaining = useMemo(() => {
-    if (item?.quota == null) return null;
-    return Math.max(0, item.quota - totalStock);
-  }, [item?.quota, totalStock]);
+    if (item?.kuota == null) return null;
+    return Math.max(0, item.kuota - totalStock);
+  }, [item?.kuota, totalStock]);
 
   // Stats for transactions
   const txStats = useMemo(() => {
@@ -287,7 +287,7 @@ export default function StockDetailPage() {
       kekuatan: item.kekuatan,
       id_kategori: item.id_kategori,
       id_bentuk: item.id_bentuk,
-      quota: item.quota,
+      kuota: item.kuota,
       catatan: item.catatan,
     });
     setEditMode(true);
@@ -313,7 +313,7 @@ export default function StockDetailPage() {
         kekuatan: editData.kekuatan
           ? editData.kekuatan.toUpperCase()
           : null,
-        quota: editData.quota != null ? Number(editData.quota) : null,
+        kuota: editData.kuota != null ? Number(editData.kuota) : null,
       } as any,
       {
         onSuccess: () => {
@@ -739,7 +739,7 @@ export default function StockDetailPage() {
                     icon={BarChart3}
                     color="#7c3aed"
                     label="Kuota"
-                    value={item.quota != null ? formatNumber(item.quota) : "—"}
+                    value={item.kuota != null ? formatNumber(item.kuota) : "—"}
                   />
                   <StatCardMini
                     icon={Users}
@@ -1281,7 +1281,7 @@ function ItemView({ item }: { item: Item }) {
           icon={BarChart3}
           label="Jumlah Kuota"
           value={
-            item.quota != null ? formatNumber(item.quota) : null
+            item.kuota != null ? formatNumber(item.kuota) : null
           }
         />
       </div>
@@ -1415,11 +1415,11 @@ function ItemEditForm({
         <Input
           type="number"
           min={0}
-          value={editData.quota ?? ""}
+          value={editData.kuota ?? ""}
           onChange={(e) =>
             setEditData({
               ...editData,
-              quota: e.target.value ? parseInt(e.target.value, 10) : (null as any),
+              kuota: e.target.value ? parseInt(e.target.value, 10) : (null as any),
             })
           }
           style={inputBaseStyle}

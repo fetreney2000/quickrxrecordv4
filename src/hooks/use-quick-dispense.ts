@@ -286,7 +286,7 @@ export function useItemsActive() {
   return useQuery({
     queryKey: ["items-active"],
     queryFn: async () => {
-      // Get all active items
+      // Get all active items (explicitly include quota)
       const { data: items, error: iErr } = await supabase
         .from("items")
         .select("*")
@@ -316,10 +316,10 @@ export function useItemsActive() {
 
       return ((items as Item[]) ?? []).map((item) => {
         const active = countMap.get(item.id) ?? 0;
-        const quota = item.quota;
-        const hasQuota = quota != null && quota > 0;
-        const baki = hasQuota ? Math.max(0, quota - active) : null;
-        const penuh = hasQuota ? active >= quota : false;
+        const kuota = item.kuota;
+        const hasQuota = kuota != null && kuota > 0;
+        const baki = hasQuota ? Math.max(0, kuota - active) : null;
+        const penuh = hasQuota ? active >= kuota : false;
         return {
           ...item,
           patient_count: active,

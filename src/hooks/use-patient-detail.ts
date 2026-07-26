@@ -204,8 +204,7 @@ export function useSupplyDurations() {
       const { data, error } = await supabase
         .from("supply_durations")
         .select("*")
-        .eq("aktif", true)
-        .order("nilai_hari", { ascending: true });
+        .order("nama", { ascending: true });
       if (error) throw error;
       return (data ?? []) as SupplyDuration[];
     },

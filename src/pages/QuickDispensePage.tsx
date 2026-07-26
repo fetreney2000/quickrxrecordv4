@@ -801,12 +801,13 @@ export default function QuickDispensePage() {
                                   Kuota Penuh
                                 </span>
                               ) : it.baki_kuota != null ? (
-                                <span className="text-[10px] font-medium" style={{ color: "#65676b" }}>
-                                  Baki: {it.baki_kuota}
-                                </span>
+                                <div className="text-[10px] leading-tight" style={{ color: "#65676b" }}>
+                                  <div className="font-medium">Baki: {it.baki_kuota}</div>
+                                  <div>{it.patient_count ?? 0}/{it.quota}</div>
+                                </div>
                               ) : (
                                 <span className="text-[10px] font-medium" style={{ color: "#65676b" }}>
-                                  Tiada had
+                                  Pesakit: {it.patient_count ?? 0}
                                 </span>
                               )}
                             </div>

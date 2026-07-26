@@ -334,6 +334,7 @@ export function useUpdateBatchQuantity(itemId: string | undefined) {
       toast.success("Kuantiti kelompok dikemaskini.");
       queryClient.invalidateQueries({ queryKey: ["batches", itemId] });
       queryClient.invalidateQueries({ queryKey: ["items"] });
+      queryClient.invalidateQueries({ queryKey: ["transaction-history", itemId] });
     },
     onError: (err: any) => {
       toast.error(err?.message || "Gagal mengemaskini kuantiti.");

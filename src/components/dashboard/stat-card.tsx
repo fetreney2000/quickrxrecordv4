@@ -127,7 +127,7 @@ export function StatCard({
 
       {/* Subtitle */}
       <p
-        className="text-[10px] relative z-10"
+        className="text-[10px] font-medium relative z-10"
         style={{ color: "rgba(255,255,255,0.5)" }}
       >
         {subtitle}

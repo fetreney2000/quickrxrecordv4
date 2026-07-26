@@ -92,7 +92,7 @@ const ALL_CARDS: StatCardConfig[] = [
   {
     key: "patients",
     title: "Pesakit Aktif",
-    subtitle: "Jumlah pesakit berdaftar",
+    subtitle: "Jumlah pesakit dalam sistem",
     icon: Users,
     gradient: ["#2563eb", "#3b82f6"],
     roles: [
@@ -236,7 +236,29 @@ export default function DashboardPage() {
   const roleLabel = ROLE_LABELS[peranan] || peranan;
 
   return (
-    <div className="space-y-5">
+    <div className="relative space-y-5 overflow-hidden">
+      {/* Background decorations */}
+      <div
+        className="absolute pointer-events-none"
+        style={{
+          width: 400,
+          height: 400,
+          top: -100,
+          right: -100,
+          background: "rgba(24,119,242,0.04)",
+          borderRadius: "50%",
+          filter: "blur(40px)",
+        }}
+      />
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(0,0,0,0.01) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.01) 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
+        }}
+      />
+
       <Breadcrumb
         showBackButton={false}
         items={[{ label: "Papan Pemuka" }]}
@@ -248,14 +270,14 @@ export default function DashboardPage() {
         initial={{ opacity: 0, y: -15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="flex flex-col md:flex-row md:items-center justify-between gap-3"
+        className="flex flex-col items-start md:flex-row md:items-center justify-between gap-3"
       >
         <div className="flex items-center gap-3 min-w-0">
           <motion.div
             initial={{ scale: 0, rotate: -90 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ delay: 0.1, type: "spring", damping: 18 }}
-            className="w-11 h-11 rounded-2xl flex items-center justify-center text-white flex-shrink-0"
+            className="w-11 h-11 rounded-[14px] flex items-center justify-center text-white flex-shrink-0"
             style={{
               background: "linear-gradient(135deg, #1877f2, #0d5bd4)",
               boxShadow: "0 4px 12px rgba(24,119,242,0.3)",
@@ -329,12 +351,7 @@ export default function DashboardPage() {
       </motion.div>
 
       {/* Stat Cards Grid */}
-      <div
-        className="grid gap-3"
-        style={{
-          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-        }}
-      >
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-5">
         {statCards.map((card) => (
           <StatCard
             key={card.key}
@@ -361,7 +378,7 @@ export default function DashboardPage() {
               {/* Section header */}
               <div className="flex items-center gap-3 mb-4">
                 <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center text-white flex-shrink-0"
+                  className="w-9 h-9 rounded-[11px] flex items-center justify-center text-white flex-shrink-0"
                   style={{
                     background:
                       "linear-gradient(135deg, #ea580c, #dc2626)",
@@ -397,7 +414,7 @@ export default function DashboardPage() {
 
               {/* Table */}
               <div
-                className="overflow-x-auto rounded-2xl"
+                className="overflow-x-auto rounded-[14px]"
                 style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}
               >
                 <table
@@ -405,7 +422,7 @@ export default function DashboardPage() {
                   style={{ background: "white" }}
                 >
                   <thead>
-                    <tr style={{ background: "rgba(0,0,0,0.02)" }}>
+                    <tr style={{ background: "rgba(0,0,0,0.02)", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
                       <th
                         className="text-left px-3 py-2.5 text-2xs font-semibold uppercase tracking-wider"
                         style={{ color: "#65676b" }}

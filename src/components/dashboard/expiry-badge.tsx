@@ -51,7 +51,7 @@ export function ExpiryBadge({
   return (
     <div
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full",
+        "inline-flex items-center gap-1.5 rounded-[10px]",
         size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-2xs",
         className
       )}

@@ -341,7 +341,7 @@ export function AddAssignmentDialog({
             <Label style={labelStyle}>Dos *</Label>
             <Input
               value={dos}
-              onChange={(e) => setDos(e.target.value)}
+              onChange={(e) => setDos(e.target.value.toUpperCase())}
               required
               style={inputBaseStyle}
             />
@@ -682,11 +682,10 @@ export function UpdateDoseDialog({
             />
           </div>
           <div>
-            <Label style={labelStyle}>Catatan (pilihan)</Label>
+            <Label style={labelStyle}>Catatan</Label>
             <Input
               value={catatan}
               onChange={(e) => setCatatan(e.target.value)}
-              placeholder="Cth: Penyesuaian dos"
               style={inputBaseStyle}
             />
           </div>

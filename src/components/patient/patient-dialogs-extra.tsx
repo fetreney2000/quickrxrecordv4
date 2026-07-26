@@ -103,7 +103,6 @@ export function StopAssignmentDialog({
             <Input
               value={sebab}
               onChange={(e) => setSebab(e.target.value)}
-              placeholder="Cth: Rawatan tamat, kesan sampingan"
               style={inputBaseStyle}
             />
           </div>
@@ -230,7 +229,6 @@ export function EditSupplyDialog({
               <Input
                 value={tempoh}
                 onChange={(e) => setTempoh(e.target.value)}
-                placeholder="Cth: 30 Hari"
                 style={inputBaseStyle}
               />
             </div>

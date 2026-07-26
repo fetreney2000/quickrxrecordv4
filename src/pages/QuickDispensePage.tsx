@@ -337,7 +337,6 @@ export default function QuickDispensePage() {
                   setShowResults(true);
                 }}
                 onBlur={() => setTimeout(() => setShowResults(false), 200)}
-                placeholder="Cari nama, No. KP, atau No. Hospital..."
                 className="h-11 pl-10 text-sm font-medium"
                 style={{
                   background: searchFocused
@@ -483,7 +482,6 @@ export default function QuickDispensePage() {
             <Input
               value={itemSearch}
               onChange={(e) => setItemSearch(e.target.value)}
-              placeholder="Cari item..."
               className="mb-2"
               style={inputStyle}
             />
@@ -743,7 +741,6 @@ export default function QuickDispensePage() {
                       autoFocus
                       value={registerItemSearch}
                       onChange={(e) => setRegisterItemSearch(e.target.value)}
-                      placeholder="Cari item (nama atau kod)..."
                       style={inputStyle}
                     />
                   </div>
@@ -843,7 +840,6 @@ export default function QuickDispensePage() {
                       autoFocus
                       value={registerDos}
                       onChange={(e) => setRegisterDos(e.target.value.toUpperCase())}
-                      placeholder="contoh: 1X1, 2X1"
                       style={inputStyle}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && registerDos.trim()) {

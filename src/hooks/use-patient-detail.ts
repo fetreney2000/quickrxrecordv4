@@ -260,7 +260,7 @@ export function useSearchPatients(query: string) {
         .or(
           `nama.ilike.%${term}%,nombor_kad_pengenalan.ilike.%${term}%,nombor_pendaftaran_hospital.ilike.%${term}%`
         )
-        .eq("merged_into", null)
+        .is("merged_into", null)
         .limit(50);
       if (error) throw error;
       return (data ?? []) as Pick<Patient, "id" | "nama" | "nombor_kad_pengenalan" | "nombor_pendaftaran_hospital" | "aktif">[];

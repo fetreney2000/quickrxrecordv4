@@ -282,7 +282,6 @@ export function useUpdatePatient(patientId: string | undefined) {
         .from("patients")
         .update({
           ...data,
-          dikemaskini_oleh: profile?.id ?? null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", patientId!);
@@ -310,7 +309,6 @@ export function useDeactivatePatient(patientId: string | undefined) {
         .from("patients")
         .update({
           aktif: false,
-          dikemaskini_oleh: profile?.id ?? null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", patientId!);
@@ -707,7 +705,6 @@ export function useMergePatients() {
           .update({
             merged_into: primaryPatientId,
             aktif: false,
-            dikemaskini_oleh: profile?.id ?? null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", dupId);

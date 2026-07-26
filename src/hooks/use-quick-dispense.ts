@@ -294,18 +294,25 @@ export function useItemsActive() {
         .order("nama_item", { ascending: true });
       if (iErr) throw iErr;
 
-      // Get assignment counts via RPC
+      // Get assignment counts via RPC, fallback to direct query
       const { data: counts, error: cErr } = await supabase.rpc(
         "count_active_assignments"
       );
-      if (cErr) {
-        // eslint-disable-next-line no-console
-        console.warn("RPC failed", cErr);
-      }
       const countMap = new Map<string, number>();
-      ((counts as any[]) ?? []).forEach((c) =>
-        countMap.set(c.item_id, Number(c.active_count))
-      );
+      if (!cErr && counts) {
+        ((counts as any[]) ?? []).forEach((c) =>
+          countMap.set(c.item_id, Number(c.active_count))
+        );
+      } else {
+        // Fallback: count active assignments directly
+        const { data: rows } = await supabase
+          .from("patient_item_assignments")
+          .select("item_id")
+          .eq("aktif", true);
+        ((rows as any[]) ?? []).forEach((r) => {
+          countMap.set(r.item_id, (countMap.get(r.item_id) ?? 0) + 1);
+        });
+      }
 
       return ((items as Item[]) ?? []).map((item) => {
         const active = countMap.get(item.id) ?? 0;

@@ -72,6 +72,8 @@ export default function QuickDispensePage() {
   const [successPatient, setSuccessPatient] = useState<string | null>(null);
   const [showRegisterDialog, setShowRegisterDialog] = useState(false);
   const [registerItemSearch, setRegisterItemSearch] = useState("");
+  const [registerSelectedItem, setRegisterSelectedItem] = useState<any>(null);
+  const [registerDos, setRegisterDos] = useState("");
 
   const { data: searchResults = [], isFetching: searching } =
     usePatientSearch(searchQuery);
@@ -155,30 +157,36 @@ export default function QuickDispensePage() {
     );
   }, [allActiveItems, assignedItemIdsSet, registerItemSearch]);
 
-  const handleRegisterItem = (item: any) => {
-    if (item.kuota_penuh) {
-      return;
-    }
+  const handleSelectRegisterItem = (item: any) => {
+    if (item.kuota_penuh) return;
+    setRegisterSelectedItem(item);
+    setRegisterDos("");
+  };
+
+  const handleConfirmRegisterItem = () => {
+    if (!registerSelectedItem || !registerDos.trim()) return;
     addAssignmentMut.mutate(
       {
-        itemId: item.id,
-        dos: "",
+        itemId: registerSelectedItem.id,
+        dos: registerDos.trim(),
       },
       {
         onSuccess: (assignment: any) => {
-          toast.success(`${item.nama_item} telah didaftarkan.`);
+          toast.success(`${registerSelectedItem.nama_item} telah didaftarkan.`);
           setShowRegisterDialog(false);
           setRegisterItemSearch("");
+          setRegisterSelectedItem(null);
+          setRegisterDos("");
           // Auto-select the newly registered item
           setSelectedItem({
             assignment_id: assignment?.id ?? "",
-            item_id: item.id,
-            dos: null,
+            item_id: registerSelectedItem.id,
+            dos: registerDos.trim(),
             item: {
-              id: item.id,
-              kod_item: item.kod_item,
-              nama_item: item.nama_item,
-              kekuatan: item.kekuatan,
+              id: registerSelectedItem.id,
+              kod_item: registerSelectedItem.kod_item,
+              nama_item: registerSelectedItem.nama_item,
+              kekuatan: registerSelectedItem.kekuatan,
             },
           });
         },
@@ -674,6 +682,8 @@ export default function QuickDispensePage() {
               if (e.target === e.currentTarget) {
                 setShowRegisterDialog(false);
                 setRegisterItemSearch("");
+                setRegisterSelectedItem(null);
+                setRegisterDos("");
               }
             }}
           >
@@ -686,36 +696,28 @@ export default function QuickDispensePage() {
                 boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
               }}
             >
+              {/* Header */}
               <div
                 className="flex items-center justify-between px-5 py-4"
-                style={{
-                  borderBottom: "1px solid #f0f2f5",
-                }}
+                style={{ borderBottom: "1px solid #f0f2f5" }}
               >
                 <div className="flex items-center gap-2">
                   <div
                     className="w-8 h-8 rounded-lg flex items-center justify-center"
-                    style={{
-                      background: "rgba(16,185,129,0.10)",
-                    }}
+                    style={{ background: "rgba(16,185,129,0.10)" }}
                   >
-                    <Plus
-                      className="w-4 h-4"
-                      style={{ color: "#059669" }}
-                    />
+                    <Plus className="w-4 h-4" style={{ color: "#059669" }} />
                   </div>
                   <div>
-                    <p
-                      className="text-[14px] font-bold"
-                      style={{ color: "#1c1e21" }}
-                    >
-                      Daftar Item Baharu
+                    <p className="text-[14px] font-bold" style={{ color: "#1c1e21" }}>
+                      {registerSelectedItem
+                        ? "Sahkan Pendaftaran"
+                        : "Daftar Item Baharu"}
                     </p>
-                    <p
-                      className="text-[11px]"
-                      style={{ color: "#65676b" }}
-                    >
-                      Pilih item untuk didaftarkan kepada {selectedPatient?.nama}
+                    <p className="text-[11px]" style={{ color: "#65676b" }}>
+                      {registerSelectedItem
+                        ? `Daftarkan ${registerSelectedItem.nama_item} kepada ${selectedPatient?.nama}`
+                        : `Pilih item untuk didaftarkan kepada ${selectedPatient?.nama}`}
                     </p>
                   </div>
                 </div>
@@ -724,119 +726,165 @@ export default function QuickDispensePage() {
                   onClick={() => {
                     setShowRegisterDialog(false);
                     setRegisterItemSearch("");
+                    setRegisterSelectedItem(null);
+                    setRegisterDos("");
                   }}
                   className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-100"
                 >
-                  <X
-                    className="w-4 h-4"
-                    style={{ color: "#65676b" }}
-                  />
+                  <X className="w-4 h-4" style={{ color: "#65676b" }} />
                 </button>
               </div>
-              <div className="px-5 py-3">
-                <Input
-                  autoFocus
-                  value={registerItemSearch}
-                  onChange={(e) => setRegisterItemSearch(e.target.value)}
-                  placeholder="Cari item (nama atau kod)..."
-                  style={inputStyle}
-                />
-              </div>
-              <div
-                className="px-5 pb-4 overflow-y-auto"
-                style={{ maxHeight: 320 }}
-              >
-                {allActiveItems.length === 0 ? (
-                  <div
-                    className="flex items-center justify-center gap-2 py-8"
-                    style={{ color: "#9ca3af" }}
-                  >
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-xs">
-                      Menyemak kuota terkini...
-                    </span>
+
+              {/* Step 1: Item selection */}
+              {!registerSelectedItem && (
+                <>
+                  <div className="px-5 py-3">
+                    <Input
+                      autoFocus
+                      value={registerItemSearch}
+                      onChange={(e) => setRegisterItemSearch(e.target.value)}
+                      placeholder="Cari item (nama atau kod)..."
+                      style={inputStyle}
+                    />
                   </div>
-                ) : filteredRegisterItems.length === 0 ? (
-                  <div
-                    className="text-center text-xs py-6"
-                    style={{ color: "#9ca3af" }}
-                  >
-                    Tiada item padanan.
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    {filteredRegisterItems.map((it: any) => (
-                      <button
-                        key={it.id}
-                        type="button"
-                        disabled={it.kuota_penuh}
-                        onClick={() => handleRegisterItem(it)}
-                        className="w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center justify-between transition-colors"
-                        style={{
-                          opacity: it.kuota_penuh ? 0.45 : 1,
-                          cursor: it.kuota_penuh
-                            ? "not-allowed"
-                            : "pointer",
-                          background: "transparent",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!it.kuota_penuh) {
-                            e.currentTarget.style.background =
-                              "rgba(16,185,129,0.06)";
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background =
-                            "transparent";
-                        }}
+                  <div className="px-5 pb-4 overflow-y-auto" style={{ maxHeight: 320 }}>
+                    {allActiveItems.length === 0 ? (
+                      <div
+                        className="flex items-center justify-center gap-2 py-8"
+                        style={{ color: "#9ca3af" }}
                       >
-                        <div>
-                          <p
-                            className="font-semibold"
-                            style={{ color: "#1c1e21" }}
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span className="text-xs">Menyemak kuota terkini...</span>
+                      </div>
+                    ) : filteredRegisterItems.length === 0 ? (
+                      <div className="text-center text-xs py-6" style={{ color: "#9ca3af" }}>
+                        Tiada item padanan.
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        {filteredRegisterItems.map((it: any) => (
+                          <button
+                            key={it.id}
+                            type="button"
+                            disabled={it.kuota_penuh}
+                            onClick={() => handleSelectRegisterItem(it)}
+                            className="w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center justify-between transition-colors"
+                            style={{
+                              opacity: it.kuota_penuh ? 0.45 : 1,
+                              cursor: it.kuota_penuh ? "not-allowed" : "pointer",
+                              background: "transparent",
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!it.kuota_penuh) {
+                                e.currentTarget.style.background = "rgba(16,185,129,0.06)";
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = "transparent";
+                            }}
                           >
-                            {it.nama_item}
-                          </p>
-                          <p style={{ color: "#65676b" }}>
-                            {it.kod_item}
-                            {it.kekuatan
-                              ? ` · ${it.kekuatan}`
-                              : ""}
-                          </p>
-                        </div>
-                        <div className="text-right flex-shrink-0 ml-2">
-                          {it.kuota_penuh ? (
-                            <span
-                              className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                              style={{
-                                background:
-                                  "rgba(220,38,38,0.10)",
-                                color: "#dc2626",
-                              }}
-                            >
-                              Kuota Penuh
-                            </span>
-                          ) : it.baki_kuota != null ? (
-                            <span
-                              className="text-[10px] font-medium"
-                              style={{ color: "#65676b" }}
-                            >
-                              Baki: {it.baki_kuota}
-                            </span>
-                          ) : (
-                            <span
-                              className="text-[10px] font-medium"
-                              style={{ color: "#65676b" }}
-                            >
-                              Tiada had
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    ))}
+                            <div>
+                              <p className="font-semibold" style={{ color: "#1c1e21" }}>
+                                {it.nama_item}
+                              </p>
+                              <p style={{ color: "#65676b" }}>
+                                {it.kod_item}
+                                {it.kekuatan ? ` · ${it.kekuatan}` : ""}
+                              </p>
+                            </div>
+                            <div className="text-right flex-shrink-0 ml-2">
+                              {it.kuota_penuh ? (
+                                <span
+                                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                                  style={{ background: "rgba(220,38,38,0.10)", color: "#dc2626" }}
+                                >
+                                  Kuota Penuh
+                                </span>
+                              ) : it.baki_kuota != null ? (
+                                <span className="text-[10px] font-medium" style={{ color: "#65676b" }}>
+                                  Baki: {it.baki_kuota}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-medium" style={{ color: "#65676b" }}>
+                                  Tiada had
+                                </span>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </>
+              )}
+
+              {/* Step 2: Confirm with dose input */}
+              {registerSelectedItem && (
+                <div className="px-5 py-4 space-y-3">
+                  <div
+                    className="flex items-center gap-3 p-3 rounded-xl"
+                    style={{ background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.15)" }}
+                  >
+                    <Pill className="w-4 h-4 flex-shrink-0" style={{ color: "#059669" }} />
+                    <div>
+                      <p className="text-[13px] font-bold" style={{ color: "#1c1e21" }}>
+                        {registerSelectedItem.nama_item}
+                      </p>
+                      <p className="text-[11px]" style={{ color: "#65676b" }}>
+                        {registerSelectedItem.kod_item}
+                        {registerSelectedItem.kekuatan ? ` · ${registerSelectedItem.kekuatan}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <div>
+                    <Label style={labelStyle}>Dos *</Label>
+                    <Input
+                      autoFocus
+                      value={registerDos}
+                      onChange={(e) => setRegisterDos(e.target.value.toUpperCase())}
+                      placeholder="contoh: 1X1, 2X1"
+                      style={inputStyle}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && registerDos.trim()) {
+                          e.preventDefault();
+                          handleConfirmRegisterItem();
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        setRegisterSelectedItem(null);
+                        setRegisterDos("");
+                      }}
+                      className="flex-1 h-10 text-xs font-medium"
+                    >
+                      Kembali
+                    </Button>
+                    <Button
+                      type="button"
+                      disabled={!registerDos.trim() || addAssignmentMut.isPending}
+                      onClick={handleConfirmRegisterItem}
+                      className="flex-1 h-10 text-xs font-bold"
+                      style={{
+                        background:
+                          registerDos.trim() && !addAssignmentMut.isPending
+                            ? "linear-gradient(135deg, #10b981, #059669)"
+                            : "#9ca3af",
+                        color: "white",
+                      }}
+                    >
+                      {addAssignmentMut.isPending && (
+                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                      )}
+                      Daftar
+                    </Button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}

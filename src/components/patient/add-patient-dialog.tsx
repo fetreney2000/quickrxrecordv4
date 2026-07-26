@@ -157,7 +157,6 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
               value={form.nama}
               onChange={(e) => updateField("nama", e.target.value)}
               onBlur={handleBlurNama}
-              placeholder="Nama penuh pesakit"
               required
               style={inputStyle}
               onFocus={(e) => {
@@ -185,7 +184,6 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
                   updateField("nombor_kad_pengenalan", e.target.value)
                 }
                 onBlur={handleBlurKp}
-                placeholder="890101-01-1234"
                 style={inputStyle}
               />
             </div>
@@ -200,7 +198,6 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
                   updateField("nombor_pendaftaran_hospital", e.target.value)
                 }
                 onBlur={handleBlurHospital}
-                placeholder="H001234"
                 style={{
                   ...inputStyle,
                   textTransform: "uppercase",
@@ -219,7 +216,6 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
               value={form.nombor_telefon}
               onChange={(e) => updateField("nombor_telefon", e.target.value)}
               onBlur={handleBlurPhone}
-              placeholder="012-345 6789"
               style={inputStyle}
             />
           </div>
@@ -234,7 +230,6 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
               value={form.alamat}
               onChange={(e) => updateField("alamat", e.target.value)}
               onBlur={handleBlurAlamat}
-              placeholder="Alamat pesakit"
               style={textareaStyle}
               rows={2}
             />
@@ -249,7 +244,6 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
               id="catatan"
               value={form.catatan}
               onChange={(e) => updateField("catatan", e.target.value)}
-              placeholder="Catatan tambahan (pilihan)"
               style={textareaStyle}
               rows={2}
             />

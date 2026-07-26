@@ -573,6 +573,26 @@ export default function QuickDispensePage() {
                 <X className="w-3.5 h-3.5" /> Tukar
               </Button>
             </div>
+            {/* Patient details summary */}
+            {selectedPatient && (
+              <div
+                className="flex items-center gap-2 mb-3 p-2 rounded-lg text-xs"
+                style={{
+                  background: "rgba(240,147,43,0.06)",
+                  border: "1px solid rgba(240,147,43,0.12)",
+                }}
+              >
+                <span style={{ color: "#65676b" }}>
+                  {selectedPatient.nama}
+                  {selectedPatient.nombor_kad_pengenalan && (
+                    <> · KP: {formatMyKad(selectedPatient.nombor_kad_pengenalan)}</>
+                  )}
+                  {selectedPatient.nombor_pendaftaran_hospital && (
+                    <> · Hosp: {selectedPatient.nombor_pendaftaran_hospital}</>
+                  )}
+                </span>
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <Label style={labelStyle}>Pilih Kelompok (FEFO)</Label>

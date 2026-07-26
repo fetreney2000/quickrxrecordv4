@@ -282,6 +282,7 @@ export default function StockDetailPage() {
   const startEdit = () => {
     if (!item) return;
     setEditData({
+      kod_item: item.kod_item,
       nama_item: item.nama_item,
       nama_dagangan: item.nama_dagangan,
       kekuatan: item.kekuatan,

@@ -184,7 +184,7 @@ export function useUpdateItem(itemId: string | undefined) {
     mutationFn: async (data: Partial<Item>) => {
       const { error } = await supabase
         .from("items")
-        .update({ ...data, dikemaskini_oleh: profile?.id ?? null })
+        .update({ ...data })
         .eq("id", itemId!);
       if (error) throw error;
     },
@@ -567,7 +567,6 @@ export function useItemForms() {
       const { data, error } = await supabase
         .from("item_forms")
         .select("*")
-        .eq("aktif", true)
         .order("nama", { ascending: true });
       if (error) throw error;
       return (data ?? []) as ItemForm[];
@@ -583,7 +582,6 @@ export function useItemCategories() {
       const { data, error } = await supabase
         .from("item_categories")
         .select("*")
-        .eq("aktif", true)
         .order("nama", { ascending: true });
       if (error) throw error;
       return (data ?? []) as ItemCategory[];

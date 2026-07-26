@@ -634,17 +634,6 @@ export default function QuickDispensePage() {
                   />
                 </div>
                 <div>
-                  <Label style={labelStyle}>Kuantiti *</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={quantity}
-                    onChange={(e) => setQuantity(e.target.value)}
-                    required
-                    style={inputStyle}
-                  />
-                </div>
-                <div>
                   <Label style={labelStyle}>Tempoh</Label>
                   <div className="flex gap-1.5">
                     <Input
@@ -669,6 +658,17 @@ export default function QuickDispensePage() {
                       ))}
                     </select>
                   </div>
+                </div>
+                <div>
+                  <Label style={labelStyle}>Kuantiti *</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    required
+                    style={inputStyle}
+                  />
                 </div>
                 <div>
                   <Label style={labelStyle}>Catatan</Label>

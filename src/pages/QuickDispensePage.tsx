@@ -68,7 +68,8 @@ export default function QuickDispensePage() {
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState("");
   const [dose, setDose] = useState("");
-  const [tempoh, setTempoh] = useState("30 Hari");
+  const [tempohNilai, setTempohNilai] = useState("30");
+  const [tempohUnit, setTempohUnit] = useState("Hari");
   const [catatan, setCatatan] = useState("");
   const [successPatient, setSuccessPatient] = useState<string | null>(null);
   const [showRegisterDialog, setShowRegisterDialog] = useState(false);
@@ -90,7 +91,7 @@ export default function QuickDispensePage() {
   const { data: availableBatches = [] } = useQuickDispenseBatches(
     selectedItem?.item_id ?? null
   );
-  useSupplyDurationsList();
+  const { data: supplyDurations = [] } = useSupplyDurationsList();
   const supplyMut = useQuickSupply(selectedPatient?.id ?? null);
   const { data: allActiveItems = [] } = useItemsActive();
   const addAssignmentMut = useAddAssignmentInline(selectedPatient?.id ?? null);
@@ -223,7 +224,7 @@ export default function QuickDispensePage() {
         itemId: selectedItem.item_id,
         dos: dose.trim(),
         kuantiti: parseInt(quantity),
-        tempoh: tempoh.trim(),
+        tempoh: tempohNilai.trim() ? `${tempohNilai.trim()} ${tempohUnit}`.trim() : "",
         batchId: selectedBatchId!,
         catatan: catatan.trim(),
       },
@@ -645,11 +646,29 @@ export default function QuickDispensePage() {
                 </div>
                 <div>
                   <Label style={labelStyle}>Tempoh</Label>
-                  <Input
-                    value={tempoh}
-                    onChange={(e) => setTempoh(e.target.value)}
-                    style={inputStyle}
-                  />
+                  <div className="flex gap-1.5">
+                    <Input
+                      value={tempohNilai}
+                      onChange={(e) => setTempohNilai(e.target.value)}
+                      style={{ ...inputStyle, flex: 1 }}
+                    />
+                    <select
+                      value={tempohUnit}
+                      onChange={(e) => setTempohUnit(e.target.value)}
+                      style={{
+                        ...inputStyle,
+                        width: "auto",
+                        minWidth: 90,
+                        appearance: "auto",
+                      }}
+                    >
+                      {supplyDurations.map((d: any) => (
+                        <option key={d.id} value={d.nama}>
+                          {d.nama}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 <div>
                   <Label style={labelStyle}>Catatan</Label>

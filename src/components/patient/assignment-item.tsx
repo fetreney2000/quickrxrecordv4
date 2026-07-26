@@ -336,7 +336,18 @@ export function AssignmentItem({
                 title={
                   <span className="flex items-center gap-2">
                     <Calendar className="w-3.5 h-3.5" style={{ color: "#1877f2" }} />
-                    Sejarah Dos ({doseHistory.length})
+                    Sejarah Dos
+                    {doseHistory.length > 0 && (
+                      <span
+                        className="text-2xs font-semibold px-1.5 py-0.5 rounded-md"
+                        style={{
+                          background: "rgba(24,119,242,0.10)",
+                          color: "#1877f2",
+                        }}
+                      >
+                        {doseHistory.length}
+                      </span>
+                    )}
                   </span>
                 }
                 defaultOpen={true}
@@ -385,7 +396,18 @@ export function AssignmentItem({
                 title={
                   <span className="flex items-center gap-2">
                     <Package className="w-3.5 h-3.5" style={{ color: "#1877f2" }} />
-                    Sejarah Bekalan ({supplyHistory.length})
+                    Sejarah Bekalan
+                    {supplyHistory.length > 0 && (
+                      <span
+                        className="text-2xs font-semibold px-1.5 py-0.5 rounded-md"
+                        style={{
+                          background: "rgba(24,119,242,0.10)",
+                          color: "#1877f2",
+                        }}
+                      >
+                        {supplyHistory.length}
+                      </span>
+                    )}
                   </span>
                 }
                 defaultOpen={true}

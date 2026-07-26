@@ -125,7 +125,6 @@ export function useAddPatient({
           catatan: form.catatan.trim() || null,
           aktif: true,
           tarikh_daftar: new Date().toISOString().split("T")[0],
-          dicipta_oleh: profile?.id ?? null,
         })
         .select("id")
         .single();

@@ -147,7 +147,7 @@ export default function LoginPage() {
                 key={feature}
                 initial={{ opacity: 0, x: -20 }}
                 animate={mounted ? { opacity: 1, x: 0 } : {}}
-                transition={{ delay: 0.7 + idx * 0.1, duration: 0.5 }}
+                transition={{ delay: 0.5 + idx * 0.1, duration: 0.5 }}
                 className="flex items-center gap-3"
               >
                 <span
@@ -242,7 +242,7 @@ export default function LoginPage() {
             <motion.div
               initial={{ opacity: 0, y: 5 }}
               animate={mounted ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 0.2, duration: 0.4 }}
+              transition={{ delay: 0.02, duration: 0.4 }}
               className="space-y-1.5"
             >
               <label

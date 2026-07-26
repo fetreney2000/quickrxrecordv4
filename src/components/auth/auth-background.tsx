@@ -146,6 +146,14 @@ export function AuthBackground({
           border-radius: 50%;
           pointer-events: none;
         }
+        @keyframes gradient-x {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        @-webkit-keyframes gradient-x {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
       `}</style>
 
       <div

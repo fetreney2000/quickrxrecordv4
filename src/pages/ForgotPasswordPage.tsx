@@ -182,7 +182,7 @@ export default function ForgotPasswordPage() {
           <motion.div
             initial={{ opacity: 0, y: 5 }}
             animate={mounted ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 0.2, duration: 0.4 }}
+            transition={{ delay: 0.02, duration: 0.4 }}
             className="space-y-1.5"
           >
             <label

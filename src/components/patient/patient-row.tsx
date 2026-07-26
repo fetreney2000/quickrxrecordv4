@@ -4,12 +4,12 @@
  * Mudah alih: card dengan avatar, nama, meta, ChevronRight
  */
 import { motion } from "framer-motion";
-import { ArrowRight, IdCard, Phone } from "lucide-react";
+import { ArrowRight, IdCard, FileText, Phone } from "lucide-react";
 import { cn, formatMyKad, formatPhone } from "@/lib/utils";
 import type { Patient } from "@/types";
 
 interface PatientRowProps {
-  patient: Patient;
+  patient: Patient & { bilangan_item?: number };
   index: number;
   onClick: () => void;
 }
@@ -33,7 +33,7 @@ export function PatientRow({ patient, index, onClick }: PatientRowProps) {
         }}
         className="hidden sm:grid px-4 py-2.5 items-center cursor-pointer transition-colors"
         style={{
-          gridTemplateColumns: "3fr 3fr 3fr 2fr 1fr",
+          gridTemplateColumns: "3fr 3fr 3fr 2fr 2fr",
           gap: 12,
           borderBottom: "1px solid #f0f2f5",
         }}
@@ -83,18 +83,16 @@ export function PatientRow({ patient, index, onClick }: PatientRowProps) {
           className="text-[13px] truncate"
           style={{ color: "#1c1e21" }}
         >
-          {patient.nombor_telefon ? (
-            formatPhone(patient.nombor_telefon)
-          ) : (
+          {patient.dokumen_lain || (
             <em style={{ color: "#9ca3af" }}>-</em>
           )}
         </span>
-        <div className="text-right">
-          <ArrowRight
-            className="w-3.5 h-3.5 inline"
-            style={{ color: "#9ca3af" }}
-          />
-        </div>
+        <span
+          className="text-[13px] font-medium tabular-nums"
+          style={{ color: "#1c1e21" }}
+        >
+          {patient.bilangan_item ?? 0}
+        </span>
       </motion.div>
 
       {/* Mobile: card row */}

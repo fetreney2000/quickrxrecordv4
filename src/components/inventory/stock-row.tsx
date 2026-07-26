@@ -55,7 +55,7 @@ export function StockRow({ item, index, onClick }: StockRowProps) {
           "hover:bg-[rgba(124,58,237,0.03)]"
         )}
         style={{
-          gridTemplateColumns: "1.2fr 3fr 1fr 1fr 0.6fr",
+          gridTemplateColumns: "1.2fr 3fr 1fr 1fr 1fr",
           gap: 12,
           borderBottom: "1px solid #f0f2f5",
         }}
@@ -119,12 +119,16 @@ export function StockRow({ item, index, onClick }: StockRowProps) {
             {formatNumber(stock)}
           </span>
         </div>
-        <div className="text-right">
-          <ArrowRight
-            className="w-3.5 h-3.5 inline"
-            style={{ color: "#9ca3af" }}
-          />
-        </div>
+        <span
+          className="text-[13px] font-medium tabular-nums"
+          style={{ color: "#1c1e21" }}
+        >
+          {item.kuota != null ? (
+            formatNumber(Math.max(0, item.kuota - stock))
+          ) : (
+            <em style={{ color: "#9ca3af" }}>-</em>
+          )}
+        </span>
       </motion.div>
 
       {/* Mobile: card row */}

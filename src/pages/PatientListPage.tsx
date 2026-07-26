@@ -16,6 +16,7 @@ import {
   UserPlus,
   Loader2,
   Stethoscope,
+  FileText,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -351,7 +352,7 @@ export default function PatientListPage() {
                 <div
                   className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider"
                   style={{
-                    gridTemplateColumns: "3fr 3fr 3fr 2fr 1fr",
+                    gridTemplateColumns: "3fr 3fr 3fr 2fr 2fr",
                     gap: 12,
                     color: "#65676b",
                     background: "rgba(0,0,0,0.02)",
@@ -380,13 +381,13 @@ export default function PatientListPage() {
                     icon={Activity}
                   />
                   <SortableHeader
-                    columnKey="nombor_telefon"
-                    label="No. Telefon"
+                    columnKey="dokumen_lain"
+                    label="Dokumen Lain"
                     sort={sort}
                     onSort={toggleSort}
-                    icon={Phone}
+                    icon={FileText}
                   />
-                  <div className="text-right">Tindakan</div>
+                  <div>Bilangan Item</div>
                 </div>
 
                 {patients.map((p, idx) => (

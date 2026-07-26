@@ -70,8 +70,25 @@ export function usePatients({
       const { data, count, error } = await query;
       if (error) throw error;
 
+      // Fetch active assignment counts for these patients
+      const patientIds = (data ?? []).map((p: any) => p.id);
+      const countMap = new Map<string, number>();
+      if (patientIds.length > 0) {
+        const { data: assignments } = await supabase
+          .from("patient_item_assignments")
+          .select("patient_id")
+          .eq("aktif", true)
+          .in("patient_id", patientIds);
+        ((assignments ?? []) as any[]).forEach((a) => {
+          countMap.set(a.patient_id, (countMap.get(a.patient_id) ?? 0) + 1);
+        });
+      }
+
       return {
-        patients: (data ?? []) as Patient[],
+        patients: ((data ?? []) as Patient[]).map((p) => ({
+          ...p,
+          bilangan_item: countMap.get(p.id) ?? 0,
+        })),
         total: count ?? 0,
         totalPages: Math.max(1, Math.ceil((count ?? 0) / PATIENT_PAGE_SIZE)),
       };
@@ -86,6 +103,7 @@ export interface NewPatientForm {
   nama: string;
   nombor_kad_pengenalan: string;
   nombor_pendaftaran_hospital: string;
+  dokumen_lain: string;
   nombor_telefon: string;
   alamat: string;
   catatan: string;
@@ -95,6 +113,7 @@ export const EMPTY_NEW_PATIENT: NewPatientForm = {
   nama: "",
   nombor_kad_pengenalan: "",
   nombor_pendaftaran_hospital: "",
+  dokumen_lain: "",
   nombor_telefon: "",
   alamat: "",
   catatan: "",
@@ -120,6 +139,7 @@ export function useAddPatient({
           nombor_kad_pengenalan: form.nombor_kad_pengenalan.trim() || null,
           nombor_pendaftaran_hospital:
             form.nombor_pendaftaran_hospital.trim() || null,
+          dokumen_lain: form.dokumen_lain.trim() || null,
           nombor_telefon: form.nombor_telefon.trim() || null,
           alamat: form.alamat.trim() || null,
           catatan: form.catatan.trim() || null,

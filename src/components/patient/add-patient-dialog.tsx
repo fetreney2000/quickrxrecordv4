@@ -206,6 +206,19 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
             </div>
           </div>
 
+          {/* Dokumen Lain */}
+          <div>
+            <Label htmlFor="dokumen" className="mb-1" style={labelStyle}>
+              Dokumen Lain
+            </Label>
+            <Input
+              id="dokumen"
+              value={form.dokumen_lain}
+              onChange={(e) => updateField("dokumen_lain", e.target.value)}
+              style={inputStyle}
+            />
+          </div>
+
           {/* Telefon */}
           <div>
             <Label htmlFor="telefon" className="mb-1" style={labelStyle}>

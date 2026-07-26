@@ -326,7 +326,7 @@ export default function StockListPage() {
                   <div
                     className="hidden sm:grid stok-table-header px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider"
                     style={{
-                      gridTemplateColumns: "1.2fr 3fr 1fr 1fr 0.6fr",
+                      gridTemplateColumns: "1.2fr 3fr 1fr 1fr 1fr",
                       gap: 12,
                       color: "#65676b",
                       background: "rgba(0,0,0,0.02)",
@@ -361,7 +361,7 @@ export default function StockListPage() {
                       <Package className="w-3 h-3" />
                       <span>Stok</span>
                     </div>
-                    <div className="text-right">Tindakan</div>
+                    <div>Baki Kuota</div>
                   </div>
 
                   {items.map((it, idx) => (

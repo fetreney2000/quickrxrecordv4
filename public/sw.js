@@ -1,4 +1,4 @@
-const CACHE_NAME = 'quickrx-v4';
+const CACHE_NAME = 'quickrx-v4.1';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

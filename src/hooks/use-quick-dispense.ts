@@ -309,8 +309,10 @@ export function useItemsActive() {
 
       return ((items as Item[]) ?? []).map((item) => {
         const active = countMap.get(item.id) ?? 0;
-        const baki = Math.max(0, (item.quota ?? 0) - active);
-        const penuh = active >= (item.quota ?? 0);
+        const quota = item.quota;
+        const hasQuota = quota != null && quota > 0;
+        const baki = hasQuota ? Math.max(0, quota - active) : null;
+        const penuh = hasQuota ? active >= quota : false;
         return {
           ...item,
           patient_count: active,

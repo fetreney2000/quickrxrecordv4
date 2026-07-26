@@ -816,12 +816,19 @@ export default function QuickDispensePage() {
                             >
                               Kuota Penuh
                             </span>
+                          ) : it.baki_kuota != null ? (
+                            <span
+                              className="text-[10px] font-medium"
+                              style={{ color: "#65676b" }}
+                            >
+                              Baki: {it.baki_kuota}
+                            </span>
                           ) : (
                             <span
                               className="text-[10px] font-medium"
                               style={{ color: "#65676b" }}
                             >
-                              Baki: {it.baki_kuota ?? 0}
+                              Tiada had
                             </span>
                           )}
                         </div>

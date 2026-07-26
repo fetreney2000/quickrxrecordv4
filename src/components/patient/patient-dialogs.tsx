@@ -408,7 +408,8 @@ export function SupplyDialog({
   isPending: boolean;
 }) {
   const [kuantiti, setKuantiti] = useState(1);
-  const [tempoh, setTempoh] = useState("");
+  const [tempohNilai, setTempohNilai] = useState("");
+  const [tempohUnit, setTempohUnit] = useState("");
   const [batchId, setBatchId] = useState<string | null>(null);
   const [catatan, setCatatan] = useState("");
 
@@ -417,19 +418,28 @@ export function SupplyDialog({
   );
   const { data: durations = [] } = useSupplyDurations();
 
-  // Auto-select first batch (FEFO)
+  // Combine tempoh value + unit
+  const tempoh = tempohNilai.trim()
+    ? `${tempohNilai.trim()} ${tempohUnit}`.trim()
+    : "";
+
+  // Auto-select first batch (FEFO) and default duration
   useEffect(() => {
     if (open && batches.length > 0 && !batchId) {
       setBatchId(batches[0].id);
     }
+    if (open && durations.length > 0 && !tempohUnit) {
+      setTempohUnit(durations[0]?.nama ?? "");
+    }
     if (!open) {
       setKuantiti(1);
-      setTempoh("");
+      setTempohNilai("");
+      setTempohUnit("");
       setBatchId(null);
       setCatatan("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, batches.length]);
+  }, [open, batches.length, durations.length]);
 
   const selectedBatch = batches.find((b) => b.id === batchId);
   const maxQty = selectedBatch?.kuantiti ?? 0;
@@ -464,9 +474,9 @@ export function SupplyDialog({
             onSubmit({
               dos: assignment.dos ?? "",
               kuantiti,
-              tempoh,
+              tempoh: tempoh.trim(),
               batchId,
-              catatan,
+              catatan: catatan.trim(),
             });
           }}
           className="space-y-3 mt-2"
@@ -476,12 +486,37 @@ export function SupplyDialog({
             <Input
               value={assignment.dos ?? ""}
               readOnly
-              className="bg-muted/30"
-              style={inputBaseStyle}
+              style={{ ...inputBaseStyle, opacity: 0.6, cursor: "default" }}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label style={labelStyle}>Tempoh</Label>
+              <div className="flex gap-1.5">
+                <Input
+                  value={tempohNilai}
+                  onChange={(e) => setTempohNilai(e.target.value)}
+                  style={{ ...inputBaseStyle, flex: 1 }}
+                />
+                <select
+                  value={tempohUnit}
+                  onChange={(e) => setTempohUnit(e.target.value)}
+                  style={{
+                    ...inputBaseStyle,
+                    width: "auto",
+                    minWidth: 90,
+                    appearance: "auto",
+                  }}
+                >
+                  {durations.map((d) => (
+                    <option key={d.id} value={d.nama}>
+                      {d.nama}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
             <div>
               <Label style={labelStyle}>Kuantiti *</Label>
               <Input
@@ -496,29 +531,10 @@ export function SupplyDialog({
                 style={inputBaseStyle}
               />
             </div>
-            <div>
-              <Label style={labelStyle}>Tempoh</Label>
-              <select
-                value={tempoh}
-                onChange={(e) => setTempoh(e.target.value)}
-                className="w-full text-sm"
-                style={{
-                  ...inputBaseStyle,
-                  appearance: "auto",
-                }}
-              >
-                <option value="">- Pilih -</option>
-                {durations.map((d) => (
-                  <option key={d.id} value={d.nama}>
-                    {d.nama}
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
 
           <div>
-            <Label style={labelStyle}>Kelompok (FEFO)</Label>
+            <Label style={labelStyle}>Nombor Kelompok</Label>
             {batchesLoading ? (
               <div className="flex items-center gap-2 text-xs" style={{ color: "#65676b" }}>
                 <Loader2 className="w-3 h-3 animate-spin" /> Memuatkan kelompok...
@@ -576,11 +592,10 @@ export function SupplyDialog({
           </div>
 
           <div>
-            <Label style={labelStyle}>Catatan (pilihan)</Label>
+            <Label style={labelStyle}>Catatan</Label>
             <Input
               value={catatan}
               onChange={(e) => setCatatan(e.target.value)}
-              placeholder="Cth: Pesakit hadir sendiri"
               style={inputBaseStyle}
             />
           </div>
@@ -600,9 +615,9 @@ export function SupplyDialog({
               onSubmit({
                 dos: assignment.dos ?? "",
                 kuantiti,
-                tempoh,
+                tempoh: tempoh.trim(),
                 batchId,
-                catatan,
+                catatan: catatan.trim(),
               });
             }}
             disabled={!batchId || kuantiti <= 0 || kuantiti > maxQty || isPending}

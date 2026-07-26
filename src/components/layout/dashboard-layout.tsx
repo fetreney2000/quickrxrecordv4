@@ -124,7 +124,7 @@ export function DashboardLayout() {
           <Header />
           <main
             key={location.pathname}
-            className="flex-1 px-4 md:px-6 py-4 md:py-5 animate-fade-in"
+            className="flex-1 px-4 md:px-6 py-5 md:py-6 animate-fade-in"
           >
             <Outlet />
           </main>
@@ -135,7 +135,7 @@ export function DashboardLayout() {
           <Header />
           <main
             key={location.pathname}
-            className="flex-1 px-3 py-3 pb-20 animate-fade-in"
+            className="flex-1 px-3 py-4 pb-20 animate-fade-in"
             style={{ paddingBottom: 80 }}
           >
             <Outlet />

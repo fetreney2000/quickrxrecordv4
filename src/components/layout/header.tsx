@@ -197,7 +197,7 @@ export function Header() {
                   }}
                   onFocus={() => setOpen(true)}
                   placeholder="Cari pesakit..."
-                  className="header-search-input w-full h-10 pl-10 pr-10 text-sm rounded-2xl border border-transparent transition-all outline-none"
+                  className="header-search-input w-full h-10 pl-10 pr-10 text-sm rounded-[14px] border border-transparent transition-all outline-none"
                   style={{
                     background: open ? "white" : "rgba(24,119,242,0.04)",
                     borderColor: open
@@ -215,7 +215,7 @@ export function Header() {
 
               {showDropdown && (
                 <div
-                  className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl border border-blue-100 overflow-hidden z-50"
+                  className="absolute left-0 right-0 top-full mt-2 bg-white rounded-[14px] border border-blue-100 overflow-hidden z-50"
                   style={{
                     boxShadow:
                       "0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06)",

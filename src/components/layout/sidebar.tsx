@@ -215,7 +215,7 @@ export function Sidebar() {
                 className={cn(
                   "group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium relative transition-all duration-200",
                   active
-                    ? "text-white"
+                    ? "text-[#60a5fa]"
                     : "text-white/55 hover:text-white hover:bg-white/[0.06]"
                 )}
                 style={
@@ -300,7 +300,7 @@ export function Sidebar() {
             onMouseEnter={(e) => {
               (e.currentTarget as HTMLElement).style.background =
                 "rgba(228,30,63,0.15)";
-              (e.currentTarget as HTMLElement).style.color = "#fca5a5";
+              (e.currentTarget as HTMLElement).style.color = "#e41e3f";
             }}
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLElement).style.background = "transparent";

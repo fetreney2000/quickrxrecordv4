@@ -231,6 +231,7 @@ export default function PatientDetailPage() {
       nama: patient.nama,
       nombor_kad_pengenalan: patient.nombor_kad_pengenalan,
       nombor_pendaftaran_hospital: patient.nombor_pendaftaran_hospital,
+      dokumen_lain: patient.dokumen_lain,
       nombor_telefon: patient.nombor_telefon,
       alamat: patient.alamat,
       catatan: patient.catatan,
@@ -738,6 +739,11 @@ function ViewInfo({ patient }: { patient: Patient }) {
         />
         <InfoField
           icon={User}
+          label="Dokumen Lain"
+          value={patient.dokumen_lain}
+        />
+        <InfoField
+          icon={User}
           label="No. Telefon"
           value={
             patient.nombor_telefon ? formatPhone(patient.nombor_telefon) : null
@@ -813,6 +819,16 @@ function EditForm({
                 ...editData,
                 nombor_pendaftaran_hospital: e.target.value.toUpperCase(),
               })
+            }
+            style={inputBaseStyle}
+          />
+        </div>
+        <div>
+          <Label style={labelStyle}>Dokumen Lain</Label>
+          <Input
+            value={editData.dokumen_lain ?? ""}
+            onChange={(e) =>
+              setEditData({ ...editData, dokumen_lain: e.target.value })
             }
             style={inputBaseStyle}
           />

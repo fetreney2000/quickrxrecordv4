@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { useAuth } from "@/hooks/use-auth";
 import { getInitials, formatMyKad } from "@/lib/utils";
+import { toast } from "sonner";
 import {
   usePatientSearch,
   usePatientAssignments,
@@ -28,6 +29,8 @@ import {
   useQuickDispenseBatches,
   useSupplyDurationsList,
   useQuickSupply,
+  useItemsActive,
+  useAddAssignmentInline,
 } from "@/hooks/use-quick-dispense";
 import type { Patient } from "@/types";
 
@@ -67,6 +70,8 @@ export default function QuickDispensePage() {
   const [tempoh, setTempoh] = useState("30 Hari");
   const [catatan, setCatatan] = useState("");
   const [successPatient, setSuccessPatient] = useState<string | null>(null);
+  const [showRegisterDialog, setShowRegisterDialog] = useState(false);
+  const [registerItemSearch, setRegisterItemSearch] = useState("");
 
   const { data: searchResults = [], isFetching: searching } =
     usePatientSearch(searchQuery);
@@ -83,6 +88,8 @@ export default function QuickDispensePage() {
   );
   useSupplyDurationsList();
   const supplyMut = useQuickSupply(selectedPatient?.id ?? null);
+  const { data: allActiveItems = [] } = useItemsActive();
+  const addAssignmentMut = useAddAssignmentInline(selectedPatient?.id ?? null);
 
   useEffect(() => {
     searchInputRef.current?.focus();
@@ -129,6 +136,55 @@ export default function QuickDispensePage() {
         a.item?.kod_item.toLowerCase().includes(term)
     );
   }, [assignedItems, itemSearch]);
+
+  const assignedItemIdsSet = useMemo(
+    () => new Set(assignedItems.map((a: any) => a.item_id)),
+    [assignedItems]
+  );
+
+  const filteredRegisterItems = useMemo(() => {
+    const items = allActiveItems.filter(
+      (it) => !assignedItemIdsSet.has(it.id)
+    );
+    if (!registerItemSearch.trim()) return items;
+    const term = registerItemSearch.toLowerCase();
+    return items.filter(
+      (it) =>
+        it.nama_item.toLowerCase().includes(term) ||
+        it.kod_item.toLowerCase().includes(term)
+    );
+  }, [allActiveItems, assignedItemIdsSet, registerItemSearch]);
+
+  const handleRegisterItem = (item: any) => {
+    if (item.kuota_penuh) {
+      return;
+    }
+    addAssignmentMut.mutate(
+      {
+        itemId: item.id,
+        dos: "",
+      },
+      {
+        onSuccess: (assignment: any) => {
+          toast.success(`${item.nama_item} telah didaftarkan.`);
+          setShowRegisterDialog(false);
+          setRegisterItemSearch("");
+          // Auto-select the newly registered item
+          setSelectedItem({
+            assignment_id: assignment?.id ?? "",
+            item_id: item.id,
+            dos: null,
+            item: {
+              id: item.id,
+              kod_item: item.kod_item,
+              nama_item: item.nama_item,
+              kekuatan: item.kekuatan,
+            },
+          });
+        },
+      }
+    );
+  };
 
   if (!hasAccess) {
     return (
@@ -457,7 +513,11 @@ export default function QuickDispensePage() {
             </div>
             <button
               type="button"
-              className="mt-3 w-full text-xs font-semibold flex items-center justify-center gap-1.5 py-2 rounded-xl border-2 border-dashed"
+              onClick={() => {
+                setShowRegisterDialog(true);
+                setRegisterItemSearch("");
+              }}
+              className="mt-3 w-full text-xs font-semibold flex items-center justify-center gap-1.5 py-2 rounded-xl border-2 border-dashed cursor-pointer"
               style={{
                 borderColor: "rgba(16,185,129,0.4)",
                 color: "#059669",
@@ -600,6 +660,180 @@ export default function QuickDispensePage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Register New Item Dialog */}
+      <AnimatePresence>
+        {showRegisterDialog && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+            style={{ background: "rgba(0,0,0,0.4)" }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowRegisterDialog(false);
+                setRegisterItemSearch("");
+              }
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md bg-white rounded-2xl overflow-hidden"
+              style={{
+                boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+              }}
+            >
+              <div
+                className="flex items-center justify-between px-5 py-4"
+                style={{
+                  borderBottom: "1px solid #f0f2f5",
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center"
+                    style={{
+                      background: "rgba(16,185,129,0.10)",
+                    }}
+                  >
+                    <Plus
+                      className="w-4 h-4"
+                      style={{ color: "#059669" }}
+                    />
+                  </div>
+                  <div>
+                    <p
+                      className="text-[14px] font-bold"
+                      style={{ color: "#1c1e21" }}
+                    >
+                      Daftar Item Baharu
+                    </p>
+                    <p
+                      className="text-[11px]"
+                      style={{ color: "#65676b" }}
+                    >
+                      Pilih item untuk didaftarkan kepada {selectedPatient?.nama}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowRegisterDialog(false);
+                    setRegisterItemSearch("");
+                  }}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-100"
+                >
+                  <X
+                    className="w-4 h-4"
+                    style={{ color: "#65676b" }}
+                  />
+                </button>
+              </div>
+              <div className="px-5 py-3">
+                <Input
+                  autoFocus
+                  value={registerItemSearch}
+                  onChange={(e) => setRegisterItemSearch(e.target.value)}
+                  placeholder="Cari item (nama atau kod)..."
+                  style={inputStyle}
+                />
+              </div>
+              <div
+                className="px-5 pb-4 overflow-y-auto"
+                style={{ maxHeight: 320 }}
+              >
+                {allActiveItems.length === 0 ? (
+                  <div
+                    className="flex items-center justify-center gap-2 py-8"
+                    style={{ color: "#9ca3af" }}
+                  >
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-xs">
+                      Menyemak kuota terkini...
+                    </span>
+                  </div>
+                ) : filteredRegisterItems.length === 0 ? (
+                  <div
+                    className="text-center text-xs py-6"
+                    style={{ color: "#9ca3af" }}
+                  >
+                    Tiada item padanan.
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {filteredRegisterItems.map((it: any) => (
+                      <button
+                        key={it.id}
+                        type="button"
+                        disabled={it.kuota_penuh}
+                        onClick={() => handleRegisterItem(it)}
+                        className="w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center justify-between transition-colors"
+                        style={{
+                          opacity: it.kuota_penuh ? 0.45 : 1,
+                          cursor: it.kuota_penuh
+                            ? "not-allowed"
+                            : "pointer",
+                          background: "transparent",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!it.kuota_penuh) {
+                            e.currentTarget.style.background =
+                              "rgba(16,185,129,0.06)";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background =
+                            "transparent";
+                        }}
+                      >
+                        <div>
+                          <p
+                            className="font-semibold"
+                            style={{ color: "#1c1e21" }}
+                          >
+                            {it.nama_item}
+                          </p>
+                          <p style={{ color: "#65676b" }}>
+                            {it.kod_item}
+                            {it.kekuatan
+                              ? ` · ${it.kekuatan}`
+                              : ""}
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0 ml-2">
+                          {it.kuota_penuh ? (
+                            <span
+                              className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                              style={{
+                                background:
+                                  "rgba(220,38,38,0.10)",
+                                color: "#dc2626",
+                              }}
+                            >
+                              Kuota Penuh
+                            </span>
+                          ) : (
+                            <span
+                              className="text-[10px] font-medium"
+                              style={{ color: "#65676b" }}
+                            >
+                              Baki: {it.baki_kuota ?? 0}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

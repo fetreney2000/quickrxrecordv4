@@ -3,6 +3,7 @@
  * Stop Assignment, Edit Supply, Delete Supply
  */
 import { useEffect, useState } from "react";
+import { useSupplyDurations } from "@/hooks/use-patient-detail";
 import {
   Dialog,
   DialogContent,
@@ -156,23 +157,42 @@ export function EditSupplyDialog({
 }) {
   const [dos, setDos] = useState("");
   const [kuantiti, setKuantiti] = useState(1);
-  const [tempoh, setTempoh] = useState("");
+  const [tempohNilai, setTempohNilai] = useState("");
+  const [tempohUnit, setTempohUnit] = useState("");
   const [catatan, setCatatan] = useState("");
 
+  const { data: durations = [] } = useSupplyDurations();
+
+  // Parse existing tempoh into value + unit
   useEffect(() => {
     if (supply) {
       setDos(supply.dos);
       setKuantiti(supply.kuantiti);
-      setTempoh(supply.tempoh_dibekal ?? "");
       setCatatan(supply.catatan_bekalan ?? "");
+      // Parse tempoh_dibekal (e.g. "30 Hari" → value="30", unit="Hari")
+      const existingTempoh = supply.tempoh_dibekal ?? "";
+      const parts = existingTempoh.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        setTempohNilai(parts[0]);
+        const unit = parts.slice(1).join(" ");
+        setTempohUnit(unit);
+      } else {
+        setTempohNilai(existingTempoh);
+        setTempohUnit("");
+      }
     }
   }, [supply]);
+
+  // Combine tempoh value + unit
+  const tempoh = tempohNilai.trim()
+    ? `${tempohNilai.trim()} ${tempohUnit}`.trim()
+    : "";
 
   if (!supply) return null;
 
   return (
     <Dialog open={!!supply} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div
@@ -199,7 +219,7 @@ export function EditSupplyDialog({
               supplyId: supply.id,
               dos: dos.trim(),
               kuantiti: Math.max(1, kuantiti),
-              tempoh,
+              tempoh: tempoh.trim(),
               catatan: catatan.trim(),
             });
           }}
@@ -215,20 +235,38 @@ export function EditSupplyDialog({
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
+              <Label style={labelStyle}>Tempoh</Label>
+              <div className="flex gap-1.5">
+                <Input
+                  value={tempohNilai}
+                  onChange={(e) => setTempohNilai(e.target.value)}
+                  style={{ ...inputBaseStyle, flex: 1 }}
+                />
+                <select
+                  value={tempohUnit}
+                  onChange={(e) => setTempohUnit(e.target.value)}
+                  style={{
+                    ...inputBaseStyle,
+                    width: "auto",
+                    minWidth: 90,
+                    appearance: "auto",
+                  }}
+                >
+                  {durations.map((d) => (
+                    <option key={d.id} value={d.nama}>
+                      {d.nama}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div>
               <Label style={labelStyle}>Kuantiti</Label>
               <Input
                 type="number"
                 min={1}
                 value={kuantiti}
                 onChange={(e) => setKuantiti(parseInt(e.target.value) || 1)}
-                style={inputBaseStyle}
-              />
-            </div>
-            <div>
-              <Label style={labelStyle}>Tempoh</Label>
-              <Input
-                value={tempoh}
-                onChange={(e) => setTempoh(e.target.value)}
                 style={inputBaseStyle}
               />
             </div>
@@ -256,7 +294,7 @@ export function EditSupplyDialog({
                 supplyId: supply.id,
                 dos: dos.trim(),
                 kuantiti: Math.max(1, kuantiti),
-                tempoh,
+                tempoh: tempoh.trim(),
                 catatan: catatan.trim(),
               })
             }

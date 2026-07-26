@@ -22,6 +22,7 @@ import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { useAuth } from "@/hooks/use-auth";
 import { getInitials, formatMyKad } from "@/lib/utils";
 import { toast } from "sonner";
+import { AddPatientDialog } from "@/components/patient/add-patient-dialog";
 import {
   usePatientSearch,
   usePatientAssignments,
@@ -74,6 +75,7 @@ export default function QuickDispensePage() {
   const [registerItemSearch, setRegisterItemSearch] = useState("");
   const [registerSelectedItem, setRegisterSelectedItem] = useState<any>(null);
   const [registerDos, setRegisterDos] = useState("");
+  const [showAddPatient, setShowAddPatient] = useState(false);
 
   const { data: searchResults = [], isFetching: searching } =
     usePatientSearch(searchQuery);
@@ -367,11 +369,24 @@ export default function QuickDispensePage() {
                   }}
                 >
                   {searchResults.length === 0 && !searching ? (
-                    <div
-                      className="text-center text-xs py-6"
-                      style={{ color: "#9ca3af" }}
-                    >
-                      Tiada pesakit dijumpai.
+                    <div className="text-center py-6 space-y-3">
+                      <p className="text-xs" style={{ color: "#9ca3af" }}>
+                        Tiada pesakit dijumpai.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowAddPatient(true)}
+                        className="text-xs h-8"
+                        style={{
+                          borderColor: "rgba(240,147,43,0.3)",
+                          color: "#f0932b",
+                        }}
+                      >
+                        <Plus className="w-3.5 h-3.5 mr-1" />
+                        Daftar Pesakit Baharu
+                      </Button>
                     </div>
                   ) : (
                     searchResults.map((p) => (
@@ -886,6 +901,7 @@ export default function QuickDispensePage() {
           </motion.div>
         )}
       </AnimatePresence>
+      <AddPatientDialog open={showAddPatient} onOpenChange={setShowAddPatient} />
     </div>
   );
 }

@@ -267,7 +267,7 @@ export function AssignmentItem({
                   className="h-7 px-2"
                 >
                   <Edit className="w-3 h-3" />
-                  <span className="hidden sm:inline">Dos</span>
+                  <span className="hidden sm:inline">Kemaskini Dos</span>
                 </Button>
                 <Button
                   size="sm"

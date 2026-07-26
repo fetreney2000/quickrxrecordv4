@@ -217,12 +217,11 @@ export function AddAssignmentDialog({
           <div>
             <Label style={labelStyle}>Cari Item</Label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Cari nama atau kod item..."
-                className="pl-9"
+                className="pr-9"
                 style={inputBaseStyle}
               />
             </div>
@@ -243,16 +242,21 @@ export function AddAssignmentDialog({
             ) : (
               filtered.map((i) => {
                 const active = activeItemIds.has(i.id);
+                const kuota = i.kuota;
+                const activeCount = i.active_assignments ?? 0;
+                const hasKuota = kuota != null && kuota > 0;
+                const baki = hasKuota ? Math.max(0, kuota - activeCount) : null;
+                const kuotaPenuh = hasKuota ? activeCount >= kuota : false;
                 return (
                   <button
                     type="button"
                     key={i.id}
-                    onClick={() => !active && setSelectedItemId(i.id)}
-                    disabled={active}
+                    onClick={() => !active && !kuotaPenuh && setSelectedItemId(i.id)}
+                    disabled={active || kuotaPenuh}
                     className={cn(
                       "w-full text-left px-3 py-2 text-xs border-b last:border-b-0 transition-colors",
-                      active && "opacity-50 cursor-not-allowed",
-                      !active && selectedItemId === i.id
+                      (active || kuotaPenuh) && "opacity-50 cursor-not-allowed",
+                      !active && !kuotaPenuh && selectedItemId === i.id
                         ? "bg-blue-50"
                         : "hover:bg-blue-50/50"
                     )}
@@ -268,27 +272,46 @@ export function AddAssignmentDialog({
                           {i.kekuatan ? ` · ${i.kekuatan}` : ""}
                         </p>
                       </div>
-                      {active ? (
-                        <span
-                          className="text-2xs font-semibold px-2 py-0.5 rounded-full"
-                          style={{
-                            background: "rgba(217,119,6,0.1)",
-                            color: "#d97706",
-                          }}
-                        >
-                          Aktif
-                        </span>
-                      ) : selectedItemId === i.id ? (
-                        <span
-                          className="text-2xs font-semibold px-2 py-0.5 rounded-full"
-                          style={{
-                            background: "rgba(24,119,242,0.1)",
-                            color: "#1877f2",
-                          }}
-                        >
-                          Dipilih
-                        </span>
-                      ) : null}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {kuotaPenuh && !active ? (
+                          <span
+                            className="text-2xs font-semibold px-2 py-0.5 rounded-full"
+                            style={{
+                              background: "rgba(220,38,38,0.10)",
+                              color: "#dc2626",
+                            }}
+                          >
+                            Kuota Penuh
+                          </span>
+                        ) : active ? (
+                          <span
+                            className="text-2xs font-semibold px-2 py-0.5 rounded-full"
+                            style={{
+                              background: "rgba(217,119,6,0.1)",
+                              color: "#d97706",
+                            }}
+                          >
+                            Aktif
+                          </span>
+                        ) : selectedItemId === i.id ? (
+                          <span
+                            className="text-2xs font-semibold px-2 py-0.5 rounded-full"
+                            style={{
+                              background: "rgba(24,119,242,0.1)",
+                              color: "#1877f2",
+                            }}
+                          >
+                            Dipilih
+                          </span>
+                        ) : hasKuota ? (
+                          <span
+                            className="text-2xs font-medium"
+                            style={{ color: "#65676b" }}
+                          >
+                            Baki: {baki}/{kuota}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                   </button>
                 );
@@ -319,18 +342,16 @@ export function AddAssignmentDialog({
             <Input
               value={dos}
               onChange={(e) => setDos(e.target.value)}
-              placeholder="Cth: 1x1, 2x sehari"
               required
               style={inputBaseStyle}
             />
           </div>
 
           <div>
-            <Label style={labelStyle}>Catatan (pilihan)</Label>
+            <Label style={labelStyle}>Catatan</Label>
             <Input
               value={catatan}
               onChange={(e) => setCatatan(e.target.value)}
-              placeholder="Cth: Selepas makan"
               style={inputBaseStyle}
             />
           </div>

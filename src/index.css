@@ -336,6 +336,16 @@
   }
 }
 
+/* Gradient-x animation for accent bars */
+@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+@-webkit-keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
 /* Chrome 109 compatible @-webkit-keyframes fallbacks */
 @-webkit-keyframes shimmer {
   0% {

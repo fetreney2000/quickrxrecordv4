@@ -186,7 +186,6 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
                 onBlur={(e) =>
                   updateField("kod_item", e.target.value.toUpperCase())
                 }
-                placeholder="Cth: PCM500"
                 required
                 style={{ ...inputStyle, textTransform: "uppercase" }}
               />
@@ -202,7 +201,6 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
                 onBlur={(e) =>
                   updateField("kekuatan", e.target.value.toUpperCase())
                 }
-                placeholder="Cth: 500MG"
                 style={{ ...inputStyle, textTransform: "uppercase" }}
               />
             </div>
@@ -220,7 +218,6 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
               onBlur={(e) =>
                 updateField("nama_item", toTitleCaseKeepAcronyms(e.target.value))
               }
-              placeholder="Cth: Paracetamol"
               required
               style={inputStyle}
             />
@@ -241,7 +238,6 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
                   toTitleCaseKeepAcronyms(e.target.value)
                 )
               }
-              placeholder="Cth: Panadol"
               style={inputStyle}
             />
           </div>
@@ -297,7 +293,6 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
               min={0}
               value={form.kuota}
               onChange={(e) => updateField("kuota", e.target.value)}
-              placeholder="Cth: 1000"
               style={inputStyle}
             />
             {form.kuota && !isNaN(parseInt(form.kuota, 10)) && (
@@ -319,7 +314,6 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
               id="catatan"
               value={form.catatan}
               onChange={(e) => updateField("catatan", e.target.value)}
-              placeholder="Catatan tambahan (pilihan)"
               style={textareaStyle}
               rows={2}
             />

@@ -751,14 +751,12 @@ function ViewInfo({ patient }: { patient: Patient }) {
       />
       <InfoField icon={User} label="Alamat" value={patient.alamat} block />
      
-      {patient.catatan && (
-        <InfoField
-          icon={User}
-          label="Catatan"
-          value={patient.catatan}
-          block
-        />
-      )}
+      <InfoField
+        icon={User}
+        label="Catatan"
+        value={patient.catatan}
+        block
+      />
     </div>
   );
 }

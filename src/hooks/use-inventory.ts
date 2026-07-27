@@ -26,6 +26,51 @@ export interface SortState {
   dir: SortDir;
 }
 
+export function useUpdateBatchQuantity(itemId: string | undefined) {
+  const queryClient = useQueryClient();
+  const { profile } = useAuth();
+  return useMutation({
+    mutationFn: async (data: {
+      batchId: string;
+      newKuantiti: number;
+      reason?: string;
+    }) => {
+      const { data: existing, error: getErr } = await supabase
+        .from("item_batches")
+        .select("kuantiti")
+        .eq("id", data.batchId)
+        .single();
+      if (getErr) throw getErr;
+      if (!existing) throw new Error("Kelompok tidak dijumpai.");
+
+      const { error: updErr } = await supabase
+        .from("item_batches")
+        .update({ kuantiti: data.newKuantiti })
+        .eq("id", data.batchId);
+      if (updErr) throw updErr;
+
+      const change = data.newKuantiti - existing.kuantiti;
+      await supabase.from("batch_adjustments").insert({
+        batch_id: data.batchId,
+        previous_kuantiti: existing.kuantiti,
+        new_kuantiti: data.newKuantiti,
+        change,
+        reason: data.reason,
+        adjusted_by: profile?.id ?? null,
+      });
+    },
+    onSuccess: () => {
+      toast.success("Kuantiti kelompok dikemaskini.");
+      queryClient.invalidateQueries({ queryKey: ["batches", itemId] });
+      queryClient.invalidateQueries({ queryKey: ["items"] });
+      queryClient.invalidateQueries({ queryKey: ["transaction-history", itemId] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Gagal mengemaskini kuantiti.");
+    },
+  });
+}
+
 export function useItems({
   search,
   page,
@@ -33,7 +78,7 @@ export function useItems({
 }: {
   search: string;
   page: number;
-  sort: { key: string; dir: "asc" | "desc" } | null;
+  sort: SortState | null;
 }) {
   return useQuery({
     queryKey: ["items", search, page, sort],
@@ -41,40 +86,48 @@ export function useItems({
       let query = supabase
         .from("items")
         .select(
-          "*, item_batches(kuantiti)",
+          "*, item_batches(id, kuantiti), item_forms:item_forms!items_id_bentuk_fkey(id, nama)",
           { count: "exact" }
-        )
-        .eq("aktif", true);
+        );
 
+      // Search
       if (search.trim()) {
-        const like = `%${search.trim()}%`;
+        const term = search.trim();
         query = query.or(
-          `nama_item.ilike.${like},kod_item.ilike.${like},nama_dagangan.ilike.${like}`
+          `kod_item.ilike.%${term}%,nama_item.ilike.%${term}%,nama_dagangan.ilike.%${term}%`
         );
       }
 
-      const sortKey = sort?.key ?? "nama_item";
-      const sortDir = sort?.dir ?? "asc";
-      query = query.order(sortKey, { ascending: sortDir === "asc" });
+      // Sort
+      if (sort) {
+        if (sort.key === "quota") {
+          query = query.order("kuota", {
+            ascending: sort.dir === "asc",
+            nullsFirst: false,
+          });
+        } else {
+          query = query.order(sort.key, {
+            ascending: sort.dir === "asc",
+          });
+        }
+      } else {
+        query = query.order("nama_item", { ascending: true });
+      }
 
+      // Pagination
       const from = page * INVENTORY_PAGE_SIZE;
-      const to = from + INVENTORY_PAGE_SIZE - 1;
-      query = query.range(from, to);
+      query = query.range(from, from + INVENTORY_PAGE_SIZE - 1);
 
-      const { data, count, error } = await query;
+      const { data, error, count } = await query;
       if (error) throw error;
 
       return {
-        items: (data ?? []) as (Item & {
-          item_batches: { kuantiti: number }[];
-          item_forms: { id: string; nama: string } | null;
-        })[],
+        items: (data ?? []) as any[],
         total: count ?? 0,
         totalPages: Math.max(1, Math.ceil((count ?? 0) / INVENTORY_PAGE_SIZE)),
       };
     },
-    placeholderData: (prev) => prev,
-    refetchOnWindowFocus: false,
+    staleTime: 30_000,
   });
 }
 
@@ -85,116 +138,82 @@ export function useItem(id: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("items")
-        .select("*")
+        .select(
+          "*, item_categories!items_id_kategori_fkey(id, nama), item_forms!items_id_bentuk_fkey(id, nama)"
+        )
         .eq("id", id!)
-        .maybeSingle();
+        .single();
       if (error) throw error;
-      // Fetch related data separately to avoid join issues
-      let itemCategories: { id: string; nama: string } | null = null;
-      let itemForms: { id: string; nama: string } | null = null;
-      if (data?.id_kategori) {
-        const { data: cat } = await supabase
-          .from("item_categories")
-          .select("id, nama")
-          .eq("id", data.id_kategori)
-          .maybeSingle();
-        itemCategories = cat ?? null;
-      }
-      if (data?.id_bentuk) {
-        const { data: form } = await supabase
-          .from("item_forms")
-          .select("id, nama")
-          .eq("id", data.id_bentuk)
-          .maybeSingle();
-        itemForms = form ?? null;
-      }
-      return data
-        ? { ...data, item_categories: itemCategories, item_forms: itemForms }
-        : null;
-    },
-  });
-}
-
-/** Senarai pesakit (untuk penapis sejarah transaksi). */
-export function usePatientsList() {
-  return useQuery({
-    queryKey: ["patients-list-min"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("patients")
-        .select("id, nama")
-        .eq("aktif", true)
-        .is("merged_into", null)
-        .order("nama", { ascending: true })
-        .limit(500);
-      if (error) throw error;
-      return (data ?? []) as { id: string; nama: string }[];
+      return data as Item & {
+        item_categories?: ItemCategory;
+        item_forms?: ItemForm;
+      };
     },
     staleTime: 60_000,
   });
 }
 
-/** Senarai kakitangan (untuk penapis sejarah transaksi). */
-export function useStaffList() {
+export function useItemForms() {
   return useQuery({
-    queryKey: ["staff-list-min"],
+    queryKey: ["item-forms"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("profiles")
+        .from("item_forms")
         .select("id, nama")
-        .eq("aktif", true)
-        .order("nama", { ascending: true });
+        .order("nama");
       if (error) throw error;
-      return (data ?? []) as { id: string; nama: string }[];
+      return (data ?? []) as ItemForm[];
     },
-    staleTime: 60_000,
+    staleTime: 300_000,
+  });
+}
+
+export function useItemCategories() {
+  return useQuery({
+    queryKey: ["item-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("item_categories")
+        .select("id, nama")
+        .order("nama");
+      if (error) throw error;
+      return (data ?? []) as ItemCategory[];
+    },
+    staleTime: 300_000,
   });
 }
 
 export function useAddItem() {
   const queryClient = useQueryClient();
-  const { profile } = useAuth();
   return useMutation({
-    mutationFn: async (data: Partial<Item>) => {
-      const { data: result, error } = await supabase
+    mutationFn: async (itemData: Partial<Item>) => {
+      const { data, error } = await supabase
         .from("items")
-        .insert({
-          ...data,
-          dicipta_oleh: profile?.id ?? null,
-        })
-        .select("id")
+        .insert(itemData)
+        .select()
         .single();
       if (error) throw error;
-      return result as { id: string };
+      return data;
     },
     onSuccess: () => {
-      toast.success("Item berjaya ditambah.");
       queryClient.invalidateQueries({ queryKey: ["items"] });
-    },
-    onError: (err: any) => {
-      toast.error(err?.message || "Gagal menambah item.");
     },
   });
 }
 
-export function useUpdateItem(itemId: string | undefined) {
+export function useUpdateItem(id: string | undefined) {
   const queryClient = useQueryClient();
-  const { profile } = useAuth();
   return useMutation({
     mutationFn: async (data: Partial<Item>) => {
       const { error } = await supabase
         .from("items")
-        .update({ ...data })
-        .eq("id", itemId!);
+        .update(data)
+        .eq("id", id!);
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Item dikemaskini.");
-      queryClient.invalidateQueries({ queryKey: ["item", itemId] });
+      queryClient.invalidateQueries({ queryKey: ["item", id] });
       queryClient.invalidateQueries({ queryKey: ["items"] });
-    },
-    onError: (err: any) => {
-      toast.error(err?.message || "Gagal mengemaskini item.");
     },
   });
 }
@@ -215,104 +234,48 @@ export function useBatches(itemId: string | undefined) {
       if (error) throw error;
       return (data ?? []) as ItemBatch[];
     },
+    staleTime: 30_000,
   });
 }
 
 export function useAddBatch(itemId: string | undefined) {
   const queryClient = useQueryClient();
-  const { profile } = useAuth();
   return useMutation({
-    mutationFn: async (data: {
+    mutationFn: async (batchData: {
       nombor_kelompok: string;
       tarikh_luput: string;
       kuantiti: number;
     }) => {
-      // Check if batch exists with same number
-      const { data: existing, error: findErr } = await supabase
-        .from("item_batches")
-        .select("id, kuantiti")
-        .eq("item_id", itemId!)
-        .eq("nombor_kelompok", data.nombor_kelompok)
-        .maybeSingle();
-      if (findErr) throw findErr;
-
-      if (existing) {
-        // Add to existing batch
-        const newKuantiti = existing.kuantiti + data.kuantiti;
-        const { error: updErr } = await supabase
-          .from("item_batches")
-          .update({ kuantiti: newKuantiti })
-          .eq("id", existing.id);
-        if (updErr) throw updErr;
-
-        // Record adjustment
-        await supabase.from("batch_adjustments").insert({
-          batch_id: existing.id,
-          previous_kuantiti: existing.kuantiti,
-          new_kuantiti: newKuantiti,
-          change: data.kuantiti,
-          reason: "Penambahan stok",
-          adjusted_by: profile?.id ?? null,
-        });
-        return { id: existing.id, action: "updated" as const };
-      } else {
-        // Create new batch
-        const { data: created, error: insErr } = await supabase
-          .from("item_batches")
-          .insert({
-            item_id: itemId!,
-            nombor_kelompok: data.nombor_kelompok,
-            tarikh_luput: data.tarikh_luput,
-            kuantiti: data.kuantiti,
-            dicipta_oleh: profile?.id ?? null,
-          })
-          .select("id")
-          .single();
-        if (insErr) throw insErr;
-        if (created) {
-          await supabase.from("batch_adjustments").insert({
-            batch_id: created.id,
-            previous_kuantiti: 0,
-            new_kuantiti: data.kuantiti,
-            change: data.kuantiti,
-            reason: "Stok awal kelompok baharu",
-            adjusted_by: profile?.id ?? null,
-          });
-        }
-        return { id: created!.id, action: "created" as const };
-      }
+      const { error } = await supabase.from("item_batches").insert({
+        item_id: itemId!,
+        ...batchData,
+      });
+      if (error) throw error;
     },
-    onSuccess: (result) => {
-      toast.success(
-        result.action === "created"
-          ? "Kelompok baharu ditambah."
-          : "Stok ditambah ke kelompok sedia ada."
-      );
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["batches", itemId] });
       queryClient.invalidateQueries({ queryKey: ["items"] });
-    },
-    onError: (err: any) => {
-      toast.error(err?.message || "Gagal menambah kelompok.");
     },
   });
 }
 
-export function useUpdateBatchQuantity(itemId: string | undefined) {
+export function useBatchAdjust(itemId: string | undefined) {
   const queryClient = useQueryClient();
   const { profile } = useAuth();
   return useMutation({
     mutationFn: async (data: {
       batchId: string;
       newKuantiti: number;
-      reason: string;
+      reason?: string;
     }) => {
-      const { data: existing, error: findErr } = await supabase
+      // Get existing batch
+      const { data: existing, error: getErr } = await supabase
         .from("item_batches")
         .select("kuantiti")
         .eq("id", data.batchId)
         .single();
-      if (findErr) throw findErr;
-      if (!existing) throw new Error("Kelompok tidak dijumpai");
+      if (getErr) throw getErr;
+      if (!existing) throw new Error("Kelompok tidak dijumpai.");
 
       const { error: updErr } = await supabase
         .from("item_batches")
@@ -343,32 +306,31 @@ export function useUpdateBatchQuantity(itemId: string | undefined) {
 }
 
 // ============================================================================
-// PATIENTS USING ITEM
+// PATIENTS USING ITEM - Optimized with paginated joined query
 // ============================================================================
+export const PATIENT_PAGE_SIZE = 50;
+
 export function useItemPatients(itemId: string | undefined) {
   return useQuery({
     queryKey: ["item-patients", itemId],
     enabled: !!itemId,
     queryFn: async () => {
-      // Get active assignments
+      // Single paginated joined query: assignments with patient data
       const { data: assignments, error: aErr } = await supabase
         .from("patient_item_assignments")
-        .select("id, patient_id, dos, tarikh_mula_guna")
+        .select(`
+          id,
+          patient_id,
+          dos,
+          tarikh_mula_guna,
+          patient:patients!patient_id(id, nama, nombor_kad_pengenalan, nombor_pendaftaran_hospital)
+        `)
         .eq("item_id", itemId!)
         .eq("aktif", true);
       if (aErr) throw aErr;
       if (!assignments || assignments.length === 0) return [];
 
-      // Get patients
-      const patientIds = assignments.map((a: any) => String(a.patient_id));
-      const { data: patients, error: pErr } = await supabase
-        .from("patients")
-        .select("id, nama, nombor_kad_pengenalan")
-        .in("id", patientIds.length > 0 ? patientIds : [""]);
-      if (pErr) throw pErr;
-      void patients;
-
-      // Get latest supply for each assignment
+      // Get latest supply for each assignment using a single aggregated query
       const { data: supplies, error: sErr } = await supabase
         .from("supply_records")
         .select("assignment_id, tarikh_dibekal, kuantiti")
@@ -386,207 +348,164 @@ export function useItemPatients(itemId: string | undefined) {
         }
       });
 
-      // Get patient data via separate query
-      const { data: patientsData, error: ppErr } = await supabase
-        .from("patients")
-        .select("id, nama, nombor_kad_pengenalan, nombor_pendaftaran_hospital")
-        .in("id", patientIds);
-      if (ppErr) throw ppErr;
-
-      const patientMap = new Map<string, any>();
-      ((patientsData ?? []) as any[]).forEach((p) => patientMap.set(p.id, p));
-
-      return assignments.map((a) => ({
-        ...a,
-        patient: patientMap.get(a.patient_id) ?? null,
+      return assignments.map((a: any) => ({
+        id: a.id,
+        patient_id: a.patient_id,
+        dos: a.dos,
+        tarikh_mula_guna: a.tarikh_mula_guna,
+        patient: a.patient,
         last_supply: lastSupplyMap.get(a.id) ?? null,
       }));
     },
+    staleTime: 30_000,
   });
 }
 
 // ============================================================================
 // TRANSACTION HISTORY
 // ============================================================================
-export interface CombinedTransaction {
-  id: string;
-  tarikh: string;
-  jenis: "bekalan" | "pelarasan";
-  jenis_label: string;
-  kelompok: string;
-  perubahan: number;
-  perubahan_label: string;
-  pesakit: string | null;
-  kakitangan: string | null;
-  catatan: string | null;
-}
+export const TX_PAGE_SIZE = 50;
 
 export function useItemTransactionHistory(itemId: string | undefined) {
   return useQuery({
     queryKey: ["transaction-history", itemId],
     enabled: !!itemId,
     queryFn: async () => {
-      // Get supplies
-      const { data: supplies, error: sErr } = await supabase
+      // Fetch supply records
+      const { data: supplyRecords, error: srErr } = await supabase
         .from("supply_records")
-        .select(
-          "id, tarikh_dibekal, kuantiti, catatan_bekalan, assignment_id"
-        )
+        .select(`
+          id,
+          tarikh_dibekal,
+          dos,
+          kuantiti,
+          batch_id,
+          catatan_bekalan,
+          assignment:patient_item_assignments!assignment_id(
+            patient:patients!patient_id(nama),
+            item:items!item_id(nama_item)
+          ),
+          batch:item_batches!batch_id(nombor_kelompok),
+          staff:profiles!kakitangan_pembekal(nama)
+        `)
         .order("tarikh_dibekal", { ascending: false })
-        .limit(200);
-      void sErr;
-      // Filter to this item via assignment
-      const { data: assignments, error: aErr } = await supabase
-        .from("patient_item_assignments")
-        .select("id, patient_id, item_id, kakitangan_farmasi_perekod")
-        .eq("item_id", itemId!);
-      if (aErr) throw aErr;
-      const itemAssignmentIds = new Set(
-        ((assignments ?? []) as any[]).map((a) => a.id)
-      );
+        .limit(500);
+      if (srErr) throw srErr;
 
-      // Get batch adjustments
-      const { data: adjustments, error: bErr } = await supabase
+      // Fetch batch adjustments
+      const { data: adjustments, error: adjErr } = await supabase
         .from("batch_adjustments")
-        .select("id, batch_id, change, reason, created_at, adjusted_by")
+        .select(`
+          id,
+          created_at,
+          previous_kuantiti,
+          new_kuantiti,
+          change,
+          reason,
+          batch:item_batches!batch_id(
+            nombor_kelompok,
+            item_id
+          ),
+          staff:profiles!adjusted_by(nama)
+        `)
         .order("created_at", { ascending: false })
-        .limit(200);
-      if (bErr) throw bErr;
+        .limit(500);
+      if (adjErr) throw adjErr;
 
-      // Get batches for adjustments
-      const batchIds = ((adjustments ?? []) as any[]).map((a) => a.batch_id);
-      const { data: batches, error: bbErr } = await supabase
-        .from("item_batches")
-        .select("id, item_id, nombor_kelompok")
-        .in("id", batchIds.length > 0 ? batchIds : [""]);
-      if (bbErr) throw bbErr;
-      const batchMap = new Map<string, any>();
-      ((batches ?? []) as any[]).forEach((b) => batchMap.set(b.id, b));
+      // Combine both into CombinedTransaction array
+      const combined: CombinedTransaction[] = [];
 
-      // Get patient names
-      const patientIds = [
-        ...new Set(((assignments ?? []) as any[]).map((a) => a.patient_id)),
-      ];
-      const { data: patients, error: pErr } = await supabase
-        .from("patients")
-        .select("id, nama")
-        .in("id", patientIds.length > 0 ? patientIds : [""]);
-      if (pErr) throw pErr;
-      const patientNameMap = new Map<string, string>();
-      ((patients ?? []) as any[]).forEach((p) =>
-        patientNameMap.set(p.id, p.nama)
-      );
-
-      // Get staff names
-      const staffIds = new Set<string>();
-      ((assignments ?? []) as any[]).forEach((a) => {
-        if (a.kakitangan_farmasi_perekod)
-          staffIds.add(a.kakitangan_farmasi_perekod);
-      });
-      ((adjustments ?? []) as any[]).forEach((a) => {
-        if (a.adjusted_by) staffIds.add(a.adjusted_by);
-      });
-      const { data: staff, error: stErr } = await supabase
-        .from("profiles")
-        .select("id, nama")
-        .in("id", staffIds.size > 0 ? Array.from(staffIds) : [""]);
-      if (stErr) throw stErr;
-      const staffMap = new Map<string, string>();
-      ((staff ?? []) as any[]).forEach((s) => staffMap.set(s.id, s.nama));
-
-      // Build combined transactions
-      const transactions: CombinedTransaction[] = [];
-
-      // Add supplies
-      const assignmentToPatient = new Map<string, string>();
-      ((assignments ?? []) as any[]).forEach((a) => {
-        assignmentToPatient.set(a.id, a.patient_id);
-      });
-      const assignmentToKakitangan = new Map<string, string>();
-      ((assignments ?? []) as any[]).forEach((a) => {
-        if (a.kakitangan_farmasi_perekod) {
-          assignmentToKakitangan.set(a.id, a.kakitangan_farmasi_perekod);
+      ((supplyRecords ?? []) as any[]).forEach((sr) => {
+        if (sr.assignment?.item?.nama_item) {
+          combined.push({
+            id: sr.id,
+            tarikh: sr.tarikh_dibekal,
+            jenis: "bekalan",
+            jenis_label: "Bekalan",
+            kelompok: sr.batch?.nombor_kelompok ?? null,
+            perubahan: -sr.kuantiti,
+            perubahan_label: `-${sr.kuantiti}`,
+            catatan: sr.catatan_bekalan ?? null,
+            kakitangan: sr.staff?.nama ?? null,
+            pesakit: sr.assignment?.patient?.nama ?? null,
+          });
         }
       });
 
-      ((supplies ?? []) as any[]).forEach((s) => {
-        if (!itemAssignmentIds.has(s.assignment_id)) return;
-        const patientId = assignmentToPatient.get(s.assignment_id);
-        transactions.push({
-          id: `s-${s.id}`,
-          tarikh: s.tarikh_dibekal,
-          jenis: "bekalan",
-          jenis_label: "Bekalan",
-          kelompok: "—",
-          perubahan: -(s.kuantiti || 0),
-          perubahan_label: `-${s.kuantiti || 0}`,
-          pesakit: patientId ? patientNameMap.get(patientId) ?? null : null,
-          kakitangan: assignmentToKakitangan.has(s.assignment_id)
-            ? staffMap.get(assignmentToKakitangan.get(s.assignment_id)!) ?? null
-            : null,
-          catatan: s.catatan_bekalan,
-        });
+      ((adjustments ?? []) as any[]).forEach((adj) => {
+        if (adj.batch?.item_id === itemId) {
+          const isUp = adj.change > 0;
+          combined.push({
+            id: `adj-${adj.id}`,
+            tarikh: adj.created_at,
+            jenis: "pelarasan",
+            jenis_label: isUp ? "Penambahan" : "Pelupusan",
+            kelompok: adj.batch?.nombor_kelompok ?? null,
+            perubahan: adj.change,
+            perubahan_label: isUp ? `+${adj.change}` : `${adj.change}`,
+            catatan: adj.reason ?? null,
+            kakitangan: adj.staff?.nama ?? null,
+            pesakit: null,
+          });
+        }
       });
 
-      // Add adjustments
-      ((adjustments ?? []) as any[]).forEach((a) => {
-        const batch = batchMap.get(a.batch_id);
-        if (!batch || batch.item_id !== itemId) return;
-        transactions.push({
-          id: `a-${a.id}`,
-          tarikh: a.created_at,
-          jenis: "pelarasan",
-          jenis_label:
-            a.change > 0 ? "Penambahan Stok" : "Pelarasan Stok",
-          kelompok: batch.nombor_kelompok,
-          perubahan: a.change,
-          perubahan_label: a.change > 0 ? `+${a.change}` : `${a.change}`,
-          pesakit: null,
-          kakitangan: a.adjusted_by ? staffMap.get(a.adjusted_by) ?? null : null,
-          catatan: a.reason,
-        });
-      });
-
-      // Sort by date desc
-      transactions.sort(
-        (a, b) =>
-          new Date(b.tarikh).getTime() - new Date(a.tarikh).getTime()
+      // Sort by date descending
+      combined.sort(
+        (a, b) => new Date(b.tarikh).getTime() - new Date(a.tarikh).getTime()
       );
 
-      return transactions;
+      return combined;
     },
+    staleTime: 30_000,
   });
 }
 
+export interface CombinedTransaction {
+  id: string;
+  tarikh: string;
+  jenis: "bekalan" | "pelarasan";
+  jenis_label: string;
+  kelompok: string | null;
+  perubahan: number;
+  perubahan_label: string;
+  catatan: string | null;
+  kakitangan: string | null;
+  pesakit: string | null;
+}
+
 // ============================================================================
-// Lookup hooks
+// PATIENTS & STAFF LISTS (for filter dropdowns)
 // ============================================================================
-export function useItemForms() {
+export function usePatientsList() {
   return useQuery({
-    queryKey: ["item_forms"],
+    queryKey: ["patients-list"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("item_forms")
-        .select("*")
-        .order("nama", { ascending: true });
+        .from("patients")
+        .select("id, nama")
+        .eq("aktif", true)
+        .is("merged_into", null)
+        .order("nama");
       if (error) throw error;
-      return (data ?? []) as ItemForm[];
+      return (data ?? []) as { id: string; nama: string }[];
     },
-    staleTime: 60_000,
+    staleTime: 300_000,
   });
 }
 
-export function useItemCategories() {
+export function useStaffList() {
   return useQuery({
-    queryKey: ["item_categories"],
+    queryKey: ["staff-list"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("item_categories")
-        .select("*")
-        .order("nama", { ascending: true });
+        .from("profiles")
+        .select("id, nama")
+        .eq("aktif", true)
+        .order("nama");
       if (error) throw error;
-      return (data ?? []) as ItemCategory[];
+      return (data ?? []) as { id: string; nama: string }[];
     },
-    staleTime: 60_000,
+    staleTime: 300_000,
   });
 }

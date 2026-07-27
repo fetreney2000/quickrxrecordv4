@@ -18,7 +18,7 @@ export default function CopyrightPage() {
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
-      <Breadcrumb items={[{ label: "Hak Cipta" }]} icon={Shield} />
+      <Breadcrumb items={[{ label: "Hak Cipta" }]} />
 
       {/* Background orb */}
       <div

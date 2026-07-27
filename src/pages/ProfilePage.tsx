@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Breadcrumb } from "@/components/layout/breadcrumb";
 import {
   ArrowLeft,
   User,
@@ -285,39 +286,7 @@ export default function ProfilePage() {
   // ── Render ──────────────────────────────────────────────────────────────
   return (
     <div style={{ maxWidth: 640, margin: "0 auto" }}>
-      {/* Breadcrumb */}
-      <div>
-        <nav className="flex items-center gap-2 text-sm mb-4" aria-label="NavigasiBreadcrumb">
-          <button
-            type="button"
-            onClick={() => navigate("/")}
-            className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors group"
-            aria-label="Kembali keUtama"
-          >
-            <ArrowLeft
-              size={20}
-              style={{ color: "#22c55e" }}
-              className="group-hover:-translate-x-0.5 transition-transform"
-            />
-          </button>
-          <span
-            className="text-muted-foreground"
-            style={{ fontSize: 13, fontWeight: 400 }}
-          >
-            Utama
-          </span>
-          <span style={{ color: "#65676b", fontSize: 13 }}>/</span>
-          <span
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: "#1c1e21",
-            }}
-          >
-            Profil
-          </span>
-        </nav>
-      </div>
+      <Breadcrumb items={[{ label: "Profil Pengguna" }]} />
 
       {/* Header */}
       <div

@@ -9,8 +9,6 @@ interface PlaceholderPageProps {
   phase: number;
   icon: LucideIcon;
   breadcrumb?: BreadcrumbItem[];
-  backHref?: string;
-  backLabel?: string;
 }
 
 export function PlaceholderPage({
@@ -19,16 +17,10 @@ export function PlaceholderPage({
   phase,
   icon: Icon,
   breadcrumb,
-  backHref,
-  backLabel,
 }: PlaceholderPageProps) {
   return (
     <div className="space-y-4">
-      <Breadcrumb
-        items={breadcrumb ?? [{ label: title }]}
-        backHref={backHref}
-        backLabel={backLabel}
-      />
+      <Breadcrumb items={breadcrumb ?? [{ label: title }]} />
       <div className="page-header">
         <div className="flex items-center gap-3">
           <div

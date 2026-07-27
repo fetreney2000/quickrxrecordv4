@@ -246,7 +246,7 @@ export default function QuickDispensePage() {
 
   return (
     <div className="space-y-4 max-w-3xl mx-auto" style={{ padding: "0 4px" }}>
-      <Breadcrumb items={[{ label: "Dispen Pantas" }]} icon={Zap} />
+      <Breadcrumb items={[{ label: "Dispen Pantas" }]} />
 
       <div className="flex items-center gap-3">
         <div

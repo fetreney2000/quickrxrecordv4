@@ -29,8 +29,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-// Framer Motion
+import { Breadcrumb } from "@/components/layout/breadcrumb";
 
 // Icons
 import {
@@ -368,10 +367,7 @@ export default function ManagementPage() {
         style={{ background: "#06b6d4" }}
       />
 
-      {/* Breadcrumb */}
-      <div className="mb-3 text-xs" style={{ color: "#65676b" }}>
-        <span>Pengurusan Pengguna</span>
-      </div>
+      <Breadcrumb items={[{ label: "Pengurusan" }]} />
 
       {/* Header */}
       <div className="flex items-center justify-between mb-5">

@@ -1,79 +1,48 @@
-import { Link, useNavigate } from "react-router-dom";
-import { ChevronRight, type LucideIcon } from "lucide-react";
-import { useNavStore } from "@/lib/nav-store";
-import type { BreadcrumbItem } from "@/types";
-import { cn } from "@/lib/utils";
+import { Link } from "react-router-dom";
+import { ChevronRight, Home } from "lucide-react";
+
+interface BreadcrumbItem {
+  label: string;
+  href?: string;
+}
 
 interface BreadcrumbProps {
   items?: BreadcrumbItem[];
-  icon?: LucideIcon;
   className?: string;
-  backHref?: string;
-  backLabel?: string;
-  showBackButton?: boolean;
 }
 
-export function Breadcrumb({
-  items,
-  icon: Icon,
-  className,
-  backHref,
-  backLabel,
-  showBackButton = true,
-}: BreadcrumbProps) {
-  const navigate = useNavigate();
-  const customTrail = useNavStore((s) => s.customTrail);
-  const breadcrumbTrail = useNavStore((s) => s.breadcrumbTrail);
-
-  const trail = items ?? customTrail ?? breadcrumbTrail ?? [];
+export function Breadcrumb({ items, className }: BreadcrumbProps) {
+  const trail: BreadcrumbItem[] = [{ label: "Utama", href: "/" }, ...(items ?? [])];
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      {showBackButton && backHref && (
-        <button
-          type="button"
-          onClick={() => navigate(backHref)}
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          {backLabel ?? "Kembali"}
-        </button>
-      )}
-      <nav
-        className={cn(
-          "flex items-center gap-2 text-sm flex-wrap",
-          className
-        )}
-      >
-        {trail.map((item, i) => {
-          const isLast = i === trail.length - 1;
-          return (
-            <span key={i} className="flex items-center gap-2 min-w-0">
-              {item.href && !isLast ? (
-                <Link
-                  to={item.href}
-                  className="text-muted-foreground hover:text-foreground transition-colors truncate"
-                >
-                  {item.label}
-                </Link>
-              ) : (
-                <span
-                  className={cn(
-                    "truncate font-medium",
-                    isLast ? "text-foreground" : "text-muted-foreground"
-                  )}
-                >
-                  {item.label}
-                </span>
-              )}
-              {!isLast && (
-                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50" />
-              )}
-            </span>
-          );
-        })}
-
-        {Icon && <Icon className="w-3.5 h-3.5 text-muted-foreground ml-1" />}
-      </nav>
-    </div>
+    <nav className={`flex items-center gap-1.5 text-sm flex-wrap ${className ?? ""}`}>
+      {trail.map((item, i) => {
+        const isLast = i === trail.length - 1;
+        return (
+          <span key={i} className="flex items-center gap-1.5 min-w-0">
+            {i > 0 && (
+              <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#9ca3af" }} />
+            )}
+            {item.href && !isLast ? (
+              <Link
+                to={item.href}
+                className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors truncate"
+              >
+                {i === 0 ? <Home className="w-3.5 h-3.5" /> : null}
+                <span className="truncate">{item.label}</span>
+              </Link>
+            ) : (
+              <span
+                className="flex items-center gap-1 truncate font-medium"
+                style={{ color: isLast ? "#1c1e21" : "#65676b" }}
+              >
+                {i === 0 ? <Home className="w-3.5 h-3.5" /> : null}
+                <span className="truncate">{item.label}</span>
+              </span>
+            )}
+          </span>
+        );
+      })}
+    </nav>
   );
 }

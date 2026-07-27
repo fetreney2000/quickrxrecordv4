@@ -436,7 +436,7 @@ export default function StockDetailPage() {
   if (!item) {
     return (
       <div className="space-y-4">
-        <Breadcrumb items={[{ label: "Senarai Inventori", href: "/stok" }, { label: "Tidak Dijumpai" }]} icon={Pill} />
+        <Breadcrumb items={[{ label: "Senarai Inventori", href: "/stok" }, { label: "Tidak Dijumpai" }]} />
         <div className="flex flex-col items-center justify-center min-h-[40vh] gap-2" style={{ color: "#65676b" }}>
           <Pill className="w-10 h-10 opacity-40" />
           <p className="text-sm font-medium">Item tidak dijumpai.</p>
@@ -450,7 +450,7 @@ export default function StockDetailPage() {
 
   return (
     <div className="space-y-4">
-      <Breadcrumb icon={Pill} />
+      <Breadcrumb items={[{ label: displayTitle }]} />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

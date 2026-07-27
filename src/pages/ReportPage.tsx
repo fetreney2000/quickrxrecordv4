@@ -470,11 +470,7 @@ export default function ReportPage() {
 
       {/* Breadcrumb */}
       <div>
-        <Breadcrumb
-          showBackButton={false}
-          items={[{ label: "Laporan" }]}
-          icon={BarChart3}
-        />
+        <Breadcrumb items={[{ label: "Laporan" }]} />
       </div>
 
       {/* Header */}

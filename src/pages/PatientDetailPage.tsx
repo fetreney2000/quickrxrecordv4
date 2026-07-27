@@ -102,8 +102,6 @@ export default function PatientDetailPage() {
   // Responsive state
   const [isMobile, setIsMobile] = useState(false);
 
-  const setBreadcrumbTrail = useNavStore((s) => s.setBreadcrumbTrail);
-
   useEffect(() => {
     setNavSource("list");
   }, [setNavSource]);
@@ -118,15 +116,6 @@ export default function PatientDetailPage() {
 
   const { data: patient, isLoading } = usePatient(id);
   const { data: assignments = [] } = usePatientAssignments(id);
-
-  useEffect(() => {
-    if (patient) {
-      setBreadcrumbTrail([
-        { label: "Senarai Pesakit", href: "/pesakit" },
-        { label: patient.nama },
-      ]);
-    }
-  }, [setBreadcrumbTrail, patient]);
   const { data: itemsWithStats = [] } = useItemsWithStats();
   const { data: itemForms = [] } = useItemForms();
 

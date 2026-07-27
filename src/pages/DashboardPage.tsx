@@ -8,7 +8,6 @@
  *    dengan summary badges + jadual 50 baris
  */
 import { useMemo } from "react";
-import { motion } from "framer-motion";
 import {
   Activity,
   Users,
@@ -180,19 +179,13 @@ const STATUS_TEXT_COLOR: Record<ExpiryStatus, string> = {
 
 function PulsingDot({ color = "#16a34a" }: { color?: string }) {
   return (
-    <motion.span
+    <span
       className="rounded-full"
       style={{
         width: 6,
         height: 6,
         background: color,
         boxShadow: `0 0 8px ${color}`,
-      }}
-      animate={{ opacity: [1, 0.3, 1] }}
-      transition={{
-        duration: 1.5,
-        repeat: Infinity,
-        ease: "easeInOut",
       }}
     />
   );
@@ -266,17 +259,9 @@ export default function DashboardPage() {
       />
 
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="flex flex-col items-start md:flex-row md:items-center justify-between gap-3"
-      >
+      <div className="flex flex-col items-start md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <motion.div
-            initial={{ scale: 0, rotate: -90 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ delay: 0.1, type: "spring", damping: 18 }}
+          <div
             className="w-11 h-11 rounded-[14px] flex items-center justify-center text-white flex-shrink-0"
             style={{
               background: "linear-gradient(135deg, #1877f2, #0d5bd4)",
@@ -284,13 +269,8 @@ export default function DashboardPage() {
             }}
           >
             <Activity className="w-5 h-5" strokeWidth={2.5} />
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, x: -15 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.15, duration: 0.4 }}
-            className="min-w-0"
-          >
+          </div>
+          <div className="min-w-0">
             <h1
               className="text-[22px] font-bold leading-tight truncate"
               style={{ color: "#1c1e21", letterSpacing: "-0.01em" }}
@@ -303,15 +283,10 @@ export default function DashboardPage() {
             >
               {roleLabel} — Papan Pemuka
             </p>
-          </motion.div>
+          </div>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.25, duration: 0.4 }}
-          className="flex flex-wrap items-center gap-2 self-start md:self-auto"
-        >
+        <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
           {/* Role badge */}
           {peranan && (
             <div
@@ -347,8 +322,8 @@ export default function DashboardPage() {
               Sistem Beroperasi
             </span>
           </div>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
 
       {/* Stat Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-5">
@@ -368,11 +343,7 @@ export default function DashboardPage() {
 
       {/* Expiry Dashboard (Pentadbir & Penjaga Stor sahaja) */}
       {isStoreOrAdmin && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-        >
+        <div>
           <Card>
             <CardContent className="p-5">
               {/* Section header */}
@@ -507,7 +478,7 @@ export default function DashboardPage() {
               </div>
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
       )}
 
       {/* Loading hint */}

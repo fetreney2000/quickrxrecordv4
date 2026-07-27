@@ -1,15 +1,8 @@
 /**
  * StockDetailPage — Halaman butiran item inventori.
- *
- * Empat bahagian utama (FoldableCard):
- *  1. Maklumat Item (view/edit + 4 kad statistik)
- *  2. Pesakit Yang Menggunakan (carian + penapis tercicir)
- *  3. Senarai Kelompok (edit sebaris, tambah, pelupusan)
- *  4. Sejarah Transaksi (penapis, eksport Excel/PDF)
  */
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
   ArrowLeft,
   Pill,
@@ -118,7 +111,6 @@ export default function StockDetailPage() {
   const canEditItem = can("manage_items");
   const canAddBatch = can("manage_batches");
 
-  // Item data
   const { data: item, isLoading } = useItem(id);
 
   useEffect(() => {
@@ -135,11 +127,9 @@ export default function StockDetailPage() {
 
   const updateItem = useUpdateItem(id);
 
-  // Edit mode for item info
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState<Partial<Item>>({});
 
-  // Batch dialogs
   const [openAddBatch, setOpenAddBatch] = useState(false);
   const [adjustDialog, setAdjustDialog] = useState<{
     type: "adjust" | "dispose";
@@ -147,25 +137,18 @@ export default function StockDetailPage() {
     newKuantiti?: number;
   } | null>(null);
 
-  // Pagination
   const [batchPage, setBatchPage] = useState(0);
   const [patientPage, setPatientPage] = useState(0);
   const [txPage, setTxPage] = useState(0);
 
-  // Patients filter
   const [patientSearch, setPatientSearch] = useState("");
   const [defaulterFilter, setDefaulterFilter] = useState<string>("all");
 
-  // Transactions filter
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
   const [filterPatient, setFilterPatient] = useState("");
   const [filterStaff, setFilterStaff] = useState("");
   const [filterTxType, setFilterTxType] = useState<"all" | "bekalan" | "pelarasan">("all");
-
-  // ========================================================================
-  // Derived state
-  // ========================================================================
 
   const totalStock = useMemo(
     () => batches.reduce((s, b) => s + (b.kuantiti || 0), 0),
@@ -179,7 +162,6 @@ export default function StockDetailPage() {
     return Math.max(0, item.kuota - activePatientCount);
   }, [item?.kuota, activePatientCount]);
 
-  // Stats for transactions
   const txStats = useMemo(() => {
     const total = transactions.length;
     let inQty = 0;
@@ -190,15 +172,9 @@ export default function StockDetailPage() {
       else outQty += Math.abs(t.perubahan);
       if (t.pesakit) patientSet.add(t.pesakit);
     });
-    return {
-      total,
-      inQty,
-      outQty,
-      patientCount: patientSet.size,
-    };
+    return { total, inQty, outQty, patientCount: patientSet.size };
   }, [transactions]);
 
-  // Filter patients
   const filteredPatients = useMemo(() => {
     const term = patientSearch.trim().toLowerCase();
     const now = new Date();
@@ -212,17 +188,14 @@ export default function StockDetailPage() {
         default: return 0;
       }
     })();
-
     return patients.filter((p) => {
-      // Search
       if (term) {
         const n = p.patient?.nama?.toLowerCase() || "";
         const kp = p.patient?.nombor_kad_pengenalan || "";
         if (!n.includes(term) && !kp.includes(term)) return false;
       }
-      // Defaulter filter
       if (defaulterFilter !== "all") {
-        if (!p.last_supply) return cutoffMonths > 0; // tiada bekalan dianggap tercicir
+        if (!p.last_supply) return cutoffMonths > 0;
         const lastDate = new Date(p.last_supply.tarikh);
         const monthsAgo =
           (now.getFullYear() - lastDate.getFullYear()) * 12 +
@@ -233,10 +206,8 @@ export default function StockDetailPage() {
     });
   }, [patients, patientSearch, defaulterFilter]);
 
-  // Filter transactions
   const filteredTransactions = useMemo(() => {
     return transactions.filter((t) => {
-      // Date range
       if (filterDateFrom) {
         const from = new Date(filterDateFrom);
         if (new Date(t.tarikh) < from) return false;
@@ -246,11 +217,8 @@ export default function StockDetailPage() {
         to.setHours(23, 59, 59);
         if (new Date(t.tarikh) > to) return false;
       }
-      // Patient
       if (filterPatient && t.pesakit !== filterPatient) return false;
-      // Staff
       if (filterStaff && t.kakitangan !== filterStaff) return false;
-      // Type
       if (filterTxType !== "all" && t.jenis !== filterTxType) return false;
       return true;
     });
@@ -274,10 +242,6 @@ export default function StockDetailPage() {
   const batchTotalPages = Math.max(1, Math.ceil(batches.length / BATCH_PAGE_SIZE));
   const patientTotalPages = Math.max(1, Math.ceil(filteredPatients.length / PATIENT_PAGE_SIZE));
   const txTotalPages = Math.max(1, Math.ceil(filteredTransactions.length / TX_PAGE_SIZE));
-
-  // ========================================================================
-  // Edit handlers
-  // ========================================================================
 
   const startEdit = () => {
     if (!item) return;
@@ -325,10 +289,6 @@ export default function StockDetailPage() {
     );
   };
 
-  // ========================================================================
-  // Batch handlers
-  // ========================================================================
-
   const handleBatchAdjust = (batch: ItemBatch, newKuantiti: number) => {
     if (newKuantiti === batch.kuantiti) {
       toast.info("Tiada perubahan pada kuantiti.");
@@ -341,10 +301,6 @@ export default function StockDetailPage() {
     setAdjustDialog({ type: "dispose", batch });
   };
 
-  // ========================================================================
-  // Export handlers (Excel & PDF)
-  // ========================================================================
-
   const handleExportExcel = async () => {
     if (filteredTransactions.length === 0) {
       toast.error("Tiada rekod untuk dieksport.");
@@ -356,88 +312,39 @@ export default function StockDetailPage() {
       wb.creator = "QuickRxRecord";
       wb.created = new Date();
       const ws = wb.addWorksheet("Sejarah Transaksi");
-      // Title row
       ws.mergeCells("A1:G1");
       const titleCell = ws.getCell("A1");
       titleCell.value = `Sejarah Transaksi — ${item?.nama_item || ""}`;
-      titleCell.font = {
-        bold: true,
-        size: 14,
-        color: { argb: "FFFFFFFF" },
-      };
+      titleCell.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
       titleCell.alignment = { horizontal: "center", vertical: "middle" };
-      titleCell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FF1877F2" },
-      };
+      titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1877F2" } };
       ws.getRow(1).height = 28;
-
-      // Date row
       ws.mergeCells("A2:G2");
       const dateCell = ws.getCell("A2");
       dateCell.value = `Dijana pada ${new Date().toLocaleString("ms-MY")} · ${filteredTransactions.length} rekod`;
       dateCell.font = { size: 10, italic: true, color: { argb: "FF65676B" } };
       dateCell.alignment = { horizontal: "left" };
       ws.getRow(2).height = 18;
-
-      // Headers
       const headers = ["Tarikh", "Jenis", "Kelompok", "Perubahan", "Keterangan", "Kakitangan", "Pesakit"];
       ws.addRow(headers);
       const headerRow = ws.getRow(3);
       headerRow.eachCell((cell) => {
         cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
-        cell.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: "FF374151" },
-        };
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF374151" } };
         cell.alignment = { horizontal: "center", vertical: "middle" };
-        cell.border = {
-          top: { style: "thin", color: { argb: "FFD1D5DB" } },
-          bottom: { style: "thin", color: { argb: "FFD1D5DB" } },
-          left: { style: "thin", color: { argb: "FFD1D5DB" } },
-          right: { style: "thin", color: { argb: "FFD1D5DB" } },
-        };
+        cell.border = { top: { style: "thin", color: { argb: "FFD1D5DB" } }, bottom: { style: "thin", color: { argb: "FFD1D5DB" } }, left: { style: "thin", color: { argb: "FFD1D5DB" } }, right: { style: "thin", color: { argb: "FFD1D5DB" } } };
       });
       headerRow.height = 22;
-
-      // Data rows
       filteredTransactions.forEach((tx, i) => {
-        const row = ws.addRow([
-          formatDate(tx.tarikh),
-          tx.jenis_label,
-          tx.kelompok,
-          tx.perubahan_label,
-          tx.catatan || "",
-          tx.kakitangan || "",
-          tx.pesakit || "",
-        ]);
-        // Zebra
+        const row = ws.addRow([formatDate(tx.tarikh), tx.jenis_label, tx.kelompok, tx.perubahan_label, tx.catatan || "", tx.kakitangan || "", tx.pesakit || ""]);
         if (i % 2 === 0) {
-          row.eachCell((cell) => {
-            cell.fill = {
-              type: "pattern",
-              pattern: "solid",
-              fgColor: { argb: "FFF9FAFB" },
-            };
-          });
+          row.eachCell((cell) => { cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF9FAFB" } }; });
         }
-        // Perubahan column color
         const changeCell = row.getCell(4);
-        changeCell.font = {
-          color: tx.perubahan > 0
-            ? { argb: "FF16A34A" }
-            : tx.perubahan < 0
-              ? { argb: "FFE41E3F" }
-              : { argb: "FF6B7280" },
-          bold: true,
-        };
+        changeCell.font = { color: tx.perubahan > 0 ? { argb: "FF16A34A" } : tx.perubahan < 0 ? { argb: "FFE41E3F" } : { argb: "FF6B7280" }, bold: true };
         changeCell.alignment = { horizontal: "center" };
         row.getCell(2).alignment = { horizontal: "center" };
       });
-
-      // Auto width
       const cols = (ws as any).columns as any[] | undefined;
       cols?.forEach((col) => {
         let maxLength = 12;
@@ -447,12 +354,8 @@ export default function StockDetailPage() {
         });
         col.width = maxLength;
       });
-
-      // Save
       const buf = await wb.xlsx.writeBuffer();
-      const blob = new Blob([buf], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
+      const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -477,86 +380,43 @@ export default function StockDetailPage() {
       const { default: jsPDF } = await import("jspdf");
       const { default: autoTable } = await import("jspdf-autotable");
       const doc = new jsPDF({ orientation: "landscape" });
-
-      // Header bar
       doc.setFillColor(24, 119, 242);
       doc.rect(0, 0, doc.internal.pageSize.getWidth(), 22, "F");
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
-      doc.text(
-        `Sejarah Transaksi - ${item?.nama_item || ""}`,
-        14,
-        15
-      );
-
-      // Date + count
+      doc.text(`Sejarah Transaksi - ${item?.nama_item || ""}`, 14, 15);
       doc.setTextColor(101, 103, 107);
       doc.setFontSize(9);
       doc.setFont("helvetica", "italic");
-      doc.text(
-        `Dijana pada ${new Date().toLocaleString("ms-MY")} · ${filteredTransactions.length} rekod`,
-        14,
-        28
-      );
-
-      // Table
-      const tableData = filteredTransactions.map((tx) => [
-        formatDate(tx.tarikh),
-        tx.jenis_label,
-        tx.kelompok,
-        tx.perubahan_label,
-        tx.catatan || "",
-        tx.kakitangan || "",
-        tx.pesakit || "",
-      ]);
-
+      doc.text(`Dijana pada ${new Date().toLocaleString("ms-MY")} · ${filteredTransactions.length} rekod`, 14, 28);
+      const tableData = filteredTransactions.map((tx) => [formatDate(tx.tarikh), tx.jenis_label, tx.kelompok, tx.perubahan_label, tx.catatan || "", tx.kakitangan || "", tx.pesakit || ""]);
       autoTable(doc, {
         startY: 33,
         head: [["Tarikh", "Jenis", "Kelompok", "Perubahan", "Keterangan", "Kakitangan", "Pesakit"]],
         body: tableData,
-        headStyles: {
-          fillColor: [55, 65, 81],
-          textColor: 255,
-          fontSize: 9,
-          fontStyle: "bold",
-        },
+        headStyles: { fillColor: [55, 65, 81], textColor: 255, fontSize: 9, fontStyle: "bold" },
         bodyStyles: { fontSize: 8 },
         alternateRowStyles: { fillColor: [249, 250, 251] },
         didParseCell: (data) => {
           if (data.column.index === 3 && data.section === "body") {
             const tx = filteredTransactions[data.row.index];
             if (tx) {
-              if (tx.perubahan > 0) {
-                data.cell.styles.textColor = [22, 163, 74];
-                data.cell.styles.fontStyle = "bold";
-              } else if (tx.perubahan < 0) {
-                data.cell.styles.textColor = [228, 30, 63];
-                data.cell.styles.fontStyle = "bold";
-              }
+              if (tx.perubahan > 0) { data.cell.styles.textColor = [22, 163, 74]; data.cell.styles.fontStyle = "bold"; }
+              else if (tx.perubahan < 0) { data.cell.styles.textColor = [228, 30, 63]; data.cell.styles.fontStyle = "bold"; }
             }
             data.cell.styles.halign = "center";
           }
         },
       });
-
-      // Footer
       const pageCount = (doc as any).internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
         doc.setFontSize(8);
         doc.setTextColor(150, 150, 150);
-        doc.text(
-          `QuickRxRecord · Halaman ${i} / ${pageCount}`,
-          doc.internal.pageSize.getWidth() / 2,
-          doc.internal.pageSize.getHeight() - 8,
-          { align: "center" }
-        );
+        doc.text(`QuickRxRecord · Halaman ${i} / ${pageCount}`, doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 8, { align: "center" });
       }
-
-      doc.save(
-        `sejarah-transaksi-${item?.kod_item || "item"}-${new Date().toISOString().slice(0, 10)}.pdf`
-      );
+      doc.save(`sejarah-transaksi-${item?.kod_item || "item"}-${new Date().toISOString().slice(0, 10)}.pdf`);
       toast.success("Fail PDF dimuat turun.");
     } catch (err: any) {
       console.error(err);
@@ -564,20 +424,10 @@ export default function StockDetailPage() {
     }
   };
 
-  // ========================================================================
-  // Render
-  // ========================================================================
-
   if (isLoading) {
     return (
-      <div
-        className="flex flex-col items-center justify-center min-h-[60vh] gap-2"
-        style={{ color: "#65676b" }}
-      >
-        <Loader2
-          className="w-7 h-7 animate-spin"
-          style={{ color: "#7c3aed" }}
-        />
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-2" style={{ color: "#65676b" }}>
+        <Loader2 className="w-7 h-7 animate-spin" style={{ color: "#7c3aed" }} />
         <p className="text-sm">Memuatkan item...</p>
       </div>
     );
@@ -586,236 +436,70 @@ export default function StockDetailPage() {
   if (!item) {
     return (
       <div className="space-y-4">
-        <Breadcrumb
-          items={[
-            { label: "Senarai Inventori", href: "/stok" },
-            { label: "Tidak Dijumpai" },
-          ]}
-          icon={Pill}
-        />
-        <div
-          className="flex flex-col items-center justify-center min-h-[40vh] gap-2"
-          style={{ color: "#65676b" }}
-        >
+        <Breadcrumb items={[{ label: "Senarai Inventori", href: "/stok" }, { label: "Tidak Dijumpai" }]} icon={Pill} />
+        <div className="flex flex-col items-center justify-center min-h-[40vh] gap-2" style={{ color: "#65676b" }}>
           <Pill className="w-10 h-10 opacity-40" />
           <p className="text-sm font-medium">Item tidak dijumpai.</p>
-          <Button
-            variant="outline"
-            onClick={() => navigate("/stok")}
-            className="mt-3"
-          >
-            Kembali ke Senarai Inventori
-          </Button>
+          <Button variant="outline" onClick={() => navigate("/stok")} className="mt-3">Kembali ke Senarai Inventori</Button>
         </div>
       </div>
     );
   }
 
-  const displayTitle = [item.nama_item, item.kekuatan]
-    .filter(Boolean)
-    .join(" ");
+  const displayTitle = [item.nama_item, item.kekuatan].filter(Boolean).join(" ");
 
   return (
     <div className="space-y-4">
       <Breadcrumb icon={Pill} />
 
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.15 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-      >
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold flex-shrink-0"
-            style={{
-              background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-              boxShadow: "0 4px 12px rgba(124,58,237,0.3)",
-            }}
-          >
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold flex-shrink-0" style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)", boxShadow: "0 4px 12px rgba(124,58,237,0.3)" }}>
             <Pill className="w-5 h-5" strokeWidth={2.2} />
           </div>
           <div className="min-w-0">
-            <h1
-              className="text-[22px] sm:text-[20px] font-bold leading-tight truncate"
-              style={{ color: "#1c1e21", letterSpacing: "-0.01em" }}
-            >
-              {displayTitle}
-            </h1>
-            <p
-              className="text-[13px] font-medium mt-0.5 truncate"
-              style={{ color: "#65676b" }}
-            >
-              <span
-                className="font-mono font-semibold"
-                style={{ color: "#7c3aed" }}
-              >
-                {item.kod_item}
-              </span>
-              {item.nama_dagangan && (
-                <> · {item.nama_dagangan}</>
-              )}
+            <h1 className="text-[22px] sm:text-[20px] font-bold leading-tight truncate" style={{ color: "#1c1e21", letterSpacing: "-0.01em" }}>{displayTitle}</h1>
+            <p className="text-[13px] font-medium mt-0.5 truncate" style={{ color: "#65676b" }}>
+              <span className="font-mono font-semibold" style={{ color: "#7c3aed" }}>{item.kod_item}</span>
+              {item.nama_dagangan && <> · {item.nama_dagangan}</>}
               {item.aktif ? " · Aktif" : " · Tidak Aktif"}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto">
-          <Button variant="outline" onClick={() => navigate("/stok")}>
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Kembali
-          </Button>
+          <Button variant="outline" onClick={() => navigate("/stok")}><ArrowLeft className="w-3.5 h-3.5" /> Kembali</Button>
         </div>
-      </motion.div>
+      </div>
 
       {/* 1. MAKLUMAT ITEM */}
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05, duration: 0.15 }}
-      >
-        <FoldableCard
-          title={
-            <span className="flex items-center gap-2">
-              <Pill className="w-4 h-4" style={{ color: "#7c3aed" }} />
-              Maklumat Item
-            </span>
-          }
-          headerExtra={
-            canEditItem && !editMode && item.aktif ? (
-              <Button size="sm" variant="outline" onClick={startEdit}>
-                <Edit className="w-3.5 h-3.5" />
-                Edit
-              </Button>
-            ) : editMode ? (
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" onClick={cancelEdit}>
-                  Batal
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={saveEdit}
-                  disabled={updateItem.isPending}
-                  style={{
-                    background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                  }}
-                >
-                  {updateItem.isPending ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Save className="w-3.5 h-3.5" />
-                  )}
-                  Simpan
-                </Button>
-              </div>
-            ) : null
-          }
+      <div>
+        <FoldableCard title={<span className="flex items-center gap-2"><Pill className="w-4 h-4" style={{ color: "#7c3aed" }} /> Maklumat Item</span>}
+          headerExtra={canEditItem && !editMode && item.aktif ? <Button size="sm" variant="outline" onClick={startEdit}><Edit className="w-3.5 h-3.5" /> Edit</Button> : editMode ? <div className="flex items-center gap-2"><Button size="sm" variant="outline" onClick={cancelEdit}>Batal</Button><Button size="sm" onClick={saveEdit} disabled={updateItem.isPending} style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}>{updateItem.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Simpan</Button></div> : null}
         >
           <div className="pt-3">
-            {editMode ? (
-              <ItemEditForm
-                editData={editData}
-                setEditData={setEditData}
-                forms={forms}
-                categories={categories}
-              />
-            ) : (
-              <>
-                <ItemView item={item} />
-                {/* Stat cards inside info section */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-                  <StatCardMini
-                    icon={Package}
-                    color="#1877f2"
-                    label="Jumlah Stok"
-                    value={formatNumber(totalStock)}
-                  />
-                  <StatCardMini
-                    icon={BarChart3}
-                    color="#7c3aed"
-                    label="Kuota"
-                    value={item.kuota != null ? formatNumber(item.kuota) : "—"}
-                  />
-                  <StatCardMini
-                    icon={Users}
-                    color="#16a34a"
-                    label="Jumlah Pesakit"
-                    value={activePatientCount}
-                  />
-                  <StatCardMini
-                    icon={Activity}
-                    color="#d97706"
-                    label="Baki Kuota"
-                    value={
-                      quotaRemaining != null ? formatNumber(quotaRemaining) : "—"
-                    }
-                  />
-                </div>
-              </>
-            )}
+            {editMode ? <ItemEditForm editData={editData} setEditData={setEditData} forms={forms} categories={categories} /> : <>
+              <ItemView item={item} />
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+                <StatCardMini icon={Package} color="#1877f2" label="Jumlah Stok" value={formatNumber(totalStock)} />
+                <StatCardMini icon={BarChart3} color="#7c3aed" label="Kuota" value={item.kuota != null ? formatNumber(item.kuota) : "—"} />
+                <StatCardMini icon={Users} color="#16a34a" label="Jumlah Pesakit" value={activePatientCount} />
+                <StatCardMini icon={Activity} color="#d97706" label="Baki Kuota" value={quotaRemaining != null ? formatNumber(quotaRemaining) : "—"} />
+              </div>
+            </>}
           </div>
         </FoldableCard>
-      </motion.div>
+      </div>
 
       {/* 2. PESAKIT YANG MENGGUNAKAN */}
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15, duration: 0.15 }}
-      >
-        <FoldableCard
-          title={
-            <span className="flex items-center gap-2">
-              <Users className="w-4 h-4" style={{ color: "#7c3aed" }} />
-              Pesakit Yang Menggunakan
-              <span
-                className="text-2xs font-semibold px-1.5 py-0.5 rounded-md"
-                style={{
-                  background: "rgba(124,58,237,0.10)",
-                  color: "#7c3aed",
-                }}
-              >
-                {filteredPatients.length}
-              </span>
-            </span>
-          }
-        >
-          {/* Search + defaulter filter */}
+      <div>
+        <FoldableCard title={<span className="flex items-center gap-2"><Users className="w-4 h-4" style={{ color: "#7c3aed" }} /> Pesakit Yang Menggunakan <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-md" style={{ background: "rgba(124,58,237,0.10)", color: "#7c3aed" }}>{filteredPatients.length}</span></span>}>
           <div className="pt-3 pb-2 flex flex-col sm:flex-row gap-2 sm:items-center">
             <div className="relative flex-1 min-w-0">
-              <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5"
-                style={{ color: "#9ca3af" }}
-              />
-              <Input
-                value={patientSearch}
-                onChange={(e) => {
-                  setPatientSearch(e.target.value);
-                  setPatientPage(0);
-                }}
-                placeholder="Cari nama atau No. KP..."
-                className="h-8 pl-9 text-xs"
-                style={{
-                  background: "rgba(124,58,237,0.04)",
-                  border: "1px solid transparent",
-                  borderRadius: 10,
-                }}
-              />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: "#9ca3af" }} />
+              <Input value={patientSearch} onChange={(e) => { setPatientSearch(e.target.value); setPatientPage(0); }} placeholder="Cari nama atau No. KP..." className="h-8 pl-9 text-xs" style={{ background: "rgba(124,58,237,0.04)", border: "1px solid transparent", borderRadius: 10 }} />
             </div>
-            <select
-              value={defaulterFilter}
-              onChange={(e) => {
-                setDefaulterFilter(e.target.value);
-                setPatientPage(0);
-              }}
-              className="h-8 text-xs px-2 rounded-xl"
-              style={{
-                background: "white",
-                border: "1px solid #dddfe2",
-                color: "#1c1e21",
-                fontWeight: 500,
-              }}
-            >
+            <select value={defaulterFilter} onChange={(e) => { setDefaulterFilter(e.target.value); setPatientPage(0); }} className="h-8 text-xs px-2 rounded-xl" style={{ background: "white", border: "1px solid #dddfe2", color: "#1c1e21", fontWeight: 500 }}>
               <option value="all">Semua Pesakit</option>
               <option value="3m">Tercicir 3 bulan</option>
               <option value="6m">Tercicir 6 bulan</option>
@@ -824,729 +508,139 @@ export default function StockDetailPage() {
               <option value="2y">{"Tercicir > 1 tahun"}</option>
             </select>
           </div>
-
-          {patients.length === 0 ? (
-            <EmptyState
-              icon={Users}
-              title="Tiada pesakit berdaftar"
-              hint="Item ini belum didaftarkan kepada mana-mana pesakit."
-            />
-          ) : filteredPatients.length === 0 ? (
-            <EmptyState
-              icon={Search}
-              title="Tiada pesakit dijumpai"
-              hint="Cuba tukar penapis atau kata kunci carian."
-            />
-          ) : (
-            <>
-              <div
-                className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider"
-                style={{
-                  gridTemplateColumns: "2.5fr 1.8fr 1.2fr 1.5fr 1.2fr",
-                  gap: 12,
-                  color: "#65676b",
-                  background: "rgba(0,0,0,0.02)",
-                  borderBottom: "2px solid #e4e6eb",
-                  borderTop: "1px solid #f0f2f5",
-                }}
-              >
-                <span>Nama</span>
-                <span>No. KP</span>
-                <span>Dos</span>
-                <span>Bekalan Terakhir</span>
-                <span>Status</span>
-              </div>
-              {pagedPatients.map((p, idx) => (
-                <PatientUsingRow
-                  key={p.id}
-                  data={p as any}
-                  index={idx}
-                />
-              ))}
-              {/* Pagination */}
-              {patientTotalPages > 1 && (
-                <Pagination
-                  page={patientPage}
-                  totalPages={patientTotalPages}
-                  onChange={setPatientPage}
-                  totalCount={filteredPatients.length}
-                  itemLabel="pesakit"
-                />
-              )}
-            </>
-          )}
+          {patients.length === 0 ? <EmptyState icon={Users} title="Tiada pesakit berdaftar" hint="Item ini belum didaftarkan kepada mana-mana pesakit." /> : filteredPatients.length === 0 ? <EmptyState icon={Search} title="Tiada pesakit dijumpai" hint="Cuba tukar penapis atau kata kunci carian." /> : <>
+            <div className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "2.5fr 1.8fr 1.2fr 1.5fr 1.2fr", gap: 12, color: "#65676b", background: "rgba(0,0,0,0.02)", borderBottom: "2px solid #e4e6eb", borderTop: "1px solid #f0f2f5" }}>
+              <span>Nama</span><span>No. KP</span><span>Dos</span><span>Bekalan Terakhir</span><span>Status</span>
+            </div>
+            {pagedPatients.map((p, idx) => <PatientUsingRow key={p.id} data={p as any} index={idx} />)}
+            {patientTotalPages > 1 && <Pagination page={patientPage} totalPages={patientTotalPages} onChange={setPatientPage} totalCount={filteredPatients.length} itemLabel="pesakit" />}
+          </>}
         </FoldableCard>
-      </motion.div>
+      </div>
 
       {/* 3. SENARAI KELOMPOK */}
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.15 }}
-      >
-        <FoldableCard
-          title={
-            <span className="flex items-center gap-2">
-              <Package className="w-4 h-4" style={{ color: "#7c3aed" }} />
-              Senarai Kelompok
-              <span
-                className="text-2xs font-semibold px-1.5 py-0.5 rounded-md"
-                style={{
-                  background: "rgba(124,58,237,0.10)",
-                  color: "#7c3aed",
-                }}
-              >
-                {batches.length}
-              </span>
-            </span>
-          }
-          headerExtra={
-            canAddBatch && item.aktif ? (
-              <Button
-                size="sm"
-                onClick={() => setOpenAddBatch(true)}
-                style={{
-                  background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                }}
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Tambah Stok
-              </Button>
-            ) : null
-          }
+      <div>
+        <FoldableCard title={<span className="flex items-center gap-2"><Package className="w-4 h-4" style={{ color: "#7c3aed" }} /> Senarai Kelompok <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-md" style={{ background: "rgba(124,58,237,0.10)", color: "#7c3aed" }}>{batches.length}</span></span>}
+          headerExtra={canAddBatch && item.aktif ? <Button size="sm" onClick={() => setOpenAddBatch(true)} style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}><Plus className="w-3.5 h-3.5" /> Tambah Stok</Button> : null}
         >
-          {batches.length === 0 ? (
-            <EmptyState
-              icon={Package}
-              title="Tiada kelompok"
-              hint={
-                canAddBatch
-                  ? "Klik \u201cTambah Stok\u201d untuk mendaftarkan kelompok baharu."
-                  : "Item ini belum mempunyai kelompok."
-              }
-            />
-          ) : (
-            <>
-              <div
-                className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider"
-                style={{
-                  gridTemplateColumns: "2fr 1.5fr 1.2fr 1.2fr 1fr",
-                  gap: 12,
-                  color: "#65676b",
-                  background: "rgba(0,0,0,0.02)",
-                  borderBottom: "2px solid #e4e6eb",
-                  borderTop: "1px solid #f0f2f5",
-                }}
-              >
-                <span>Nombor Kelompok</span>
-                <span>Tarikh Luput</span>
-                <span>Kuantiti</span>
-                <span>Status</span>
-                <span className="text-right">Tindakan</span>
-              </div>
-              {pagedBatches.map((b, idx) => (
-                <BatchRow
-                  key={b.id}
-                  batch={b}
-                  index={idx}
-                  canEdit={canAddBatch && item.aktif}
-                  onConfirmAdjust={handleBatchAdjust}
-                  onDispose={handleBatchDispose}
-                />
-              ))}
-              {batchTotalPages > 1 && (
-                <Pagination
-                  page={batchPage}
-                  totalPages={batchTotalPages}
-                  onChange={setBatchPage}
-                  totalCount={batches.length}
-                  itemLabel="kelompok"
-                />
-              )}
-            </>
-          )}
+          {batches.length === 0 ? <EmptyState icon={Package} title="Tiada kelompok" hint={canAddBatch ? "Klik \u201cTambah Stok\u201d untuk mendaftarkan kelompok baharu." : "Item ini belum mempunyai kelompok."} /> : <>
+            <div className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "2fr 1.5fr 1.2fr 1.2fr 1fr", gap: 12, color: "#65676b", background: "rgba(0,0,0,0.02)", borderBottom: "2px solid #e4e6eb", borderTop: "1px solid #f0f2f5" }}>
+              <span>Nombor Kelompok</span><span>Tarikh Luput</span><span>Kuantiti</span><span>Status</span><span className="text-right">Tindakan</span>
+            </div>
+            {pagedBatches.map((b, idx) => <BatchRow key={b.id} batch={b} index={idx} canEdit={canAddBatch && item.aktif} onConfirmAdjust={handleBatchAdjust} onDispose={handleBatchDispose} />)}
+            {batchTotalPages > 1 && <Pagination page={batchPage} totalPages={batchTotalPages} onChange={setBatchPage} totalCount={batches.length} itemLabel="kelompok" />}
+          </>}
         </FoldableCard>
-      </motion.div>
+      </div>
 
       {/* 4. SEJARAH TRANSAKSI */}
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25, duration: 0.15 }}
-      >
-        <FoldableCard
-          title={
-            <span className="flex items-center gap-2">
-              <History className="w-4 h-4" style={{ color: "#7c3aed" }} />
-              Sejarah Transaksi Item
-              <span
-                className="text-2xs font-semibold px-1.5 py-0.5 rounded-md"
-                style={{
-                  background: "rgba(124,58,237,0.10)",
-                  color: "#7c3aed",
-                }}
-              >
-                {filteredTransactions.length}
-              </span>
-            </span>
-          }
-          headerExtra={
-            <div className="flex items-center gap-1.5">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleExportExcel}
-                disabled={filteredTransactions.length === 0}
-                title="Eksport ke Excel"
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5" style={{ color: "#16a34a" }} />
-                <span className="hidden sm:inline">Excel</span>
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleExportPDF}
-                disabled={filteredTransactions.length === 0}
-                title="Eksport ke PDF"
-              >
-                <FileText className="w-3.5 h-3.5" style={{ color: "#dc2626" }} />
-                <span className="hidden sm:inline">PDF</span>
-              </Button>
-            </div>
-          }
+      <div>
+        <FoldableCard title={<span className="flex items-center gap-2"><History className="w-4 h-4" style={{ color: "#7c3aed" }} /> Sejarah Transaksi Item <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-md" style={{ background: "rgba(124,58,237,0.10)", color: "#7c3aed" }}>{filteredTransactions.length}</span></span>}
+          headerExtra={<div className="flex items-center gap-1.5"><Button size="sm" variant="outline" onClick={handleExportExcel} disabled={filteredTransactions.length === 0} title="Eksport ke Excel"><FileSpreadsheet className="w-3.5 h-3.5" style={{ color: "#16a34a" }} /><span className="hidden sm:inline">Excel</span></Button><Button size="sm" variant="outline" onClick={handleExportPDF} disabled={filteredTransactions.length === 0} title="Eksport ke PDF"><FileText className="w-3.5 h-3.5" style={{ color: "#dc2626" }} /><span className="hidden sm:inline">PDF</span></Button></div>}
         >
-          {/* Filters */}
           <div className="pt-3 pb-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
-            <div>
-              <Label style={labelStyle}>Dari</Label>
-              <Input
-                type="date"
-                value={filterDateFrom}
-                onChange={(e) => {
-                  setFilterDateFrom(e.target.value);
-                  setTxPage(0);
-                }}
-                className="h-8 text-xs"
-                style={inputBaseStyle}
-              />
-            </div>
-            <div>
-              <Label style={labelStyle}>Hingga</Label>
-              <Input
-                type="date"
-                value={filterDateTo}
-                onChange={(e) => {
-                  setFilterDateTo(e.target.value);
-                  setTxPage(0);
-                }}
-                className="h-8 text-xs"
-                style={inputBaseStyle}
-              />
-            </div>
-            <div>
-              <Label style={labelStyle}>Pesakit</Label>
-              <select
-                value={filterPatient}
-                onChange={(e) => {
-                  setFilterPatient(e.target.value);
-                  setTxPage(0);
-                }}
-                className="h-8 text-xs w-full px-2"
-                style={{
-                  background: "white",
-                  border: "1px solid #dddfe2",
-                  borderRadius: 10,
-                  color: "#1c1e21",
-                  fontWeight: 500,
-                }}
-              >
-                <option value="">Semua</option>
-                {patientsList.map((p) => (
-                  <option key={p.id} value={p.nama}>
-                    {p.nama}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label style={labelStyle}>Kakitangan</Label>
-              <select
-                value={filterStaff}
-                onChange={(e) => {
-                  setFilterStaff(e.target.value);
-                  setTxPage(0);
-                }}
-                className="h-8 text-xs w-full px-2"
-                style={{
-                  background: "white",
-                  border: "1px solid #dddfe2",
-                  borderRadius: 10,
-                  color: "#1c1e21",
-                  fontWeight: 500,
-                }}
-              >
-                <option value="">Semua</option>
-                {staffList.map((s) => (
-                  <option key={s.id} value={s.nama}>
-                    {s.nama}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label style={labelStyle}>Jenis</Label>
-              <select
-                value={filterTxType}
-                onChange={(e) => {
-                  setFilterTxType(e.target.value as any);
-                  setTxPage(0);
-                }}
-                className="h-8 text-xs w-full px-2"
-                style={{
-                  background: "white",
-                  border: "1px solid #dddfe2",
-                  borderRadius: 10,
-                  color: "#1c1e21",
-                  fontWeight: 500,
-                }}
-              >
-                <option value="all">Semua</option>
-                <option value="bekalan">Bekalan</option>
-                <option value="pelarasan">Pelarasan</option>
-              </select>
-            </div>
+            <div><Label style={labelStyle}>Dari</Label><Input type="date" value={filterDateFrom} onChange={(e) => { setFilterDateFrom(e.target.value); setTxPage(0); }} className="h-8 text-xs" style={inputBaseStyle} /></div>
+            <div><Label style={labelStyle}>Hingga</Label><Input type="date" value={filterDateTo} onChange={(e) => { setFilterDateTo(e.target.value); setTxPage(0); }} className="h-8 text-xs" style={inputBaseStyle} /></div>
+            <div><Label style={labelStyle}>Pesakit</Label><select value={filterPatient} onChange={(e) => { setFilterPatient(e.target.value); setTxPage(0); }} className="h-8 text-xs w-full px-2" style={{ background: "white", border: "1px solid #dddfe2", borderRadius: 10, color: "#1c1e21", fontWeight: 500 }}><option value="">Semua</option>{patientsList.map((p) => <option key={p.id} value={p.nama}>{p.nama}</option>)}</select></div>
+            <div><Label style={labelStyle}>Kakitangan</Label><select value={filterStaff} onChange={(e) => { setFilterStaff(e.target.value); setTxPage(0); }} className="h-8 text-xs w-full px-2" style={{ background: "white", border: "1px solid #dddfe2", borderRadius: 10, color: "#1c1e21", fontWeight: 500 }}><option value="">Semua</option>{staffList.map((s) => <option key={s.id} value={s.nama}>{s.nama}</option>)}</select></div>
+            <div><Label style={labelStyle}>Jenis</Label><select value={filterTxType} onChange={(e) => { setFilterTxType(e.target.value as any); setTxPage(0); }} className="h-8 text-xs w-full px-2" style={{ background: "white", border: "1px solid #dddfe2", borderRadius: 10, color: "#1c1e21", fontWeight: 500 }}><option value="all">Semua</option><option value="bekalan">Bekalan</option><option value="pelarasan">Pelarasan</option></select></div>
           </div>
-
           <div className="flex items-center justify-end pb-2">
-            <button
-              type="button"
-              onClick={() => {
-                setFilterDateFrom("");
-                setFilterDateTo("");
-                setFilterPatient("");
-                setFilterStaff("");
-                setFilterTxType("all");
-                setTxPage(0);
-              }}
-              className="text-2xs font-semibold flex items-center gap-1 hover:opacity-80"
-              style={{ color: "#7c3aed" }}
-            >
-              <RotateCcw className="w-3 h-3" />
-              Reset Penapis
-            </button>
+            <button type="button" onClick={() => { setFilterDateFrom(""); setFilterDateTo(""); setFilterPatient(""); setFilterStaff(""); setFilterTxType("all"); setTxPage(0); }} className="text-2xs font-semibold flex items-center gap-1 hover:opacity-80" style={{ color: "#7c3aed" }}><RotateCcw className="w-3 h-3" /> Reset Penapis</button>
           </div>
-
-          {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-            <TxStatBadge
-              icon={BarChart3}
-              color="#65676b"
-              label="Jumlah Transaksi"
-              value={txStats.total.toString()}
-            />
-            <TxStatBadge
-              icon={TrendingUp}
-              color="#16a34a"
-              label="Item Masuk"
-              value={`+${formatNumber(txStats.inQty)}`}
-            />
-            <TxStatBadge
-              icon={TrendingDown}
-              color="#e41e3f"
-              label="Item Keluar"
-              value={`-${formatNumber(txStats.outQty)}`}
-            />
-            <TxStatBadge
-              icon={Users}
-              color="#1877f2"
-              label="Pesakit Menerima"
-              value={txStats.patientCount.toString()}
-            />
+            <TxStatBadge icon={BarChart3} color="#65676b" label="Jumlah Transaksi" value={txStats.total.toString()} />
+            <TxStatBadge icon={TrendingUp} color="#16a34a" label="Item Masuk" value={`+${formatNumber(txStats.inQty)}`} />
+            <TxStatBadge icon={TrendingDown} color="#e41e3f" label="Item Keluar" value={`-${formatNumber(txStats.outQty)}`} />
+            <TxStatBadge icon={Users} color="#1877f2" label="Pesakit Menerima" value={txStats.patientCount.toString()} />
           </div>
-
-          {/* Table */}
-          {filteredTransactions.length === 0 ? (
-            <EmptyState
-              icon={History}
-              title="Tiada sejarah transaksi"
-              hint={
-                transactions.length === 0
-                  ? "Belum ada transaksi untuk item ini."
-                  : "Tiada rekod menepati penapis semasa."
-              }
-            />
-          ) : (
-            <>
-              <div
-                className="hidden lg:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider"
-                style={{
-                  gridTemplateColumns: "1.5fr 1.3fr 1.3fr 1fr 1.8fr 1.3fr 1.3fr",
-                  gap: 12,
-                  color: "#65676b",
-                  background: "rgba(0,0,0,0.02)",
-                  borderBottom: "2px solid #e4e6eb",
-                  borderTop: "1px solid #f0f2f5",
-                }}
-              >
-                <span>Tarikh</span>
-                <span>Jenis</span>
-                <span>Kelompok</span>
-                <span>Perubahan</span>
-                <span>Keterangan</span>
-                <span>Kakitangan</span>
-                <span>Pesakit</span>
-              </div>
-              {pagedTransactions.map((tx, idx) => (
-                <TransactionRow key={tx.id} tx={tx} index={idx} />
-              ))}
-              {txTotalPages > 1 && (
-                <Pagination
-                  page={txPage}
-                  totalPages={txTotalPages}
-                  onChange={setTxPage}
-                  totalCount={filteredTransactions.length}
-                  itemLabel="transaksi"
-                />
-              )}
-            </>
-          )}
+          {filteredTransactions.length === 0 ? <EmptyState icon={History} title="Tiada sejarah transaksi" hint={transactions.length === 0 ? "Belum ada transaksi untuk item ini." : "Tiada rekod menepati penapis semasa."} /> : <>
+            <div className="hidden lg:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "1.5fr 1.3fr 1.3fr 1fr 1.8fr 1.3fr 1.3fr", gap: 12, color: "#65676b", background: "rgba(0,0,0,0.02)", borderBottom: "2px solid #e4e6eb", borderTop: "1px solid #f0f2f5" }}>
+              <span>Tarikh</span><span>Jenis</span><span>Kelompok</span><span>Perubahan</span><span>Keterangan</span><span>Kakitangan</span><span>Pesakit</span>
+            </div>
+            {pagedTransactions.map((tx, idx) => <TransactionRow key={tx.id} tx={tx} index={idx} />)}
+            {txTotalPages > 1 && <Pagination page={txPage} totalPages={txTotalPages} onChange={setTxPage} totalCount={filteredTransactions.length} itemLabel="transaksi" />}
+          </>}
         </FoldableCard>
-      </motion.div>
+      </div>
 
-      {/* DIALOGS */}
-      {id && (
-        <>
-          <AddBatchDialog
-            open={openAddBatch}
-            onOpenChange={setOpenAddBatch}
-            itemId={id}
-          />
-          <BatchAdjustmentDialog
-            open={!!adjustDialog}
-            onOpenChange={(o) => !o && setAdjustDialog(null)}
-            actionType={adjustDialog?.type ?? "adjust"}
-            batch={adjustDialog?.batch ?? null}
-            newKuantiti={adjustDialog?.newKuantiti}
-            itemId={id}
-          />
-        </>
-      )}
+      {id && <>
+        <AddBatchDialog open={openAddBatch} onOpenChange={setOpenAddBatch} itemId={id} />
+        <BatchAdjustmentDialog open={!!adjustDialog} onOpenChange={(o) => !o && setAdjustDialog(null)} actionType={adjustDialog?.type ?? "adjust"} batch={adjustDialog?.batch ?? null} newKuantiti={adjustDialog?.newKuantiti} itemId={id} />
+      </>}
     </div>
   );
 }
-
-// ============================================================================
-// Helper sub-components
-// ============================================================================
 
 function ItemView({ item }: { item: Item }) {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <InfoField
-          icon={Tag}
-          label="Kod Item"
-          value={item.kod_item}
-          mono
-        />
-        <InfoField
-          icon={Tag}
-          label="Nama Dagangan"
-          value={item.nama_dagangan}
-        />
-        <InfoField
-          icon={Activity}
-          label="Kekuatan"
-          value={item.kekuatan}
-          mono
-        />
+        <InfoField icon={Tag} label="Kod Item" value={item.kod_item} mono />
+        <InfoField icon={Tag} label="Nama Dagangan" value={item.nama_dagangan} />
+        <InfoField icon={Activity} label="Kekuatan" value={item.kekuatan} mono />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <InfoField
-          icon={BarChart3}
-          label="Kategori"
-          value={(item as any).item_categories?.nama ?? null}
-        />
-        <InfoField
-          icon={Package}
-          label="Bentuk Dos"
-          value={(item as any).item_forms?.nama ?? null}
-        />
-        <InfoField
-          icon={BarChart3}
-          label="Jumlah Kuota"
-          value={
-            item.kuota != null ? formatNumber(item.kuota) : null
-          }
-        />
+        <InfoField icon={BarChart3} label="Kategori" value={(item as any).item_categories?.nama ?? null} />
+        <InfoField icon={Package} label="Bentuk Dos" value={(item as any).item_forms?.nama ?? null} />
+        <InfoField icon={BarChart3} label="Jumlah Kuota" value={item.kuota != null ? formatNumber(item.kuota) : null} />
       </div>
-      {item.catatan && (
-        <InfoField
-          icon={Edit}
-          label="Catatan"
-          value={item.catatan}
-          block
-        />
-      )}
+      {item.catatan && <InfoField icon={Edit} label="Catatan" value={item.catatan} block />}
     </div>
   );
 }
 
-function ItemEditForm({
-  editData,
-  setEditData,
-  forms,
-  categories,
-}: {
-  editData: Partial<Item>;
-  setEditData: (v: Partial<Item>) => void;
-  forms: { id: string; nama: string }[];
-  categories: { id: string; nama: string }[];
-}) {
+function ItemEditForm({ editData, setEditData, forms, categories }: { editData: Partial<Item>; setEditData: (v: Partial<Item>) => void; forms: { id: string; nama: string }[]; categories: { id: string; nama: string }[] }) {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <Label style={labelStyle}>Kod Item</Label>
-          <Input
-            value={editData.kod_item ?? ""}
-            readOnly
-            className="bg-muted/30"
-            style={{ ...inputBaseStyle, fontFamily: "ui-monospace, SFMono-Regular, monospace" }}
-          />
-        </div>
-        <div>
-          <Label style={labelStyle}>Kekuatan</Label>
-          <Input
-            value={editData.kekuatan ?? ""}
-            onChange={(e) =>
-              setEditData({ ...editData, kekuatan: e.target.value })
-            }
-            onBlur={(e) =>
-              setEditData({
-                ...editData,
-                kekuatan: e.target.value.toUpperCase(),
-              })
-            }
-            style={{
-              ...inputBaseStyle,
-              textTransform: "uppercase",
-            }}
-          />
-        </div>
+        <div><Label style={labelStyle}>Kod Item</Label><Input value={editData.kod_item ?? ""} readOnly className="bg-muted/30" style={{ ...inputBaseStyle, fontFamily: "ui-monospace, SFMono-Regular, monospace" }} /></div>
+        <div><Label style={labelStyle}>Kekuatan</Label><Input value={editData.kekuatan ?? ""} onChange={(e) => setEditData({ ...editData, kekuatan: e.target.value })} onBlur={(e) => setEditData({ ...editData, kekuatan: e.target.value.toUpperCase() })} style={{ ...inputBaseStyle, textTransform: "uppercase" }} /></div>
       </div>
-      <div>
-        <Label style={labelStyle}>
-          Nama Item <span style={{ color: "#dc2626" }}>*</span>
-        </Label>
-        <Input
-          value={editData.nama_item ?? ""}
-          onChange={(e) =>
-            setEditData({ ...editData, nama_item: e.target.value })
-          }
-          onBlur={(e) =>
-            setEditData({
-              ...editData,
-              nama_item: toTitleCaseKeepAcronyms(e.target.value),
-            })
-          }
-          style={inputBaseStyle}
-        />
-      </div>
-      <div>
-        <Label style={labelStyle}>Nama Dagangan</Label>
-        <Input
-          value={editData.nama_dagangan ?? ""}
-          onChange={(e) =>
-            setEditData({ ...editData, nama_dagangan: e.target.value })
-          }
-          onBlur={(e) =>
-            setEditData({
-              ...editData,
-              nama_dagangan: toTitleCaseKeepAcronyms(e.target.value),
-            })
-          }
-          style={inputBaseStyle}
-        />
-      </div>
+      <div><Label style={labelStyle}>Nama Item <span style={{ color: "#dc2626" }}>*</span></Label><Input value={editData.nama_item ?? ""} onChange={(e) => setEditData({ ...editData, nama_item: e.target.value })} onBlur={(e) => setEditData({ ...editData, nama_item: toTitleCaseKeepAcronyms(e.target.value) })} style={inputBaseStyle} /></div>
+      <div><Label style={labelStyle}>Nama Dagangan</Label><Input value={editData.nama_dagangan ?? ""} onChange={(e) => setEditData({ ...editData, nama_dagangan: e.target.value })} onBlur={(e) => setEditData({ ...editData, nama_dagangan: toTitleCaseKeepAcronyms(e.target.value) })} style={inputBaseStyle} /></div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <Label style={labelStyle}>Kategori</Label>
-          <select
-            value={editData.id_kategori ?? ""}
-            onChange={(e) =>
-              setEditData({ ...editData, id_kategori: e.target.value })
-            }
-            style={selectStyle}
-          >
-            <option value="">- Pilih -</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nama}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <Label style={labelStyle}>Bentuk Dos</Label>
-          <select
-            value={editData.id_bentuk ?? ""}
-            onChange={(e) =>
-              setEditData({ ...editData, id_bentuk: e.target.value })
-            }
-            style={selectStyle}
-          >
-            <option value="">- Pilih -</option>
-            {forms.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.nama}
-              </option>
-            ))}
-          </select>
-        </div>
+        <div><Label style={labelStyle}>Kategori</Label><select value={editData.id_kategori ?? ""} onChange={(e) => setEditData({ ...editData, id_kategori: e.target.value })} style={selectStyle}><option value="">- Pilih -</option>{categories.map((c) => <option key={c.id} value={c.id}>{c.nama}</option>)}</select></div>
+        <div><Label style={labelStyle}>Bentuk Dos</Label><select value={editData.id_bentuk ?? ""} onChange={(e) => setEditData({ ...editData, id_bentuk: e.target.value })} style={selectStyle}><option value="">- Pilih -</option>{forms.map((f) => <option key={f.id} value={f.id}>{f.nama}</option>)}</select></div>
       </div>
-      <div>
-        <Label style={labelStyle}>Jumlah Kuota</Label>
-        <Input
-          type="number"
-          min={0}
-          value={editData.kuota ?? ""}
-          onChange={(e) =>
-            setEditData({
-              ...editData,
-              kuota: e.target.value ? parseInt(e.target.value, 10) : (null as any),
-            })
-          }
-          style={inputBaseStyle}
-        />
-      </div>
-      <div>
-        <Label style={labelStyle}>Catatan</Label>
-        <textarea
-          value={editData.catatan ?? ""}
-          onChange={(e) =>
-            setEditData({ ...editData, catatan: e.target.value })
-          }
-          style={textareaStyle}
-          rows={2}
-        />
-      </div>
+      <div><Label style={labelStyle}>Jumlah Kuota</Label><Input type="number" min={0} value={editData.kuota ?? ""} onChange={(e) => setEditData({ ...editData, kuota: e.target.value ? parseInt(e.target.value, 10) : (null as any) })} style={inputBaseStyle} /></div>
+      <div><Label style={labelStyle}>Catatan</Label><textarea value={editData.catatan ?? ""} onChange={(e) => setEditData({ ...editData, catatan: e.target.value })} style={textareaStyle} rows={2} /></div>
     </div>
   );
 }
 
-function EmptyState({
-  icon: Icon,
-  title,
-  hint,
-}: {
-  icon: LucideIcon;
-  title: string;
-  hint: string;
-}) {
+function EmptyState({ icon: Icon, title, hint }: { icon: LucideIcon; title: string; hint: string }) {
   return (
-    <div
-      className="flex flex-col items-center justify-center py-10 gap-2"
-      style={{ color: "#9ca3af" }}
-    >
+    <div className="flex flex-col items-center justify-center py-10 gap-2" style={{ color: "#9ca3af" }}>
       <Icon className="w-10 h-10 opacity-40" />
-      <p className="text-sm font-medium" style={{ color: "#65676b" }}>
-        {title}
-      </p>
+      <p className="text-sm font-medium" style={{ color: "#65676b" }}>{title}</p>
       <p className="text-xs">{hint}</p>
     </div>
   );
 }
 
-function Pagination({
-  page,
-  totalPages,
-  onChange,
-  totalCount,
-  itemLabel,
-}: {
-  page: number;
-  totalPages: number;
-  onChange: (p: number) => void;
-  totalCount: number;
-  itemLabel: string;
-}) {
+function Pagination({ page, totalPages, onChange, totalCount, itemLabel }: { page: number; totalPages: number; onChange: (p: number) => void; totalCount: number; itemLabel: string }) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-3 pt-3 border-t border-[#f0f2f5]">
-      <p className="text-xs" style={{ color: "#65676b" }}>
-        Halaman {page + 1} daripada {totalPages} ({totalCount} {itemLabel})
-      </p>
+      <p className="text-xs" style={{ color: "#65676b" }}>Halaman {page + 1} daripada {totalPages} ({totalCount} {itemLabel})</p>
       <div className="flex items-center gap-1">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={page === 0}
-          onClick={() => onChange(Math.max(0, page - 1))}
-          className="h-7 px-2"
-          style={{ opacity: page === 0 ? 0.4 : 1 }}
-        >
-          <ChevronLeft className="w-3.5 h-3.5" />
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={page >= totalPages - 1}
-          onClick={() => onChange(Math.min(totalPages - 1, page + 1))}
-          className="h-7 px-2"
-          style={{ opacity: page >= totalPages - 1 ? 0.4 : 1 }}
-        >
-          <ChevronRight className="w-3.5 h-3.5" />
-        </Button>
+        <Button variant="outline" size="sm" disabled={page === 0} onClick={() => onChange(Math.max(0, page - 1))} className="h-7 px-2" style={{ opacity: page === 0 ? 0.4 : 1 }}><ChevronLeft className="w-3.5 h-3.5" /></Button>
+        <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => onChange(Math.min(totalPages - 1, page + 1))} className="h-7 px-2" style={{ opacity: page >= totalPages - 1 ? 0.4 : 1 }}><ChevronRight className="w-3.5 h-3.5" /></Button>
       </div>
     </div>
   );
 }
 
-function TxStatBadge({
-  icon: Icon,
-  color,
-  label,
-  value,
-}: {
-  icon: LucideIcon;
-  color: string;
-  label: string;
-  value: string;
-}) {
+function TxStatBadge({ icon: Icon, color, label, value }: { icon: LucideIcon; color: string; label: string; value: string }) {
   return (
-    <div
-      className="rounded-xl p-2.5"
-      style={{
-        background: "white",
-        border: "1px solid rgba(0,0,0,0.06)",
-        boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
-      }}
-    >
+    <div className="rounded-xl p-2.5" style={{ background: "white", border: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 2px rgba(0,0,0,0.03)" }}>
       <div className="flex items-center gap-2">
-        <div
-          className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ background: `${color}15`, color }}
-        >
-          <Icon className="w-3.5 h-3.5" strokeWidth={2.2} />
-        </div>
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${color}15`, color }}><Icon className="w-3.5 h-3.5" strokeWidth={2.2} /></div>
         <div className="min-w-0 flex-1">
-          <p
-            className="text-2xs font-semibold uppercase tracking-wider truncate"
-            style={{ color: "#65676b" }}
-          >
-            {label}
-          </p>
-          <p
-            className="text-sm font-extrabold truncate"
-            style={{ color: "#1c1e21" }}
-          >
-            {value}
-          </p>
+          <p className="text-2xs font-semibold uppercase tracking-wider truncate" style={{ color: "#65676b" }}>{label}</p>
+          <p className="text-sm font-extrabold truncate" style={{ color: "#1c1e21" }}>{value}</p>
         </div>
       </div>
     </div>
   );
 }
-
-
-

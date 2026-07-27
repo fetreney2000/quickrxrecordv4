@@ -1,15 +1,8 @@
 /**
  * CopyrightPage — Halaman "About" statik.
- *
- * Ciri-ciri:
- *  - Maklumat pembangun (nama, telefon, email)
- *  - Notis hak cipta dengan tahun dinamik
- *  - Tema merah (konsisten dengan sidebar "Hak Cipta")
- *  - 1 interaksi: butang kembali (router.back)
  */
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import { ArrowLeft, User, Phone, Mail } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
@@ -42,12 +35,7 @@ export default function CopyrightPage() {
       />
 
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.02, duration: 0.15 }}
-        className="flex items-center gap-3"
-      >
+      <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={() => navigate(-1)}
@@ -71,14 +59,10 @@ export default function CopyrightPage() {
             Maklumat pembangun dan notis hak cipta
           </p>
         </div>
-      </motion.div>
+      </div>
 
       {/* Main Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.03, duration: 0.15 }}
-      >
+      <div>
         <Card>
           <CardContent className="p-0 relative">
             {/* Gradient border */}
@@ -172,7 +156,7 @@ export default function CopyrightPage() {
             </div>
           </CardContent>
         </Card>
-      </motion.div>
+      </div>
     </div>
   );
 }

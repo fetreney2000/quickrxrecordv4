@@ -4,14 +4,11 @@
  * Ciri-ciri:
  *  - Latar kecerunan (mengikut jenis)
  *  - 2 bulatan hiasan (diagonal)
- *  - Cahaya glow (visible pada hover)
- *  - Tajuk + nilai animasi + sarikata
- *  - Ikon dengan animasi spring
- *  - Hover: angkat + zoom
+ *  - Tajuk + nilai + sarikata
+ *  - Ikon
  *  - Navigasi ke URL tertentu (pilihan)
  */
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
 import { AnimatedNumber } from "./animated-number";
 
@@ -41,16 +38,7 @@ export function StatCard({
   const isNumeric = typeof value === "number";
 
   const content = (
-    <motion.div
-      initial={{ opacity: 0, y: 30, scale: 0.97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{
-        delay,
-        type: "spring",
-        damping: 25,
-        stiffness: 200,
-      }}
-      whileHover={{ y: -4, scale: 1.02, transition: { duration: 0.15 } }}
+    <div
       className="relative overflow-hidden text-white p-5 transition-shadow hover:shadow-2xl cursor-pointer"
       style={{
         background: `linear-gradient(135deg, ${from}, ${to})`,
@@ -81,14 +69,7 @@ export function StatCard({
       />
 
       {/* Icon */}
-      <motion.div
-        initial={{ scale: 0, rotate: -90 }}
-        animate={{ scale: 1, rotate: 0 }}
-        transition={{
-          delay: delay + 0.1,
-          type: "spring",
-          damping: 18,
-        }}
+      <div
         className="absolute top-5 right-5 flex items-center justify-center"
         style={{
           width: 44,
@@ -98,7 +79,7 @@ export function StatCard({
         }}
       >
         <Icon className="w-5 h-5 text-white" strokeWidth={2.2} />
-      </motion.div>
+      </div>
 
       {/* Title */}
       <p
@@ -132,7 +113,7 @@ export function StatCard({
       >
         {subtitle}
       </p>
-    </motion.div>
+    </div>
   );
 
   if (href) {

@@ -2,17 +2,9 @@
  * StockListPage — Senarai Inventori dengan carian, isihan, dan pagination.
  *
  * Tema: Ungu (#7c3aed)
- * Ciri:
- *  - Bar carian dengan lencana kiraan
- *  - Jadual 5 lajur (Kod, Nama, Kuota, Stok, Tindakan)
- *  - Isihan 3 lajur boleh isih (Kod, Nama, Kuota) — Stok dikira di klien
- *  - Pagination 50/halaman
- *  - Dialog Tambah Item (8 medan)
- *  - Orb ungu, breadcrumb, header dengan ikon Pill
  */
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
   Pill,
   Plus,
@@ -44,7 +36,6 @@ import { AddItemDialog } from "@/components/inventory/add-item-dialog";
 import { StockRow } from "@/components/inventory/stock-row";
 import type { Item } from "@/types";
 
-// Custom SVG icon untuk header
 function TagIcon(props: { className?: string }) {
   return (
     <svg
@@ -161,12 +152,7 @@ export default function StockListPage() {
       />
 
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.02, duration: 0.15 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-      >
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <div
             className="w-11 h-11 rounded-2xl flex items-center justify-center text-white flex-shrink-0"
@@ -206,27 +192,12 @@ export default function StockListPage() {
             Tambah Item
           </Button>
         )}
-      </motion.div>
+      </div>
 
       {/* Main Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.01, duration: 0.15 }}
-      >
+      <div>
         <Card>
           <CardContent className="p-0 relative">
-            {/* Accent bar (purple-blue-cyan) */}
-            <div
-              className="absolute top-0 left-6 right-6 h-[3px] rounded-full"
-              style={{
-                background:
-                  "linear-gradient(90deg, #7c3aed, #06b6d4, #1877f2, #7c3aed)",
-                backgroundSize: "200% 100%",
-                animation: "gradient-x 4s linear infinite",
-              }}
-            />
-
             {/* Search bar */}
             <div className="p-4 sm:p-5 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#f0f2f5]">
               <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -462,7 +433,7 @@ export default function StockListPage() {
             )}
           </CardContent>
         </Card>
-      </motion.div>
+      </div>
 
       <AddItemDialog open={openAdd} onOpenChange={setOpenAdd} />
     </div>

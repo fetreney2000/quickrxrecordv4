@@ -3,7 +3,6 @@
  * 3 langkah linear: Cari pesakit → Pilih item → Bekal.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap,
   Search,
@@ -186,7 +185,6 @@ export default function QuickDispensePage() {
           setRegisterItemSearch("");
           setRegisterSelectedItem(null);
           setRegisterDos("");
-          // Auto-select the newly registered item
           setSelectedItem({
             assignment_id: assignment?.id ?? "",
             item_id: registerSelectedItem.id,
@@ -250,12 +248,7 @@ export default function QuickDispensePage() {
     <div className="space-y-4 max-w-3xl mx-auto" style={{ padding: "0 4px" }}>
       <Breadcrumb items={[{ label: "Dispen Pantas" }]} icon={Zap} />
 
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.15 }}
-        className="flex items-center gap-3"
-      >
+      <div className="flex items-center gap-3">
         <div
           className="w-11 h-11 rounded-2xl flex items-center justify-center text-white flex-shrink-0"
           style={{
@@ -279,53 +272,39 @@ export default function QuickDispensePage() {
             Bekal ubat dalam 3 langkah mudah
           </p>
         </div>
-      </motion.div>
+      </div>
 
-      <AnimatePresence>
-        {successPatient && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="flex items-center gap-3 p-4 rounded-2xl"
+      {successPatient && (
+        <div
+          className="flex items-center gap-3 p-4 rounded-2xl"
+          style={{
+            background: "rgba(16,185,129,0.10)",
+            border: "1px solid rgba(16,185,129,0.30)",
+          }}
+        >
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-white flex-shrink-0"
             style={{
-              background: "rgba(16,185,129,0.10)",
-              border: "1px solid rgba(16,185,129,0.30)",
+              background: "linear-gradient(135deg, #10b981, #059669)",
             }}
           >
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-white flex-shrink-0"
-              style={{
-                background: "linear-gradient(135deg, #10b981, #059669)",
-              }}
-            >
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-            <div>
-              <p
-                className="text-[13px] font-bold"
-                style={{ color: "#065f46" }}
-              >
-                Bekalan direkodkan untuk {successPatient}
-              </p>
-              <p
-                className="text-[11px]"
-                style={{ color: "#059669" }}
-              >
-                Sedia untuk pendispensan seterusnya.
-              </p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-[13px] font-bold" style={{ color: "#065f46" }}>
+              Bekalan direkodkan untuk {successPatient}
+            </p>
+            <p className="text-[11px]" style={{ color: "#059669" }}>
+              Sedia untuk pendispensan seterusnya.
+            </p>
+          </div>
+        </div>
+      )}
 
       {!selectedPatient && (
         <Card>
           <CardContent className="p-6 sm:p-8">
-            <h2
-              className="text-[15px] font-bold mb-3"
-              style={{ color: "#1c1e21" }}
-            >
+            <h2 className="text-[15px] font-bold mb-3" style={{ color: "#1c1e21" }}>
               Cari Pesakit
             </h2>
             <div className="relative">
@@ -337,62 +316,30 @@ export default function QuickDispensePage() {
                 ref={searchInputRef}
                 type="search"
                 value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setShowResults(true);
-                }}
-                onFocus={() => {
-                  setSearchFocused(true);
-                  setShowResults(true);
-                }}
+                onChange={(e) => { setSearchQuery(e.target.value); setShowResults(true); }}
+                onFocus={() => { setSearchFocused(true); setShowResults(true); }}
                 onBlur={() => setTimeout(() => setShowResults(false), 200)}
                 className="h-11 pl-10 text-sm font-medium"
                 style={{
-                  background: searchFocused
-                    ? "white"
-                    : "rgba(240,147,43,0.04)",
-                  border: searchFocused
-                    ? "1px solid rgba(240,147,43,0.3)"
-                    : "1px solid transparent",
+                  background: searchFocused ? "white" : "rgba(240,147,43,0.04)",
+                  border: searchFocused ? "1px solid rgba(240,147,43,0.3)" : "1px solid transparent",
                   borderRadius: 14,
-                  boxShadow: searchFocused
-                    ? "0 0 0 4px rgba(240,147,43,0.08)"
-                    : "0 4px 16px rgba(240,147,43,0.06)",
+                  boxShadow: searchFocused ? "0 0 0 4px rgba(240,147,43,0.08)" : "0 4px 16px rgba(240,147,43,0.06)",
                 }}
               />
               {searching && (
-                <Loader2
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin"
-                  style={{ color: "#f0932b" }}
-                />
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin" style={{ color: "#f0932b" }} />
               )}
               {showResults && searchQuery.trim().length >= 2 && (
                 <div
                   className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl border z-50 overflow-y-auto"
-                  style={{
-                    borderColor: "rgba(240,147,43,0.2)",
-                    boxShadow: "0 12px 40px rgba(0,0,0,0.12)",
-                    maxHeight: 320,
-                  }}
+                  style={{ borderColor: "rgba(240,147,43,0.2)", boxShadow: "0 12px 40px rgba(0,0,0,0.12)", maxHeight: 320 }}
                 >
                   {searchResults.length === 0 && !searching ? (
                     <div className="text-center py-6 space-y-3">
-                      <p className="text-xs" style={{ color: "#9ca3af" }}>
-                        Tiada pesakit dijumpai.
-                      </p>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowAddPatient(true)}
-                        className="text-xs h-8"
-                        style={{
-                          borderColor: "rgba(240,147,43,0.3)",
-                          color: "#f0932b",
-                        }}
-                      >
-                        <Plus className="w-3.5 h-3.5 mr-1" />
-                        Daftar Pesakit Baharu
+                      <p className="text-xs" style={{ color: "#9ca3af" }}>Tiada pesakit dijumpai.</p>
+                      <Button type="button" variant="outline" size="sm" onClick={() => setShowAddPatient(true)} className="text-xs h-8" style={{ borderColor: "rgba(240,147,43,0.3)", color: "#f0932b" }}>
+                        <Plus className="w-3.5 h-3.5 mr-1" /> Daftar Pesakit Baharu
                       </Button>
                     </div>
                   ) : (
@@ -400,39 +347,17 @@ export default function QuickDispensePage() {
                       <button
                         type="button"
                         key={p.id}
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          setSelectedPatient(p);
-                          setSearchQuery("");
-                          setShowResults(false);
-                          setSelectedItem(null);
-                        }}
+                        onMouseDown={(e) => { e.preventDefault(); setSelectedPatient(p); setSearchQuery(""); setShowResults(false); setSelectedItem(null); }}
                         className="w-full text-left px-4 py-2.5 hover:bg-orange-50/50 border-b border-orange-50 last:border-b-0"
                       >
                         <div className="flex items-center gap-2">
-                          <div
-                            className="w-6 h-6 rounded-lg flex items-center justify-center text-white text-2xs font-bold"
-                            style={{
-                              background:
-                                "linear-gradient(135deg, #f0932b, #e07a1f)",
-                            }}
-                          >
+                          <div className="w-6 h-6 rounded-lg flex items-center justify-center text-white text-2xs font-bold" style={{ background: "linear-gradient(135deg, #f0932b, #e07a1f)" }}>
                             {getInitials(p.nama)}
                           </div>
-                          <p
-                            className="text-[13px] font-semibold truncate"
-                            style={{ color: "#1c1e21" }}
-                          >
-                            {p.nama}
-                          </p>
+                          <p className="text-[13px] font-semibold truncate" style={{ color: "#1c1e21" }}>{p.nama}</p>
                         </div>
                         {p.nombor_kad_pengenalan && (
-                          <p
-                            className="text-2xs mt-0.5 ml-8"
-                            style={{ color: "#65676b" }}
-                          >
-                            KP: {formatMyKad(p.nombor_kad_pengenalan)}
-                          </p>
+                          <p className="text-2xs mt-0.5 ml-8" style={{ color: "#65676b" }}>KP: {formatMyKad(p.nombor_kad_pengenalan)}</p>
                         )}
                       </button>
                     ))
@@ -448,109 +373,37 @@ export default function QuickDispensePage() {
         <Card>
           <CardContent className="pt-5">
             <div className="flex items-center justify-between mb-3">
-              <h3
-                className="text-[14px] font-bold"
-                style={{ color: "#1c1e21" }}
-              >
-                {selectedPatient.nama}
-              </h3>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setSelectedPatient(null)}
-                className="h-7"
-              >
-                <X className="w-3.5 h-3.5" /> Tukar
-              </Button>
+              <h3 className="text-[14px] font-bold" style={{ color: "#1c1e21" }}>{selectedPatient.nama}</h3>
+              <Button size="sm" variant="ghost" onClick={() => setSelectedPatient(null)} className="h-7"><X className="w-3.5 h-3.5" /> Tukar</Button>
             </div>
             {frequentItems.length > 0 && (
               <div className="mb-3">
-                <p
-                  className="text-2xs font-semibold uppercase tracking-wider mb-1.5"
-                  style={{ color: "#65676b" }}
-                >
-                  Item Kerap
-                </p>
+                <p className="text-2xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: "#65676b" }}>Item Kerap</p>
                 <div className="flex flex-wrap gap-1.5">
                   {frequentItems.map((it: any) => (
-                    <button
-                      key={it.id}
-                      onClick={() =>
-                        setSelectedItem({
-                          assignment_id: "",
-                          item_id: it.id,
-                          dos: null,
-                          item: {
-                            id: it.id,
-                            kod_item: it.kod_item,
-                            nama_item: it.nama_item,
-                            kekuatan: it.kekuatan,
-                          },
-                        })
-                      }
-                      className="text-[12px] font-medium px-2.5 py-1 rounded-full"
-                      style={{
-                        background: "rgba(24,119,242,0.08)",
-                        color: "#1877f2",
-                        border: "1px solid rgba(24,119,242,0.2)",
-                      }}
-                    >
+                    <button key={it.id} onClick={() => setSelectedItem({ assignment_id: "", item_id: it.id, dos: null, item: { id: it.id, kod_item: it.kod_item, nama_item: it.nama_item, kekuatan: it.kekuatan } })}
+                      className="text-[12px] font-medium px-2.5 py-1 rounded-full" style={{ background: "rgba(24,119,242,0.08)", color: "#1877f2", border: "1px solid rgba(24,119,242,0.2)" }}>
                       {it.nama_item}
                     </button>
                   ))}
                 </div>
               </div>
             )}
-            <Input
-              value={itemSearch}
-              onChange={(e) => setItemSearch(e.target.value)}
-              className="mb-2"
-              style={inputStyle}
-            />
-            <div
-              className="border rounded-xl overflow-y-auto"
-              style={{ borderColor: "#e4e6eb", maxHeight: 200 }}
-            >
+            <Input value={itemSearch} onChange={(e) => setItemSearch(e.target.value)} className="mb-2" style={inputStyle} />
+            <div className="border rounded-xl overflow-y-auto" style={{ borderColor: "#e4e6eb", maxHeight: 200 }}>
               {filteredItems.length === 0 ? (
-                <div
-                  className="text-center text-xs py-6"
-                  style={{ color: "#9ca3af" }}
-                >
-                  Tiada padanan.
-                </div>
+                <div className="text-center text-xs py-6" style={{ color: "#9ca3af" }}>Tiada padanan.</div>
               ) : (
                 filteredItems.map((a: any) => (
-                  <button
-                    key={a.assignment_id}
-                    onClick={() => setSelectedItem(a)}
-                    className="w-full text-left px-3 py-2 text-xs border-b last:border-b-0 hover:bg-blue-50/50"
-                    style={{ borderColor: "#f0f2f5" }}
-                  >
-                    <p
-                      className="font-semibold"
-                      style={{ color: "#1c1e21" }}
-                    >
-                      {a.item?.nama_item}
-                    </p>
-                    <p style={{ color: "#65676b" }}>
-                      {a.item?.kod_item} · Dos: {a.dos}
-                    </p>
+                  <button key={a.assignment_id} onClick={() => setSelectedItem(a)} className="w-full text-left px-3 py-2 text-xs border-b last:border-b-0 hover:bg-blue-50/50" style={{ borderColor: "#f0f2f5" }}>
+                    <p className="font-semibold" style={{ color: "#1c1e21" }}>{a.item?.nama_item}</p>
+                    <p style={{ color: "#65676b" }}>{a.item?.kod_item} · Dos: {a.dos}</p>
                   </button>
                 ))
               )}
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setShowRegisterDialog(true);
-                setRegisterItemSearch("");
-              }}
-              className="mt-3 w-full text-xs font-semibold flex items-center justify-center gap-1.5 py-2 rounded-xl border-2 border-dashed cursor-pointer"
-              style={{
-                borderColor: "rgba(16,185,129,0.4)",
-                color: "#059669",
-              }}
-            >
+            <button type="button" onClick={() => { setShowRegisterDialog(true); setRegisterItemSearch(""); }}
+              className="mt-3 w-full text-xs font-semibold flex items-center justify-center gap-1.5 py-2 rounded-xl border-2 border-dashed cursor-pointer" style={{ borderColor: "rgba(16,185,129,0.4)", color: "#059669" }}>
               <Plus className="w-3.5 h-3.5" /> Daftar Item Baharu
             </button>
           </CardContent>
@@ -563,87 +416,29 @@ export default function QuickDispensePage() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2 min-w-0">
                 <Pill className="w-4 h-4 text-blue-500" />
-                <p
-                  className="text-[14px] font-bold truncate"
-                  style={{ color: "#1c1e21" }}
-                >
-                  {selectedItem.item?.nama_item}
-                </p>
+                <p className="text-[14px] font-bold truncate" style={{ color: "#1c1e21" }}>{selectedItem.item?.nama_item}</p>
               </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setSelectedItem(null)}
-                className="h-7"
-              >
-                <X className="w-3.5 h-3.5" /> Tukar
-              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelectedItem(null)} className="h-7"><X className="w-3.5 h-3.5" /> Tukar</Button>
             </div>
-            {/* Patient details summary */}
             {selectedPatient && (
-              <div
-                className="flex items-center gap-2 mb-3 p-2 rounded-lg text-xs"
-                style={{
-                  background: "rgba(240,147,43,0.06)",
-                  border: "1px solid rgba(240,147,43,0.12)",
-                }}
-              >
-                <span style={{ color: "#65676b" }}>
-                  {selectedPatient.nama}
-                  {selectedPatient.nombor_kad_pengenalan && (
-                    <> · KP: {formatMyKad(selectedPatient.nombor_kad_pengenalan)}</>
-                  )}
-                  {selectedPatient.nombor_pendaftaran_hospital && (
-                    <> · Hosp: {selectedPatient.nombor_pendaftaran_hospital}</>
-                  )}
-                </span>
+              <div className="flex items-center gap-2 mb-3 p-2 rounded-lg text-xs" style={{ background: "rgba(240,147,43,0.06)", border: "1px solid rgba(240,147,43,0.12)" }}>
+                <span style={{ color: "#65676b" }}>{selectedPatient.nama}{selectedPatient.nombor_kad_pengenalan && <> · KP: {formatMyKad(selectedPatient.nombor_kad_pengenalan)}</>}{selectedPatient.nombor_pendaftaran_hospital && <> · Hosp: {selectedPatient.nombor_pendaftaran_hospital}</>}</span>
               </div>
             )}
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <Label style={labelStyle}>Pilih Kelompok (FEFO)</Label>
                 {availableBatches.length === 0 ? (
-                  <div
-                    className="text-xs p-2 rounded-lg"
-                    style={{
-                      background: "rgba(220,38,38,0.08)",
-                      color: "#991b1b",
-                    }}
-                  >
-                    Tiada kelompok tersedia.
-                  </div>
+                  <div className="text-xs p-2 rounded-lg" style={{ background: "rgba(220,38,38,0.08)", color: "#991b1b" }}>Tiada kelompok tersedia.</div>
                 ) : (
                   <div className="space-y-1 max-h-40 overflow-y-auto">
                     {availableBatches.map((b: any) => (
-                      <label
-                        key={b.id}
-                        className="flex items-center gap-2 px-3 py-2 text-xs border rounded-lg cursor-pointer"
-                        style={{
-                          borderColor:
-                            selectedBatchId === b.id ? "#f59e0b" : "#e4e6eb",
-                          background:
-                            selectedBatchId === b.id
-                              ? "rgba(245,158,11,0.06)"
-                              : "white",
-                        }}
-                      >
-                        <input
-                          type="radio"
-                          name="batch"
-                          checked={selectedBatchId === b.id}
-                          onChange={() => setSelectedBatchId(b.id)}
-                          style={{ accentColor: "#f59e0b" }}
-                        />
+                      <label key={b.id} className="flex items-center gap-2 px-3 py-2 text-xs border rounded-lg cursor-pointer"
+                        style={{ borderColor: selectedBatchId === b.id ? "#f59e0b" : "#e4e6eb", background: selectedBatchId === b.id ? "rgba(245,158,11,0.06)" : "white" }}>
+                        <input type="radio" name="batch" checked={selectedBatchId === b.id} onChange={() => setSelectedBatchId(b.id)} style={{ accentColor: "#f59e0b" }} />
                         <div className="flex-1">
-                          <p
-                            className="font-mono font-semibold"
-                            style={{ color: "#1c1e21" }}
-                          >
-                            {b.nombor_kelompok}
-                          </p>
-                          <p style={{ color: "#65676b" }}>
-                            Luput: {b.tarikh_luput} · Stok: {b.kuantiti}
-                          </p>
+                          <p className="font-mono font-semibold" style={{ color: "#1c1e21" }}>{b.nombor_kelompok}</p>
+                          <p style={{ color: "#65676b" }}>Luput: {b.tarikh_luput} · Stok: {b.kuantiti}</p>
                         </div>
                       </label>
                     ))}
@@ -651,76 +446,23 @@ export default function QuickDispensePage() {
                 )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <Label style={labelStyle}>Dos</Label>
-                  <Input
-                    value={dose}
-                    readOnly
-                    style={{ ...inputStyle, opacity: 0.6, cursor: "default" }}
-                  />
-                </div>
+                <div><Label style={labelStyle}>Dos</Label><Input value={dose} readOnly style={{ ...inputStyle, opacity: 0.6, cursor: "default" }} /></div>
                 <div>
                   <Label style={labelStyle}>Tempoh</Label>
                   <div className="flex gap-1.5">
-                    <Input
-                      value={tempohNilai}
-                      onChange={(e) => setTempohNilai(e.target.value)}
-                      style={{ ...inputStyle, flex: 1 }}
-                    />
-                    <select
-                      value={tempohUnit}
-                      onChange={(e) => setTempohUnit(e.target.value)}
-                      style={{
-                        ...inputStyle,
-                        width: "auto",
-                        minWidth: 90,
-                        appearance: "auto",
-                      }}
-                    >
-                      {supplyDurations.map((d: any) => (
-                        <option key={d.id} value={d.nama}>
-                          {d.nama}
-                        </option>
-                      ))}
+                    <Input value={tempohNilai} onChange={(e) => setTempohNilai(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+                    <select value={tempohUnit} onChange={(e) => setTempohUnit(e.target.value)} style={{ ...inputStyle, width: "auto", minWidth: 90, appearance: "auto" }}>
+                      {supplyDurations.map((d: any) => <option key={d.id} value={d.nama}>{d.nama}</option>)}
                     </select>
                   </div>
                 </div>
-                <div>
-                  <Label style={labelStyle}>Kuantiti *</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={quantity}
-                    onChange={(e) => setQuantity(e.target.value)}
-                    required
-                    style={inputStyle}
-                  />
-                </div>
-                <div>
-                  <Label style={labelStyle}>Catatan</Label>
-                  <Input
-                    value={catatan}
-                    onChange={(e) => setCatatan(e.target.value)}
-                    style={inputStyle}
-                  />
-                </div>
+                <div><Label style={labelStyle}>Kuantiti *</Label><Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} required style={inputStyle} /></div>
+                <div><Label style={labelStyle}>Catatan</Label><Input value={catatan} onChange={(e) => setCatatan(e.target.value)} style={inputStyle} /></div>
               </div>
-              <Button
-                type="submit"
-                disabled={!canSubmit || supplyMut.isPending}
-                className="w-full h-12 text-sm font-bold"
-                style={{
-                  background: canSubmit
-                    ? "linear-gradient(135deg, #1877f2, #0d5bd4)"
-                    : "#9ca3af",
-                  color: "white",
-                }}
-              >
-                {supplyMut.isPending && (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                )}
-                <Zap className="w-4 h-4 mr-2" />
-                Bekal {quantity && `(${quantity})`}
+              <Button type="submit" disabled={!canSubmit || supplyMut.isPending} className="w-full h-12 text-sm font-bold"
+                style={{ background: canSubmit ? "linear-gradient(135deg, #1877f2, #0d5bd4)" : "#9ca3af", color: "white" }}>
+                {supplyMut.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                <Zap className="w-4 h-4 mr-2" /> Bekal {quantity && `(${quantity})`}
               </Button>
             </form>
           </CardContent>
@@ -728,224 +470,91 @@ export default function QuickDispensePage() {
       )}
 
       {/* Register New Item Dialog */}
-      <AnimatePresence>
-        {showRegisterDialog && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-            style={{ background: "rgba(0,0,0,0.4)" }}
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowRegisterDialog(false);
-                setRegisterItemSearch("");
-                setRegisterSelectedItem(null);
-                setRegisterDos("");
-              }
-            }}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-md bg-white rounded-2xl overflow-hidden"
-              style={{
-                boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
-              }}
-            >
-              {/* Header */}
-              <div
-                className="flex items-center justify-between px-5 py-4"
-                style={{ borderBottom: "1px solid #f0f2f5" }}
-              >
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center"
-                    style={{ background: "rgba(16,185,129,0.10)" }}
-                  >
-                    <Plus className="w-4 h-4" style={{ color: "#059669" }} />
-                  </div>
-                  <div>
-                    <p className="text-[14px] font-bold" style={{ color: "#1c1e21" }}>
-                      {registerSelectedItem
-                        ? "Sahkan Pendaftaran"
-                        : "Daftar Item Baharu"}
-                    </p>
-                    <p className="text-[11px]" style={{ color: "#65676b" }}>
-                      {registerSelectedItem
-                        ? `Daftarkan ${registerSelectedItem.nama_item} kepada ${selectedPatient?.nama}`
-                        : `Pilih item untuk didaftarkan kepada ${selectedPatient?.nama}`}
-                    </p>
-                  </div>
+      {showRegisterDialog && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.4)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) { setShowRegisterDialog(false); setRegisterItemSearch(""); setRegisterSelectedItem(null); setRegisterDos(""); } }}>
+          <div className="w-full max-w-md bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+            <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid #f0f2f5" }}>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(16,185,129,0.10)" }}>
+                  <Plus className="w-4 h-4" style={{ color: "#059669" }} />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowRegisterDialog(false);
-                    setRegisterItemSearch("");
-                    setRegisterSelectedItem(null);
-                    setRegisterDos("");
-                  }}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-100"
-                >
-                  <X className="w-4 h-4" style={{ color: "#65676b" }} />
-                </button>
+                <div>
+                  <p className="text-[14px] font-bold" style={{ color: "#1c1e21" }}>{registerSelectedItem ? "Sahkan Pendaftaran" : "Daftar Item Baharu"}</p>
+                  <p className="text-[11px]" style={{ color: "#65676b" }}>{registerSelectedItem ? `Daftarkan ${registerSelectedItem.nama_item} kepada ${selectedPatient?.nama}` : `Pilih item untuk didaftarkan kepada ${selectedPatient?.nama}`}</p>
+                </div>
               </div>
-
-              {/* Step 1: Item selection */}
-              {!registerSelectedItem && (
-                <>
-                  <div className="px-5 py-3">
-                    <Input
-                      autoFocus
-                      value={registerItemSearch}
-                      onChange={(e) => setRegisterItemSearch(e.target.value)}
-                      style={inputStyle}
-                    />
-                  </div>
-                  <div className="px-5 pb-4 overflow-y-auto" style={{ maxHeight: 320 }}>
-                    {allActiveItems.length === 0 ? (
-                      <div
-                        className="flex items-center justify-center gap-2 py-8"
-                        style={{ color: "#9ca3af" }}
-                      >
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span className="text-xs">Menyemak kuota terkini...</span>
-                      </div>
-                    ) : filteredRegisterItems.length === 0 ? (
-                      <div className="text-center text-xs py-6" style={{ color: "#9ca3af" }}>
-                        Tiada item padanan.
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        {filteredRegisterItems.map((it: any) => (
-                          <button
-                            key={it.id}
-                            type="button"
-                            disabled={it.kuota_penuh}
-                            onClick={() => handleSelectRegisterItem(it)}
-                            className="w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center justify-between transition-colors"
-                            style={{
-                              opacity: it.kuota_penuh ? 0.45 : 1,
-                              cursor: it.kuota_penuh ? "not-allowed" : "pointer",
-                              background: "transparent",
-                            }}
-                            onMouseEnter={(e) => {
-                              if (!it.kuota_penuh) {
-                                e.currentTarget.style.background = "rgba(16,185,129,0.06)";
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = "transparent";
-                            }}
-                          >
-                            <div>
-                              <p className="font-semibold" style={{ color: "#1c1e21" }}>
-                                {it.nama_item}
-                              </p>
-                              <p style={{ color: "#65676b" }}>
-                                {it.kod_item}
-                                {it.kekuatan ? ` · ${it.kekuatan}` : ""}
-                              </p>
-                            </div>
-                            <div className="text-right flex-shrink-0 ml-2">
-                              {it.kuota_penuh ? (
-                                <span
-                                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                                  style={{ background: "rgba(220,38,38,0.10)", color: "#dc2626" }}
-                                >
-                                  Kuota Penuh
-                                </span>
-                              ) : it.baki_kuota != null ? (
-                                <div className="text-[10px] leading-tight" style={{ color: "#65676b" }}>
-                                  <div className="font-medium">Baki: {it.baki_kuota}</div>
-                                  <div>{it.patient_count ?? 0}/{it.kuota}</div>
-                                </div>
-                              ) : (
-                                <span className="text-[10px] font-medium" style={{ color: "#65676b" }}>
-                                  Pesakit: {it.patient_count ?? 0}
-                                </span>
-                              )}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-
-              {/* Step 2: Confirm with dose input */}
-              {registerSelectedItem && (
-                <div className="px-5 py-4 space-y-3">
-                  <div
-                    className="flex items-center gap-3 p-3 rounded-xl"
-                    style={{ background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.15)" }}
-                  >
-                    <Pill className="w-4 h-4 flex-shrink-0" style={{ color: "#059669" }} />
-                    <div>
-                      <p className="text-[13px] font-bold" style={{ color: "#1c1e21" }}>
-                        {registerSelectedItem.nama_item}
-                      </p>
-                      <p className="text-[11px]" style={{ color: "#65676b" }}>
-                        {registerSelectedItem.kod_item}
-                        {registerSelectedItem.kekuatan ? ` · ${registerSelectedItem.kekuatan}` : ""}
-                      </p>
+              <button type="button" onClick={() => { setShowRegisterDialog(false); setRegisterItemSearch(""); setRegisterSelectedItem(null); setRegisterDos(""); }} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-100">
+                <X className="w-4 h-4" style={{ color: "#65676b" }} />
+              </button>
+            </div>
+            {!registerSelectedItem && (
+              <>
+                <div className="px-5 py-3"><Input autoFocus value={registerItemSearch} onChange={(e) => setRegisterItemSearch(e.target.value)} style={inputStyle} /></div>
+                <div className="px-5 pb-4 overflow-y-auto" style={{ maxHeight: 320 }}>
+                  {allActiveItems.length === 0 ? (
+                    <div className="flex items-center justify-center gap-2 py-8" style={{ color: "#9ca3af" }}>
+                      <Loader2 className="w-4 h-4 animate-spin" /><span className="text-xs">Menyemak kuota terkini...</span>
                     </div>
-                  </div>
+                  ) : filteredRegisterItems.length === 0 ? (
+                    <div className="text-center text-xs py-6" style={{ color: "#9ca3af" }}>Tiada item padanan.</div>
+                  ) : (
+                    <div className="space-y-1">
+                      {filteredRegisterItems.map((it: any) => (
+                        <button key={it.id} type="button" disabled={it.kuota_penuh} onClick={() => handleSelectRegisterItem(it)}
+                          className="w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center justify-between transition-colors"
+                          style={{ opacity: it.kuota_penuh ? 0.45 : 1, cursor: it.kuota_penuh ? "not-allowed" : "pointer", background: "transparent" }}
+                          onMouseEnter={(e) => { if (!it.kuota_penuh) e.currentTarget.style.background = "rgba(16,185,129,0.06)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
+                          <div>
+                            <p className="font-semibold" style={{ color: "#1c1e21" }}>{it.nama_item}</p>
+                            <p style={{ color: "#65676b" }}>{it.kod_item}{it.kekuatan ? ` · ${it.kekuatan}` : ""}</p>
+                          </div>
+                          <div className="text-right flex-shrink-0 ml-2">
+                            {it.kuota_penuh ? (
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(220,38,38,0.10)", color: "#dc2626" }}>Kuota Penuh</span>
+                            ) : it.baki_kuota != null ? (
+                              <div className="text-[10px] leading-tight" style={{ color: "#65676b" }}>
+                                <div className="font-medium">Baki: {it.baki_kuota}</div>
+                                <div>{it.patient_count ?? 0}/{it.kuota}</div>
+                              </div>
+                            ) : (
+                              <span className="text-[10px] font-medium" style={{ color: "#65676b" }}>Pesakit: {it.patient_count ?? 0}</span>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+            {registerSelectedItem && (
+              <div className="px-5 py-4 space-y-3">
+                <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.15)" }}>
+                  <Pill className="w-4 h-4 flex-shrink-0" style={{ color: "#059669" }} />
                   <div>
-                    <Label style={labelStyle}>Dos *</Label>
-                    <Input
-                      autoFocus
-                      value={registerDos}
-                      onChange={(e) => setRegisterDos(e.target.value.toUpperCase())}
-                      style={inputStyle}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && registerDos.trim()) {
-                          e.preventDefault();
-                          handleConfirmRegisterItem();
-                        }
-                      }}
-                    />
-                  </div>
-                  <div className="flex gap-2 pt-1">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => {
-                        setRegisterSelectedItem(null);
-                        setRegisterDos("");
-                      }}
-                      className="flex-1 h-10 text-xs font-medium"
-                    >
-                      Kembali
-                    </Button>
-                    <Button
-                      type="button"
-                      disabled={!registerDos.trim() || addAssignmentMut.isPending}
-                      onClick={handleConfirmRegisterItem}
-                      className="flex-1 h-10 text-xs font-bold"
-                      style={{
-                        background:
-                          registerDos.trim() && !addAssignmentMut.isPending
-                            ? "linear-gradient(135deg, #10b981, #059669)"
-                            : "#9ca3af",
-                        color: "white",
-                      }}
-                    >
-                      {addAssignmentMut.isPending && (
-                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                      )}
-                      Daftar
-                    </Button>
+                    <p className="text-[13px] font-bold" style={{ color: "#1c1e21" }}>{registerSelectedItem.nama_item}</p>
+                    <p className="text-[11px]" style={{ color: "#65676b" }}>{registerSelectedItem.kod_item}{registerSelectedItem.kekuatan ? ` · ${registerSelectedItem.kekuatan}` : ""}</p>
                   </div>
                 </div>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                <div>
+                  <Label style={labelStyle}>Dos *</Label>
+                  <Input autoFocus value={registerDos} onChange={(e) => setRegisterDos(e.target.value.toUpperCase())} style={inputStyle}
+                    onKeyDown={(e) => { if (e.key === "Enter" && registerDos.trim()) { e.preventDefault(); handleConfirmRegisterItem(); } }} />
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button type="button" variant="ghost" onClick={() => { setRegisterSelectedItem(null); setRegisterDos(""); }} className="flex-1 h-10 text-xs font-medium">Kembali</Button>
+                  <Button type="button" disabled={!registerDos.trim() || addAssignmentMut.isPending} onClick={handleConfirmRegisterItem}
+                    className="flex-1 h-10 text-xs font-bold" style={{ background: registerDos.trim() && !addAssignmentMut.isPending ? "linear-gradient(135deg, #10b981, #059669)" : "#9ca3af", color: "white" }}>
+                    {addAssignmentMut.isPending && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />} Daftar
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       <AddPatientDialog open={showAddPatient} onOpenChange={setShowAddPatient} />
     </div>
   );

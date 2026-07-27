@@ -3,7 +3,6 @@
  */
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
   Users,
   Search,
@@ -137,7 +136,7 @@ export default function PatientListPage() {
 
   return (
     <div className="relative space-y-4">
-      {/* Orb hiasan — Section 6.7 */}
+      {/* Orb hiasan */}
       <div
         className="pointer-events-none absolute -top-[60px] -right-[60px] z-0"
         style={{
@@ -149,26 +148,17 @@ export default function PatientListPage() {
         }}
       />
 
-      {/* Breadcrumb — fade animation Section 6.6 */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.12 }}
-      >
+      {/* Breadcrumb */}
+      <div>
         <Breadcrumb
           showBackButton={false}
           items={[{ label: "Senarai Pesakit" }]}
           icon={Stethoscope}
         />
-      </motion.div>
+      </div>
 
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.02, duration: 0.15 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-      >
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <div
             className="w-11 h-11 rounded-2xl flex items-center justify-center text-white flex-shrink-0"
@@ -208,14 +198,10 @@ export default function PatientListPage() {
             Daftar Pesakit
           </Button>
         )}
-      </motion.div>
+      </div>
 
-      {/* Main Card — glass effect + gradient border (Section 6.2) */}
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.01, duration: 0.15 }}
-      >
+      {/* Main Card — glass effect + gradient border */}
+      <div>
         <div
           className="relative rounded-2xl overflow-hidden"
           style={{
@@ -225,7 +211,7 @@ export default function PatientListPage() {
             boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
           }}
         >
-          {/* Gradient border via mask-composite — Section 6.2 */}
+          {/* Gradient border via mask-composite */}
           <div
             className="pointer-events-none absolute inset-0 z-10"
             style={{
@@ -237,17 +223,6 @@ export default function PatientListPage() {
                 "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
               WebkitMaskComposite: "xor",
               maskComposite: "exclude",
-            }}
-          />
-
-          {/* Accent bar — Section 6.2 */}
-          <div
-            className="absolute top-0 left-6 right-6 h-[3px] rounded-full z-10"
-            style={{
-              background:
-                "linear-gradient(90deg, #1877f2, #7c3aed, #06b6d4, #1877f2)",
-              backgroundSize: "200% 100%",
-              animation: "gradient-x 4s linear infinite",
             }}
           />
 
@@ -480,7 +455,7 @@ export default function PatientListPage() {
             </div>
           )}
         </div>
-      </motion.div>
+      </div>
 
       <AddPatientDialog open={openAdd} onOpenChange={setOpenAdd} />
     </div>

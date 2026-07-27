@@ -6,7 +6,6 @@
  * untuk prestasi optimum (elakkan render yang tidak perlu).
  */
 import { useEffect, useRef, useState } from "react";
-import { motion, useInView } from "framer-motion";
 
 interface AnimatedNumberProps {
   /** Nilai akhir untuk dipaparkan */
@@ -29,10 +28,23 @@ export function AnimatedNumber({
   className,
 }: AnimatedNumberProps) {
   const ref = useRef<HTMLSpanElement>(null);
-  const isInView = useInView(ref, {
-    once: true,
-    margin: "0px 0px -50px 0px",
-  });
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "0px 0px -50px 0px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // Jika value bukan nombor, papar terus
   if (typeof value !== "number" || isNaN(value)) {
@@ -46,14 +58,8 @@ export function AnimatedNumber({
   }
 
   return (
-    <motion.span
-      ref={ref}
-      className={className}
-      initial={{ opacity: 0, scale: 0.6 }}
-      animate={isInView ? { opacity: 1, scale: 1 } : {}}
-      transition={{ duration: 0.25 }}
-    >
-      {isInView ? (
+    <span ref={ref} className={className}>
+      {isVisible ? (
         <CountingNumber
           to={value}
           duration={duration}
@@ -65,7 +71,7 @@ export function AnimatedNumber({
           {prefix}0{suffix}
         </span>
       )}
-    </motion.span>
+    </span>
   );
 }
 

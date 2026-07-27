@@ -3,7 +3,6 @@
  */
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
   ArrowLeft,
   Pill,
@@ -340,12 +339,7 @@ export default function PatientDetailPage() {
       <Breadcrumb icon={Stethoscope} />
 
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.15 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-      >
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <div
             className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg flex-shrink-0"
@@ -405,14 +399,10 @@ export default function PatientDetailPage() {
             </Button>
           )}
         </div>
-      </motion.div>
+      </div>
 
       {/* Patient Info Card — FoldableCard */}
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05, duration: 0.15 }}
-      >
+      <div>
         <FoldableCard
           title={
             <span className="flex items-center gap-2">
@@ -449,15 +439,10 @@ export default function PatientDetailPage() {
             <ViewInfo patient={patient} />
           )}
         </FoldableCard>
-      </motion.div>
+      </div>
 
       {/* Stats Row */}
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.15 }}
-        className="grid grid-cols-2 sm:grid-cols-4 gap-3"
-      >
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCardMini
           icon={Pill}
           color="#1877f2"
@@ -482,14 +467,10 @@ export default function PatientDetailPage() {
           label="Tarikh Daftar"
           value={patient.tarikh_daftar ?? ""}
         />
-      </motion.div>
+      </div>
 
       {/* Items List */}
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15, duration: 0.15 }}
-      >
+      <div>
         <FoldableCard
           title={
             <span className="flex items-center gap-2">
@@ -600,7 +581,7 @@ export default function PatientDetailPage() {
             </>
           )}
         </FoldableCard>
-      </motion.div>
+      </div>
 
       {/* DIALOGS */}
       <DeactivateDialog

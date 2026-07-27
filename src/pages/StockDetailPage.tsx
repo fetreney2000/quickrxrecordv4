@@ -626,13 +626,7 @@ export default function StockDetailPage() {
 
   return (
     <div className="space-y-4">
-      <Breadcrumb
-        items={[
-          { label: "Senarai Inventori", href: "/stok" },
-          { label: displayTitle },
-        ]}
-        icon={Pill}
-      />
+      <Breadcrumb icon={Pill} />
 
       {/* Header */}
       <motion.div

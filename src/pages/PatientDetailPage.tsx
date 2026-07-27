@@ -348,13 +348,7 @@ export default function PatientDetailPage() {
         }}
       />
 
-      <Breadcrumb
-        items={[
-          { label: "Senarai Pesakit", href: "/pesakit" },
-          { label: patient.nama },
-        ]}
-        icon={Stethoscope}
-      />
+      <Breadcrumb icon={Stethoscope} />
 
       {/* Header */}
       <motion.div

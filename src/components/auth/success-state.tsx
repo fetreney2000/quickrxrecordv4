@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import { CheckCircle2, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -11,7 +10,7 @@ interface SuccessStateProps {
 
 /**
  * SuccessState — Skrin penuh kejayaan dengan bar aksen hijau,
- * ikon CheckCircle2 dengan animasi spring, dan butang kembali.
+ * ikon CheckCircle2, dan butang kembali.
  */
 export function SuccessState({
   title = "Permintaan Dihantar",
@@ -23,10 +22,7 @@ export function SuccessState({
 
   return (
     <div className="relative w-full max-w-[440px] mx-auto">
-      <motion.div
-        initial={{ opacity: 0, y: 40, scale: 0.96 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
+      <div
         className="relative"
         style={{
           background: "rgba(255,255,255,0.07)",
@@ -61,34 +57,12 @@ export function SuccessState({
           style={{
             background:
               "linear-gradient(90deg, #22c55e, #06b6d4, #22c55e)",
-            backgroundSize: "200% 100%",
-            animation: "gradient-x 4s linear infinite",
           }}
         />
 
         <div className="text-center">
-          {/* Success icon with glow */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{
-              delay: 0.01,
-              type: "spring",
-              stiffness: 200,
-              damping: 15,
-            }}
-            className="relative inline-flex items-center justify-center mb-6"
-          >
-            <motion.div
-              className="absolute rounded-full"
-              style={{
-                inset: -12,
-                background: "rgba(34,197,94,0.3)",
-                filter: "blur(20px)",
-              }}
-              animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
-              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-            />
+          {/* Success icon */}
+          <div className="relative inline-flex items-center justify-center mb-6">
             <div
               className="relative w-20 h-20 rounded-2xl flex items-center justify-center"
               style={{
@@ -103,34 +77,21 @@ export function SuccessState({
                 strokeWidth={2.5}
               />
             </div>
-          </motion.div>
+          </div>
 
-          <motion.h2
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.02, duration: 0.4 }}
-            className="text-[20px] font-bold text-white mb-2"
-          >
+          <h2 className="text-[20px] font-bold text-white mb-2">
             {title}
-          </motion.h2>
+          </h2>
 
-          <motion.p
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.4 }}
+          <p
             className="text-sm mb-6"
             style={{ color: "rgba(255,255,255,0.7)" }}
           >
             {description}
-          </motion.p>
+          </p>
 
-          <motion.button
+          <button
             type="button"
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7, duration: 0.4 }}
-            whileHover={{ y: -2 }}
-            whileTap={{ scale: 0.98 }}
             onClick={() => navigate(buttonHref)}
             className="w-full h-[50px] flex items-center justify-center gap-2 text-[15px] font-bold text-white transition-all"
             style={{
@@ -143,9 +104,9 @@ export function SuccessState({
           >
             <ArrowLeft className="w-[18px] h-[18px]" />
             {buttonLabel}
-          </motion.button>
+          </button>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

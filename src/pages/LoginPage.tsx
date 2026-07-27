@@ -1,6 +1,5 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
   Loader2,
   Eye,
@@ -17,7 +16,6 @@ import { useAuth } from "@/hooks/use-auth";
 export default function LoginPage() {
   const navigate = useNavigate();
   const { signIn, profile } = useAuth();
-  const [mounted, setMounted] = useState(false);
   const [namaPengguna, setNamaPengguna] = useState("");
   const [kataLaluan, setKataLaluan] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -26,16 +24,10 @@ export default function LoginPage() {
     null
   );
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   // If already logged in, redirect to dashboard
-  useEffect(() => {
-    if (profile) {
-      navigate("/", { replace: true });
-    }
-  }, [profile, navigate]);
+  if (profile) {
+    navigate("/", { replace: true });
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -63,17 +55,9 @@ export default function LoginPage() {
 
       <div className="relative w-full max-w-5xl mx-auto flex flex-col md:flex-row items-stretch gap-6 md:gap-0">
         {/* ===== KAWASAN PENJENAMAAN (KIRI — DESKTOP SAHAJA) ===== */}
-        <motion.div
-          className="hidden md:flex flex-col justify-center pr-8 lg:pr-12 flex-1"
-          initial={{ opacity: 0, x: -60 }}
-          animate={mounted ? { opacity: 1, x: 0 } : {}}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-        >
+        <div className="hidden md:flex flex-col justify-center pr-8 lg:pr-12 flex-1">
           {/* Version badge */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={mounted ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 0.1, duration: 0.3 }}
+          <div
             className="inline-flex items-center gap-2 self-start mb-5 px-3 py-1.5 rounded-full"
             style={{
               background: "rgba(24,119,242,0.15)",
@@ -90,15 +74,10 @@ export default function LoginPage() {
             >
               v4.0
             </span>
-          </motion.div>
+          </div>
 
           {/* Title */}
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={mounted ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 0.15, duration: 0.35 }}
-            className="text-[42px] font-extrabold text-white leading-[1.1] mb-3"
-          >
+          <h1 className="text-[42px] font-extrabold text-white leading-[1.1] mb-3">
             Quick
             <span
               style={{
@@ -111,27 +90,20 @@ export default function LoginPage() {
               Rx
             </span>
             Record
-          </motion.h1>
+          </h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={mounted ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 0.2, duration: 0.3 }}
+          <p
             className="text-base mb-6"
             style={{ color: "rgba(255,255,255,0.5)" }}
           >
             Jabatan Farmasi Hospital Keningau
-          </motion.p>
+          </p>
 
           {/* Divider */}
-          <motion.div
-            initial={{ opacity: 0, scaleX: 0 }}
-            animate={mounted ? { opacity: 1, scaleX: 1 } : {}}
-            transition={{ delay: 0.25, duration: 0.3 }}
+          <div
             className="w-12 h-[3px] rounded-full mb-6"
             style={{
               background: "linear-gradient(90deg, #1877f2, #7c3aed)",
-              transformOrigin: "left",
             }}
           />
 
@@ -142,12 +114,9 @@ export default function LoginPage() {
               "Pembekalan Ubat Pesakit",
               "Rekod Pesakit Digital",
               "Laporan Analitikal",
-            ].map((feature, idx) => (
-              <motion.li
+            ].map((feature) => (
+              <li
                 key={feature}
-                initial={{ opacity: 0, x: -20 }}
-                animate={mounted ? { opacity: 1, x: 0 } : {}}
-                transition={{ delay: 0.25 + idx * 0.05, duration: 0.3 }}
                 className="flex items-center gap-3"
               >
                 <span
@@ -163,16 +132,13 @@ export default function LoginPage() {
                 >
                   {feature}
                 </span>
-              </motion.li>
+              </li>
             ))}
           </ul>
-        </motion.div>
+        </div>
 
         {/* ===== KAD LOG MASUK (KANAN) ===== */}
-        <motion.div
-          initial={{ opacity: 0, y: 40, scale: 0.96 }}
-          animate={mounted ? { opacity: 1, y: 0, scale: 1 } : {}}
-          transition={{ duration: 0.35, ease: "easeOut" }}
+        <div
           className="relative w-full md:w-[440px] flex-shrink-0"
           style={{
             background: "rgba(255,255,255,0.07)",
@@ -207,8 +173,6 @@ export default function LoginPage() {
             style={{
               background:
                 "linear-gradient(90deg, #1877f2, #7c3aed, #06b6d4, #1877f2)",
-              backgroundSize: "200% 100%",
-              animation: "gradient-x 4s linear infinite",
             }}
           />
 
@@ -217,12 +181,7 @@ export default function LoginPage() {
             <RxLogo />
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 5 }}
-            animate={mounted ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 0.05, duration: 0.25 }}
-            className="text-center md:text-left mb-6"
-          >
+          <div className="text-center md:text-left mb-6">
             <h2
               className="text-[20px] font-bold text-white mb-1"
               style={{ letterSpacing: "-0.01em" }}
@@ -235,16 +194,11 @@ export default function LoginPage() {
             >
               Masukkan nama pengguna dan kata laluan anda
             </p>
-          </motion.div>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Username field */}
-            <motion.div
-              initial={{ opacity: 0, y: 5 }}
-              animate={mounted ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 0.02, duration: 0.25 }}
-              className="space-y-1.5"
-            >
+            <div className="space-y-1.5">
               <label
                 htmlFor="username"
                 className="text-[13px] font-semibold flex items-center gap-2"
@@ -284,15 +238,10 @@ export default function LoginPage() {
                       : "0 1px 3px rgba(0,0,0,0.04)",
                 }}
               />
-            </motion.div>
+            </div>
 
             {/* Password field */}
-            <motion.div
-              initial={{ opacity: 0, y: 5 }}
-              animate={mounted ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 0.1, duration: 0.25 }}
-              className="space-y-1.5"
-            >
+            <div className="space-y-1.5">
               <label
                 htmlFor="password"
                 className="text-[13px] font-semibold flex items-center gap-2"
@@ -354,19 +303,13 @@ export default function LoginPage() {
                   )}
                 </button>
               </div>
-            </motion.div>
+            </div>
 
             {/* Submit button */}
-            <motion.div
-              initial={{ opacity: 0, y: 5 }}
-              animate={mounted ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 0.15, duration: 0.25 }}
-            >
-              <motion.button
+            <div>
+              <button
                 type="submit"
                 disabled={loading}
-                whileHover={!loading ? { y: -2 } : {}}
-                whileTap={!loading ? { scale: 0.98 } : {}}
                 className="w-full h-[50px] flex items-center justify-center gap-2 text-[15px] font-bold text-white disabled:opacity-80 transition-all"
                 style={{
                   background: "linear-gradient(135deg, #1877f2, #0d5bd4)",
@@ -387,16 +330,11 @@ export default function LoginPage() {
                     <ArrowRight className="w-[18px] h-[18px]" />
                   </>
                 )}
-              </motion.button>
-            </motion.div>
+              </button>
+            </div>
 
             {/* Forgot password link */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={mounted ? { opacity: 1 } : {}}
-              transition={{ delay: 0.2, duration: 0.25 }}
-              className="text-center pt-2"
-            >
+            <div className="text-center pt-2">
               <Link
                 to="/lupa-kata-laluan"
                 className="inline-flex items-center gap-1.5 text-[13px] transition-colors"
@@ -413,25 +351,20 @@ export default function LoginPage() {
                 <Lock className="w-3 h-3" />
                 <span>Lupa kata laluan?</span>
               </Link>
-            </motion.div>
+            </div>
           </form>
-        </motion.div>
+        </div>
       </div>
 
       {/* Footer */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={mounted ? { opacity: 1 } : {}}
-        transition={{ delay: 0.3, duration: 0.25 }}
-        className="absolute bottom-4 left-0 right-0 text-center"
-      >
+      <div className="absolute bottom-4 left-0 right-0 text-center">
         <p
           className="text-xs"
           style={{ color: "rgba(255,255,255,0.25)" }}
         >
           © 2026 QuickRxRecord. Hak cipta terpelihara.
         </p>
-      </motion.div>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { motion } from "framer-motion";
+import { useState, type FormEvent } from "react";
 import { KeyRound, HelpCircle, Loader2, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -8,15 +7,10 @@ import { SuccessState } from "@/components/auth/success-state";
 import { supabase } from "@/lib/supabase";
 
 export default function ForgotPasswordPage() {
-  const [mounted, setMounted] = useState(false);
   const [namaPengguna, setNamaPengguna] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [focused, setFocused] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -75,16 +69,11 @@ export default function ForgotPasswordPage() {
       >
         <AuthBackground orbCount={3} particleCount={16} />
         <SuccessState />
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={mounted ? { opacity: 1 } : {}}
-          transition={{ delay: 1.2, duration: 0.4 }}
-          className="absolute bottom-4 left-0 right-0 text-center"
-        >
+        <div className="absolute bottom-4 left-0 right-0 text-center">
           <p className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
             © 2026 QuickRxRecord. Hak cipta terpelihara.
           </p>
-        </motion.div>
+        </div>
       </div>
     );
   }
@@ -96,10 +85,7 @@ export default function ForgotPasswordPage() {
     >
       <AuthBackground orbCount={3} particleCount={16} />
 
-      <motion.div
-        initial={{ opacity: 0, y: 40, scale: 0.96 }}
-        animate={mounted ? { opacity: 1, y: 0, scale: 1 } : {}}
-        transition={{ duration: 0.35, ease: "easeOut" }}
+      <div
         className="relative w-full max-w-[440px]"
         style={{
           background: "rgba(255,255,255,0.07)",
@@ -134,18 +120,11 @@ export default function ForgotPasswordPage() {
           style={{
             background:
               "linear-gradient(90deg, #1877f2, #7c3aed, #06b6d4, #1877f2)",
-            backgroundSize: "200% 100%",
-            animation: "gradient-x 4s linear infinite",
           }}
         />
 
         {/* Logo */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={mounted ? { opacity: 1, scale: 1 } : {}}
-          transition={{ delay: 0.03, type: "spring", stiffness: 200 }}
-          className="flex justify-center mb-5"
-        >
+        <div className="flex justify-center mb-5">
           <div
             className="w-[72px] h-[72px] rounded-[18px] flex items-center justify-center"
             style={{
@@ -156,14 +135,9 @@ export default function ForgotPasswordPage() {
           >
             <KeyRound className="w-8 h-8 text-white" strokeWidth={2.5} />
           </div>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 5 }}
-          animate={mounted ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.05, duration: 0.25 }}
-          className="text-center mb-6"
-        >
+        <div className="text-center mb-6">
           <h2
             className="text-[20px] font-bold text-white mb-1"
             style={{ letterSpacing: "-0.01em" }}
@@ -176,15 +150,10 @@ export default function ForgotPasswordPage() {
           >
             Masukkan nama pengguna anda. Permintaan akan dihantar kepada pentadbir.
           </p>
-        </motion.div>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <motion.div
-            initial={{ opacity: 0, y: 5 }}
-            animate={mounted ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 0.02, duration: 0.25 }}
-            className="space-y-1.5"
-          >
+          <div className="space-y-1.5">
             <label
               htmlFor="username"
               className="text-[13px] font-semibold flex items-center gap-2"
@@ -218,18 +187,12 @@ export default function ForgotPasswordPage() {
                   : "0 1px 3px rgba(0,0,0,0.04)",
               }}
             />
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 5 }}
-            animate={mounted ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 0.15, duration: 0.25 }}
-          >
-            <motion.button
+          <div>
+            <button
               type="submit"
               disabled={loading}
-              whileHover={!loading ? { y: -2 } : {}}
-              whileTap={!loading ? { scale: 0.98 } : {}}
               className="w-full h-[50px] flex items-center justify-center gap-2 text-[15px] font-bold text-white disabled:opacity-80 transition-all"
               style={{
                 background: "linear-gradient(135deg, #1877f2, #0d5bd4)",
@@ -247,15 +210,10 @@ export default function ForgotPasswordPage() {
               ) : (
                 <span>Hantar Permintaan</span>
               )}
-            </motion.button>
-          </motion.div>
+            </button>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={mounted ? { opacity: 1 } : {}}
-            transition={{ delay: 0.2, duration: 0.25 }}
-            className="text-center pt-2"
-          >
+          <div className="text-center pt-2">
             <Link
               to="/login"
               className="inline-flex items-center gap-1.5 text-[13px] transition-colors"
@@ -272,21 +230,16 @@ export default function ForgotPasswordPage() {
               <ArrowLeft className="w-3 h-3" />
               <span>Kembali ke Log Masuk</span>
             </Link>
-          </motion.div>
+          </div>
         </form>
-      </motion.div>
+      </div>
 
       {/* Footer */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={mounted ? { opacity: 1 } : {}}
-        transition={{ delay: 0.3, duration: 0.25 }}
-        className="absolute bottom-4 left-0 right-0 text-center"
-      >
+      <div className="absolute bottom-4 left-0 right-0 text-center">
         <p className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
           © 2026 QuickRxRecord. Hak cipta terpelihara.
         </p>
-      </motion.div>
+      </div>
     </div>
   );
 }

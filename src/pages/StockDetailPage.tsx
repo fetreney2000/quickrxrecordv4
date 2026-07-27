@@ -620,12 +620,75 @@ function EmptyState({ icon: Icon, title, hint }: { icon: LucideIcon; title: stri
 }
 
 function Pagination({ page, totalPages, onChange, totalCount, itemLabel }: { page: number; totalPages: number; onChange: (p: number) => void; totalCount: number; itemLabel: string }) {
+  const buttons: (number | string)[] = [];
+  const maxVisible = 5;
+  if (totalPages <= maxVisible + 2) {
+    for (let i = 1; i <= totalPages; i++) buttons.push(i);
+  } else {
+    buttons.push(1);
+    if (page > 2) buttons.push("...");
+    const start = Math.max(2, page);
+    const end = Math.min(totalPages - 1, page + 2);
+    for (let i = start; i <= end; i++) buttons.push(i);
+    if (page < totalPages - 3) buttons.push("...");
+    buttons.push(totalPages);
+  }
+
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-3 pt-3 border-t border-[#f0f2f5]">
-      <p className="text-xs" style={{ color: "#65676b" }}>Halaman {page + 1} daripada {totalPages} ({totalCount} {itemLabel})</p>
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3 pt-3 border-t border-[#f0f2f5]">
+      <p className="text-xs" style={{ color: "#65676b" }}>
+        {totalCount} {itemLabel} · Halaman {page + 1}/{totalPages}
+      </p>
       <div className="flex items-center gap-1">
-        <Button variant="outline" size="sm" disabled={page === 0} onClick={() => onChange(Math.max(0, page - 1))} className="h-7 px-2" style={{ opacity: page === 0 ? 0.4 : 1 }}><ChevronLeft className="w-3.5 h-3.5" /></Button>
-        <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => onChange(Math.min(totalPages - 1, page + 1))} className="h-7 px-2" style={{ opacity: page >= totalPages - 1 ? 0.4 : 1 }}><ChevronRight className="w-3.5 h-3.5" /></Button>
+        <button
+          type="button"
+          disabled={page === 0}
+          onClick={() => onChange(Math.max(0, page - 1))}
+          className="w-7 h-7 flex items-center justify-center rounded-lg text-xs font-medium transition-colors disabled:opacity-30"
+          style={{
+            background: page === 0 ? "transparent" : "rgba(0,0,0,0.04)",
+            color: "#65676b",
+            border: "1px solid",
+            borderColor: page === 0 ? "transparent" : "#e4e6eb",
+            cursor: page === 0 ? "default" : "pointer",
+          }}
+        >
+          <ChevronLeft className="w-3.5 h-3.5" />
+        </button>
+        {buttons.map((b, i) =>
+          b === "..." ? (
+            <span key={`dots-${i}`} className="w-7 h-7 flex items-center justify-center text-xs" style={{ color: "#9ca3af" }}>…</span>
+          ) : (
+            <button
+              key={b}
+              type="button"
+              onClick={() => onChange((b as number) - 1)}
+              className="w-7 h-7 rounded-lg text-xs font-semibold transition-colors"
+              style={
+                (b as number) === page + 1
+                  ? { background: "linear-gradient(135deg, #7c3aed, #6d28d9)", color: "white", border: "none", cursor: "pointer" }
+                  : { background: "white", color: "#1c1e21", border: "1px solid #e4e6eb", cursor: "pointer" }
+              }
+            >
+              {b}
+            </button>
+          )
+        )}
+        <button
+          type="button"
+          disabled={page >= totalPages - 1}
+          onClick={() => onChange(Math.min(totalPages - 1, page + 1))}
+          className="w-7 h-7 flex items-center justify-center rounded-lg text-xs font-medium transition-colors disabled:opacity-30"
+          style={{
+            background: page >= totalPages - 1 ? "transparent" : "rgba(0,0,0,0.04)",
+            color: "#65676b",
+            border: "1px solid",
+            borderColor: page >= totalPages - 1 ? "transparent" : "#e4e6eb",
+            cursor: page >= totalPages - 1 ? "default" : "pointer",
+          }}
+        >
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
       </div>
     </div>
   );

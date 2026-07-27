@@ -368,23 +368,25 @@ export function useItemPatients(itemId: string | undefined) {
       if (aErr) throw aErr;
       if (!assignments || assignments.length === 0) return [];
 
-      // Batch the supplies query to avoid URL length errors with thousands of IDs
-      const assignmentIds = assignments.map((a: any) => a.id);
-      const allSupplies = await batchInQuery(
-        assignmentIds,
-        async (batchIds) => {
-          const { data, error } = await supabase
-            .from("supply_records")
-            .select("assignment_id, tarikh_dibekal, kuantiti")
-            .in("assignment_id", batchIds)
-            .order("tarikh_dibekal", { ascending: false });
-          if (error) throw error;
-          return (data ?? []) as any[];
-        }
-      );
+      // Fetch ALL supply records for this item by joining through assignments.
+      // Using the inner join (!inner) filters to only supplies belonging to this item's assignments.
+      // This is a single query - no URL length issues, no batching needed.
+      const { data: supplies, error: sErr } = await supabase
+        .from("supply_records")
+        .select(`
+          assignment_id,
+          tarikh_dibekal,
+          kuantiti,
+          assignment:assignment_id!inner(
+            item_id
+          )
+        `)
+        .eq("assignment.item_id", itemId!)
+        .order("tarikh_dibekal", { ascending: false });
+      if (sErr) throw sErr;
 
       const lastSupplyMap = new Map<string, { tarikh: string; qty: number }>();
-      allSupplies.forEach((s: any) => {
+      ((supplies ?? []) as any[]).forEach((s: any) => {
         if (!lastSupplyMap.has(s.assignment_id)) {
           lastSupplyMap.set(s.assignment_id, {
             tarikh: s.tarikh_dibekal,

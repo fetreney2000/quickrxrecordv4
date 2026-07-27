@@ -67,13 +67,13 @@ export default function LoginPage() {
           className="hidden md:flex flex-col justify-center pr-8 lg:pr-12 flex-1"
           initial={{ opacity: 0, x: -60 }}
           animate={mounted ? { opacity: 1, x: 0 } : {}}
-          transition={{ duration: 0.8, ease: "easeOut" }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
         >
           {/* Version badge */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={mounted ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 0.3, duration: 0.5 }}
+            transition={{ delay: 0.1, duration: 0.3 }}
             className="inline-flex items-center gap-2 self-start mb-5 px-3 py-1.5 rounded-full"
             style={{
               background: "rgba(24,119,242,0.15)",
@@ -96,7 +96,7 @@ export default function LoginPage() {
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={mounted ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 0.4, duration: 0.6 }}
+            transition={{ delay: 0.15, duration: 0.35 }}
             className="text-[42px] font-extrabold text-white leading-[1.1] mb-3"
           >
             Quick
@@ -116,7 +116,7 @@ export default function LoginPage() {
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={mounted ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 0.5, duration: 0.5 }}
+            transition={{ delay: 0.2, duration: 0.3 }}
             className="text-base mb-6"
             style={{ color: "rgba(255,255,255,0.5)" }}
           >
@@ -127,7 +127,7 @@ export default function LoginPage() {
           <motion.div
             initial={{ opacity: 0, scaleX: 0 }}
             animate={mounted ? { opacity: 1, scaleX: 1 } : {}}
-            transition={{ delay: 0.6, duration: 0.5 }}
+            transition={{ delay: 0.25, duration: 0.3 }}
             className="w-12 h-[3px] rounded-full mb-6"
             style={{
               background: "linear-gradient(90deg, #1877f2, #7c3aed)",
@@ -147,7 +147,7 @@ export default function LoginPage() {
                 key={feature}
                 initial={{ opacity: 0, x: -20 }}
                 animate={mounted ? { opacity: 1, x: 0 } : {}}
-                transition={{ delay: 0.5 + idx * 0.1, duration: 0.5 }}
+                transition={{ delay: 0.25 + idx * 0.05, duration: 0.3 }}
                 className="flex items-center gap-3"
               >
                 <span
@@ -172,7 +172,7 @@ export default function LoginPage() {
         <motion.div
           initial={{ opacity: 0, y: 40, scale: 0.96 }}
           animate={mounted ? { opacity: 1, y: 0, scale: 1 } : {}}
-          transition={{ duration: 0.6, ease: "easeOut" }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
           className="relative w-full md:w-[440px] flex-shrink-0"
           style={{
             background: "rgba(255,255,255,0.07)",
@@ -220,7 +220,7 @@ export default function LoginPage() {
           <motion.div
             initial={{ opacity: 0, y: 5 }}
             animate={mounted ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 0.08, duration: 0.4 }}
+            transition={{ delay: 0.05, duration: 0.25 }}
             className="text-center md:text-left mb-6"
           >
             <h2
@@ -242,7 +242,7 @@ export default function LoginPage() {
             <motion.div
               initial={{ opacity: 0, y: 5 }}
               animate={mounted ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 0.02, duration: 0.4 }}
+              transition={{ delay: 0.02, duration: 0.25 }}
               className="space-y-1.5"
             >
               <label
@@ -290,7 +290,7 @@ export default function LoginPage() {
             <motion.div
               initial={{ opacity: 0, y: 5 }}
               animate={mounted ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 0.5, duration: 0.4 }}
+              transition={{ delay: 0.1, duration: 0.25 }}
               className="space-y-1.5"
             >
               <label
@@ -360,7 +360,7 @@ export default function LoginPage() {
             <motion.div
               initial={{ opacity: 0, y: 5 }}
               animate={mounted ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 0.6, duration: 0.4 }}
+              transition={{ delay: 0.15, duration: 0.25 }}
             >
               <motion.button
                 type="submit"
@@ -394,7 +394,7 @@ export default function LoginPage() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={mounted ? { opacity: 1 } : {}}
-              transition={{ delay: 0.8, duration: 0.4 }}
+              transition={{ delay: 0.2, duration: 0.25 }}
               className="text-center pt-2"
             >
               <Link
@@ -422,7 +422,7 @@ export default function LoginPage() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={mounted ? { opacity: 1 } : {}}
-        transition={{ delay: 1.2, duration: 0.4 }}
+        transition={{ delay: 0.3, duration: 0.25 }}
         className="absolute bottom-4 left-0 right-0 text-center"
       >
         <p

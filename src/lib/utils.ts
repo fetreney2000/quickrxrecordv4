@@ -191,11 +191,25 @@ export function calculateAge(dob: string | Date | null | undefined): number | nu
   return age;
 }
 
-/** Format age in years/months. */
+/** Format age in year, month, day format. */
 export function formatAge(dob: string | Date | null | undefined): string {
-  const age = calculateAge(dob);
-  if (age === null) return "—";
-  return `${age} tahun`;
+  if (!dob) return "—";
+  const birth = new Date(dob);
+  if (isNaN(birth.getTime())) return "—";
+  const today = new Date();
+  let years = today.getFullYear() - birth.getFullYear();
+  let months = today.getMonth() - birth.getMonth();
+  let days = today.getDate() - birth.getDate();
+  if (days < 0) {
+    months--;
+    const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+    days += prevMonth.getDate();
+  }
+  if (months < 0) {
+    years--;
+    months += 12;
+  }
+  return `${years} Tahun, ${months} Bulan, ${days} Hari`;
 }
 
 /** Return a relative time string in Bahasa Melayu (e.g. "5 minit yang lalu"). */

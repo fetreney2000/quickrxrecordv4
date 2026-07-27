@@ -176,8 +176,8 @@ export default function StockDetailPage() {
 
   const quotaRemaining = useMemo(() => {
     if (item?.kuota == null) return null;
-    return Math.max(0, item.kuota - totalStock);
-  }, [item?.kuota, totalStock]);
+    return Math.max(0, item.kuota - activePatientCount);
+  }, [item?.kuota, activePatientCount]);
 
   // Stats for transactions
   const txStats = useMemo(() => {

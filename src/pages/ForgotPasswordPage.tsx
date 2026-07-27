@@ -99,7 +99,7 @@ export default function ForgotPasswordPage() {
       <motion.div
         initial={{ opacity: 0, y: 40, scale: 0.96 }}
         animate={mounted ? { opacity: 1, y: 0, scale: 1 } : {}}
-        transition={{ duration: 0.6, ease: "easeOut" }}
+        transition={{ duration: 0.35, ease: "easeOut" }}
         className="relative w-full max-w-[440px]"
         style={{
           background: "rgba(255,255,255,0.07)",
@@ -161,7 +161,7 @@ export default function ForgotPasswordPage() {
         <motion.div
           initial={{ opacity: 0, y: 5 }}
           animate={mounted ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.08, duration: 0.4 }}
+          transition={{ delay: 0.05, duration: 0.25 }}
           className="text-center mb-6"
         >
           <h2
@@ -182,7 +182,7 @@ export default function ForgotPasswordPage() {
           <motion.div
             initial={{ opacity: 0, y: 5 }}
             animate={mounted ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 0.02, duration: 0.4 }}
+            transition={{ delay: 0.02, duration: 0.25 }}
             className="space-y-1.5"
           >
             <label
@@ -223,7 +223,7 @@ export default function ForgotPasswordPage() {
           <motion.div
             initial={{ opacity: 0, y: 5 }}
             animate={mounted ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 0.5, duration: 0.4 }}
+            transition={{ delay: 0.15, duration: 0.25 }}
           >
             <motion.button
               type="submit"
@@ -253,7 +253,7 @@ export default function ForgotPasswordPage() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={mounted ? { opacity: 1 } : {}}
-            transition={{ delay: 0.7, duration: 0.4 }}
+            transition={{ delay: 0.2, duration: 0.25 }}
             className="text-center pt-2"
           >
             <Link
@@ -280,7 +280,7 @@ export default function ForgotPasswordPage() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={mounted ? { opacity: 1 } : {}}
-        transition={{ delay: 1.2, duration: 0.4 }}
+        transition={{ delay: 0.3, duration: 0.25 }}
         className="absolute bottom-4 left-0 right-0 text-center"
       >
         <p className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>

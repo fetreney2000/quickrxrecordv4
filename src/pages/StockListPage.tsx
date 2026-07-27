@@ -32,7 +32,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { useAuth } from "@/hooks/use-auth";
-import { useNavStore } from "@/lib/nav-store";
+import { useNavStore, HOME_CRUMB } from "@/lib/nav-store";
 import { SEARCH_DEBOUNCE_MS } from "@/hooks/use-patients";
 import {
   useItems,
@@ -81,7 +81,7 @@ export default function StockListPage() {
   useEffect(() => {
     document.title = "Inventori — QuickRxRecord";
     setNavSource("list");
-    setBreadcrumbTrail([{ label: "Senarai Inventori" }]);
+    setBreadcrumbTrail([HOME_CRUMB, { label: "Senarai Inventori" }]);
   }, [setNavSource, setBreadcrumbTrail]);
 
   useEffect(() => {
@@ -115,12 +115,11 @@ export default function StockListPage() {
     setPage(0);
   }, []);
 
-  const pushBreadcrumb = useNavStore((s) => s.pushBreadcrumb);
-
   const handleItemClick = useCallback(
     (item: Item) => {
       const displayTitle = [item.nama_item, item.kekuatan].filter(Boolean).join(" ");
       setBreadcrumbTrail([
+        HOME_CRUMB,
         { label: "Senarai Inventori", href: "/stok" },
         { label: displayTitle },
       ]);

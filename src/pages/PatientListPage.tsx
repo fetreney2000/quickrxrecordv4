@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { useAuth } from "@/hooks/use-auth";
-import { useNavStore } from "@/lib/nav-store";
+import { useNavStore, HOME_CRUMB } from "@/lib/nav-store";
 import {
   SEARCH_DEBOUNCE_MS,
   usePatients,
@@ -70,7 +70,7 @@ export default function PatientListPage() {
     debounceTimer.current = setTimeout(() => {
     setDebouncedSearch(search);
       setPage(0);
-      setBreadcrumbTrail([{ label: "Senarai Pesakit" }]);
+      setBreadcrumbTrail([HOME_CRUMB, { label: "Senarai Pesakit" }]);
     }, SEARCH_DEBOUNCE_MS);
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
@@ -101,6 +101,7 @@ export default function PatientListPage() {
     (patient: Patient) => {
       setNavSource("list");
       setBreadcrumbTrail([
+        HOME_CRUMB,
         { label: "Senarai Pesakit", href: "/pesakit" },
         { label: patient.nama },
       ]);

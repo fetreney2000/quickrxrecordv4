@@ -4,20 +4,23 @@ import type { BreadcrumbItem, NavSource } from "@/types";
 interface NavState {
   source: NavSource;
   customTrail: BreadcrumbItem[] | null;
+  breadcrumbTrail: BreadcrumbItem[];
   setNavSource: (source: NavSource) => void;
   setCustomTrail: (trail: BreadcrumbItem[] | null) => void;
+  setBreadcrumbTrail: (trail: BreadcrumbItem[]) => void;
   resetTrail: () => void;
 }
 
 /**
- * Tracks where the user came from when navigating to a detail page.
- * Used by the Breadcrumb component to render "Kembali ke Senarai" vs
- * "Kembali ke Carian" links.
+ * Tracks navigation source and breadcrumb trail.
+ * Each page pushes its breadcrumb entry when it loads.
  */
 export const useNavStore = create<NavState>((set) => ({
   source: "default",
   customTrail: null,
+  breadcrumbTrail: [],
   setNavSource: (source) => set({ source }),
   setCustomTrail: (trail) => set({ customTrail: trail }),
-  resetTrail: () => set({ source: "default", customTrail: null }),
+  setBreadcrumbTrail: (trail) => set({ breadcrumbTrail: trail }),
+  resetTrail: () => set({ source: "default", customTrail: null, breadcrumbTrail: [] }),
 }));

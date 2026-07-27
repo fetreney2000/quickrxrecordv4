@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { useAuth } from "@/hooks/use-auth";
+import { useNavStore } from "@/lib/nav-store";
 import { getInitials, formatMyKad } from "@/lib/utils";
 import { toast } from "sonner";
 import { AddPatientDialog } from "@/components/patient/add-patient-dialog";
@@ -93,6 +94,11 @@ export default function QuickDispensePage() {
   );
   const { data: supplyDurations = [] } = useSupplyDurationsList();
   const supplyMut = useQuickSupply(selectedPatient?.id ?? null);
+  const setBreadcrumbTrail = useNavStore((s) => s.setBreadcrumbTrail);
+
+  useEffect(() => {
+    setBreadcrumbTrail([{ label: "Dispen Pantas" }]);
+  }, [setBreadcrumbTrail]);
   const { data: allActiveItems = [] } = useItemsActive();
   const addAssignmentMut = useAddAssignmentInline(selectedPatient?.id ?? null);
 

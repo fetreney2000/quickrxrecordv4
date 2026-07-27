@@ -76,10 +76,13 @@ export default function StockListPage() {
   const [openAdd, setOpenAdd] = useState(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const setBreadcrumbTrail = useNavStore((s) => s.setBreadcrumbTrail);
+
   useEffect(() => {
     document.title = "Inventori — QuickRxRecord";
     setNavSource("list");
-  }, [setNavSource]);
+    setBreadcrumbTrail([{ label: "Senarai Inventori" }]);
+  }, [setNavSource, setBreadcrumbTrail]);
 
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);

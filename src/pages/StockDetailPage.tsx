@@ -118,13 +118,22 @@ export default function StockDetailPage() {
   const canEditItem = can("manage_items");
   const canAddBatch = can("manage_batches");
 
-  useEffect(() => {
-    document.title = "Butiran Item — QuickRxRecord";
-    setNavSource("list");
-  }, [setNavSource]);
+  const setBreadcrumbTrail = useNavStore((s) => s.setBreadcrumbTrail);
 
   // Item data
   const { data: item, isLoading } = useItem(id);
+
+  useEffect(() => {
+    document.title = "Butiran Item — QuickRxRecord";
+    setNavSource("list");
+    if (item) {
+      const displayTitle = [item.nama_item, item.kekuatan].filter(Boolean).join(" ");
+      setBreadcrumbTrail([
+        { label: "Senarai Inventori", href: "/stok" },
+        { label: displayTitle },
+      ]);
+    }
+  }, [setNavSource, setBreadcrumbTrail, item]);
   const { data: forms = [] } = useItemForms();
   const { data: categories = [] } = useItemCategories();
   const { data: batches = [] } = useBatches(id);

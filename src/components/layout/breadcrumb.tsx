@@ -24,6 +24,7 @@ export function Breadcrumb({
   const navigate = useNavigate();
   const source = useNavStore((s) => s.source);
   const customTrail = useNavStore((s) => s.customTrail);
+  const breadcrumbTrail = useNavStore((s) => s.breadcrumbTrail);
   const setNavSource = useNavStore((s) => s.setNavSource);
 
   // Determine the back link
@@ -49,7 +50,7 @@ export function Breadcrumb({
     }
   };
 
-  const trail = items ?? customTrail ?? [];
+  const trail = items ?? customTrail ?? breadcrumbTrail ?? [];
 
   return (
     <nav

@@ -64,12 +64,14 @@ export default function PatientListPage() {
   const [sort, setSort] = useState<SortState | null>(null);
   const [openAdd, setOpenAdd] = useState(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const setBreadcrumbTrail = useNavStore((s) => s.setBreadcrumbTrail);
 
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
-      setDebouncedSearch(search);
+    setDebouncedSearch(search);
       setPage(0);
+      setBreadcrumbTrail([{ label: "Senarai Pesakit" }]);
     }, SEARCH_DEBOUNCE_MS);
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);

@@ -69,7 +69,7 @@ export function Header() {
     setOpen(false);
     setQuery("");
     setNavSource("search");
-    navigate(`/pesakit/${id}`);
+    navigate(`/pesakit/${id}?from=search`);
   };
 
   const showDropdown =

@@ -25,6 +25,8 @@ export interface PatientUsingData {
 interface PatientUsingRowProps {
   data: PatientUsingData;
   index: number;
+  itemName?: string;
+  itemId?: string;
 }
 
 function monthsAgo(isoDate: string | null | undefined): number | null {
@@ -66,14 +68,21 @@ function getStatus(data: PatientUsingData): {
   };
 }
 
-export function PatientUsingRow({ data, index }: PatientUsingRowProps) {
+export function PatientUsingRow({ data, index, itemName, itemId }: PatientUsingRowProps) {
   const navigate = useNavigate();
   const patient = data.patient;
   const status = getStatus(data);
 
   const handleClick = () => {
     if (patient) {
-      navigate(`/pesakit/${patient.id}`);
+      const params = new URLSearchParams();
+      if (itemName && itemId) {
+        params.set("from", "item");
+        params.set("item", itemName);
+        params.set("itemId", itemId);
+      }
+      const qs = params.toString();
+      navigate(`/pesakit/${patient.id}${qs ? `?${qs}` : ""}`);
     }
   };
 

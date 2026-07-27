@@ -450,7 +450,7 @@ export default function StockDetailPage() {
 
   return (
     <div className="space-y-4">
-      <Breadcrumb items={[{ label: displayTitle }]} />
+      <Breadcrumb items={[{ label: "Senarai Inventori", href: "/stok" }, { label: displayTitle }]} />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -512,7 +512,7 @@ export default function StockDetailPage() {
             <div className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "2.5fr 1.8fr 1.2fr 1.5fr 1.2fr", gap: 12, color: "#65676b", background: "rgba(0,0,0,0.02)", borderBottom: "2px solid #e4e6eb", borderTop: "1px solid #f0f2f5" }}>
               <span>Nama</span><span>No. KP</span><span>Dos</span><span>Bekalan Terakhir</span><span>Status</span>
             </div>
-            {pagedPatients.map((p, idx) => <PatientUsingRow key={p.id} data={p as any} index={idx} />)}
+            {pagedPatients.map((p, idx) => <PatientUsingRow key={p.id} data={p as any} index={idx} itemName={displayTitle} itemId={id} />)}
             {patientTotalPages > 1 && <Pagination page={patientPage} totalPages={patientTotalPages} onChange={setPatientPage} totalCount={filteredPatients.length} itemLabel="pesakit" />}
           </>}
         </FoldableCard>

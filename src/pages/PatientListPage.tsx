@@ -81,7 +81,7 @@ export default function PatientListPage() {
   const handlePatientClick = useCallback((patient: Patient) => {
     setNavSource("list");
     setBreadcrumbTrail([HOME_CRUMB, { label: "Senarai Pesakit", href: "/pesakit" }, { label: patient.nama }]);
-    navigate(`/pesakit/${patient.id}`);
+    navigate(`/pesakit/${patient.id}?from=list`);
   }, [navigate, setNavSource, setBreadcrumbTrail]);
 
   const pageButtons = useMemo(() => {

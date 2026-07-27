@@ -3,7 +3,6 @@
  * Desktop: grid 5 lajur
  * Mudah alih: card dengan avatar, nama, meta, ChevronRight
  */
-import { motion } from "framer-motion";
 import { ArrowRight, IdCard, FileText, Phone } from "lucide-react";
 import { cn, formatMyKad, formatPhone } from "@/lib/utils";
 import type { Patient } from "@/types";
@@ -18,10 +17,7 @@ export function PatientRow({ patient, index, onClick }: PatientRowProps) {
   return (
     <>
       {/* Desktop: grid row */}
-      <motion.div
-        initial={{ opacity: 0, y: -3 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.008, duration: 0.1 }}
+      <div
         onClick={onClick}
         role="button"
         tabIndex={0}
@@ -93,13 +89,10 @@ export function PatientRow({ patient, index, onClick }: PatientRowProps) {
         >
           {patient.bilangan_item ?? 0}
         </span>
-      </motion.div>
+      </div>
 
       {/* Mobile: card row */}
-      <motion.div
-        initial={{ opacity: 0, y: -3 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.008, duration: 0.1 }}
+      <div
         onClick={onClick}
         role="button"
         tabIndex={0}
@@ -159,7 +152,7 @@ export function PatientRow({ patient, index, onClick }: PatientRowProps) {
           className="w-4 h-4 flex-shrink-0"
           style={{ color: "#9ca3af" }}
         />
-      </motion.div>
+      </div>
     </>
   );
 }

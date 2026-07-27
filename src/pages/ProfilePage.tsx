@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
   ArrowLeft,
   User,
@@ -287,11 +286,7 @@ export default function ProfilePage() {
   return (
     <div style={{ maxWidth: 640, margin: "0 auto" }}>
       {/* Breadcrumb */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.12 }}
-      >
+      <div>
         <nav className="flex items-center gap-2 text-sm mb-4" aria-label="NavigasiBreadcrumb">
           <button
             type="button"
@@ -322,13 +317,10 @@ export default function ProfilePage() {
             Profil
           </span>
         </nav>
-      </motion.div>
+      </div>
 
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.15, delay: 0.02 }}
+      <div
         style={{ marginBottom: 20 }}
       >
         <h1
@@ -351,15 +343,12 @@ export default function ProfilePage() {
         >
           Lihat dan kemaskini maklumat peribadi anda
         </p>
-      </motion.div>
+      </div>
 
       {/* ════════════════════════════════════════════════════════════════════ */}
-      {/* Kad Maklumat Peribadi                                               */}
+      {/* Kad Tukar Kata Laluan                                               */}
       {/* ════════════════════════════════════════════════════════════════════ */}
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.15, delay: 0.03 }}
+      <div
         style={{ ...cardBaseStyle, marginBottom: 20, overflow: "hidden" }}
       >
         {/* Gradient border */}
@@ -619,9 +608,7 @@ export default function ProfilePage() {
 
         {/* Success indicator */}
         {updateProfileMutation.isSuccess && !editing && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
+          <div
             style={{
               display: "flex",
               alignItems: "center",
@@ -637,17 +624,14 @@ export default function ProfilePage() {
           >
             <Check size={14} />
             Profil berjaya dikemaskini
-          </motion.div>
+          </div>
         )}
-      </motion.div>
+      </div>
 
       {/* ════════════════════════════════════════════════════════════════════ */}
       {/* Kad Tukar Kata Laluan                                               */}
       {/* ════════════════════════════════════════════════════════════════════ */}
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.15, delay: 0.08 }}
+      <div
         style={{ ...cardBaseStyle, overflow: "hidden" }}
       >
         {/* Gradient border */}
@@ -733,12 +717,7 @@ export default function ProfilePage() {
 
         {/* Expanded password form */}
         {changingPassword && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-          >
+          <div>
             <div
               style={{
                 display: "flex",
@@ -1039,9 +1018,9 @@ export default function ProfilePage() {
                 </button>
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
-      </motion.div>
+      </div>
 
       {/* ════════════════════════════════════════════════════════════════════ */}
       {/* Inline spin keyframes                                               */}

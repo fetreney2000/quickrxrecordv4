@@ -10,7 +10,6 @@
  */
 import { useState, useEffect, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
   Dialog,
   DialogContent,
@@ -264,9 +263,7 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
 
           {/* Duplicate warning */}
           {duplicate && (
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
+            <div
               className="flex items-start gap-2 p-3 rounded-xl"
               style={{
                 background: "rgba(245,158,11,0.08)",
@@ -313,7 +310,7 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
                   <ExternalLink className="w-3 h-3" />
                 </button>
               </div>
-            </motion.div>
+            </div>
           )}
         </form>
 

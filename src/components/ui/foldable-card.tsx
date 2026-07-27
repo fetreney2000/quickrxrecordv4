@@ -3,10 +3,8 @@
  *
  * - Klik pengepala untuk membuka/menutup
  * - Ikon ChevronDown berputar 180° semasa dibuka
- * - Animasi lancar dengan Framer Motion AnimatePresence
  */
 import { useState, type ReactNode } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -57,34 +55,23 @@ export function FoldableCard({
           onClick={(e) => e.stopPropagation()}
         >
           {headerExtra}
-          <motion.div
-            animate={{ rotate: open ? 180 : 0 }}
-            transition={{ duration: 0.15 }}
-          >
+          <div style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>
             <ChevronDown
               className="w-4 h-4"
               style={{ color: "#65676b" }}
             />
-          </motion.div>
+          </div>
         </div>
       </div>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            style={{ overflow: "hidden" }}
+      {open && (
+        <div>
+          <CardContent
+            className={cn("pt-0 border-t border-[#f0f2f5]", contentClassName)}
           >
-            <CardContent
-              className={cn("pt-0 border-t border-[#f0f2f5]", contentClassName)}
-            >
-              {children}
-            </CardContent>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {children}
+          </CardContent>
+        </div>
+      )}
     </Card>
   );
 }

@@ -31,7 +31,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Framer Motion
-import { AnimatePresence, motion } from "framer-motion";
 
 // Icons
 import {
@@ -996,15 +995,14 @@ function UserRow({
         }}
       >
         <td className="px-3 py-3">
-          <motion.div
-            animate={{ rotate: isExpanded ? 180 : 0 }}
-            transition={{ duration: 0.1 }}
+          <div
+            style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.1s" }}
           >
             <ChevronDown
               className="h-4 w-4"
               style={{ color: "#65676b" }}
             />
-          </motion.div>
+          </div>
         </td>
         <td className="px-3 py-3 text-sm font-medium">{user.nama}</td>
         <td
@@ -1027,15 +1025,10 @@ function UserRow({
       </tr>
 
       {/* Expanded Panel */}
-      <AnimatePresence>
         {isExpanded && (
           <tr>
             <td colSpan={6}>
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.15 }}
+              <div
                 className="overflow-hidden"
               >
                 <div
@@ -1077,14 +1070,8 @@ function UserRow({
                   </div>
 
                   {/* Edit Form OR Action Buttons */}
-                  <AnimatePresence mode="wait">
                     {isEditing ? (
-                      <motion.div
-                        key="edit-form"
-                        initial={{ opacity: 0, y: -3 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -3 }}
-                        transition={{ duration: 0.15 }}
+                      <div
                         className="grid grid-cols-1 md:grid-cols-4 gap-3"
                       >
                         <div className="space-y-1">
@@ -1165,14 +1152,9 @@ function UserRow({
                             Batal
                           </Button>
                         </div>
-                      </motion.div>
+                      </div>
                     ) : (
-                      <motion.div
-                        key="action-buttons"
-                        initial={{ opacity: 0, y: -3 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -3 }}
-                        transition={{ duration: 0.15 }}
+                      <div
                         className="flex gap-2"
                       >
                         <Button
@@ -1224,15 +1206,13 @@ function UserRow({
                             Reset Kata Laluan
                           </Button>
                         )}
-                      </motion.div>
+                      </div>
                     )}
-                  </AnimatePresence>
                 </div>
-              </motion.div>
+              </div>
             </td>
           </tr>
         )}
-      </AnimatePresence>
     </>
   );
 }

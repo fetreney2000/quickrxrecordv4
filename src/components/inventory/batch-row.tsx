@@ -8,7 +8,6 @@
  *  - Indikator kuantiti rendah
  */
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
 import { Check, X as XIcon, Edit, Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import { cn, formatDate, formatNumber } from "@/lib/utils";
 import type { ItemBatch } from "@/types";
@@ -121,10 +120,7 @@ export function BatchRow({
   return (
     <>
       {/* Desktop row */}
-      <motion.div
-        initial={{ opacity: 0, y: -3 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.008, duration: 0.1 }}
+      <div
         className="hidden sm:grid px-4 py-2.5 items-center"
         style={{
           gridTemplateColumns: "2fr 1.5fr 1.2fr 1.2fr 1fr",
@@ -231,13 +227,10 @@ export function BatchRow({
             </>
           )}
         </div>
-      </motion.div>
+      </div>
 
       {/* Mobile row */}
-      <motion.div
-        initial={{ opacity: 0, y: -3 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.008, duration: 0.1 }}
+      <div
         className="sm:hidden flex items-start gap-3 px-4 py-3 border-b border-[#f0f2f5]"
       >
         <div
@@ -334,7 +327,7 @@ export function BatchRow({
             )}
           </div>
         </div>
-      </motion.div>
+      </div>
     </>
   );
 }

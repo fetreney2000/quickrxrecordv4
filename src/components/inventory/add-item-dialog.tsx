@@ -8,7 +8,6 @@
  */
 import { useState, useEffect, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
   Dialog,
   DialogContent,
@@ -320,9 +319,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
           </div>
 
           {addItem.isError && (
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
+            <div
               className="text-xs px-3 py-2 rounded-xl"
               style={{
                 background: "rgba(220,38,38,0.08)",
@@ -332,7 +329,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
             >
               {(addItem.error as any)?.message ||
                 "Gagal menambah item. Sila cuba lagi."}
-            </motion.div>
+            </div>
           )}
         </form>
 

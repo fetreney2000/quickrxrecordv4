@@ -12,7 +12,6 @@
  *  - Orb merah, breadcrumb, header dengan ikon BarChart3
  */
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart3,
@@ -470,23 +469,16 @@ export default function ReportPage() {
       />
 
       {/* Breadcrumb */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.12 }}
-      >
+      <div>
         <Breadcrumb
           showBackButton={false}
           items={[{ label: "Laporan" }]}
           icon={BarChart3}
         />
-      </motion.div>
+      </div>
 
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.02, duration: 0.15 }}
+      <div
         className="flex items-center gap-3"
       >
         <div
@@ -512,14 +504,10 @@ export default function ReportPage() {
             Laporan inventori dan transaksi bekalan
           </p>
         </div>
-      </motion.div>
+      </div>
 
       {/* Tab Segmented Control */}
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.01, duration: 0.15 }}
-      >
+      <div>
         <div
           className="inline-flex items-center gap-1 p-1 rounded-[14px]"
           style={{ background: "rgba(240,242,245,0.8)" }}
@@ -556,16 +544,11 @@ export default function ReportPage() {
             );
           })}
         </div>
-      </motion.div>
+      </div>
 
       {/* Tab Content */}
-      <AnimatePresence mode="wait">
-        <motion.div
+        <div
           key={activeTab}
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 5 }}
-          transition={{ duration: 0.12 }}
         >
           {activeTab === "inventory" ? (
             <InventoryTab
@@ -582,8 +565,7 @@ export default function ReportPage() {
               onExportPDF={handleExportTransactionPDF}
             />
           )}
-        </motion.div>
-      </AnimatePresence>
+        </div>
     </div>
   );
 }

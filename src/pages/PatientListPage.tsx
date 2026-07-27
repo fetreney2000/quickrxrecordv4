@@ -56,6 +56,7 @@ export default function PatientListPage() {
   const navigate = useNavigate();
   const { can } = useAuth();
   const setNavSource = useNavStore((s) => s.setNavSource);
+  const setBreadcrumbTrail = useNavStore((s) => s.setBreadcrumbTrail);
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -64,8 +65,6 @@ export default function PatientListPage() {
   const [sort, setSort] = useState<SortState | null>(null);
   const [openAdd, setOpenAdd] = useState(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const setBreadcrumbTrail = useNavStore((s) => s.setBreadcrumbTrail);
-
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
@@ -101,9 +100,13 @@ export default function PatientListPage() {
   const handlePatientClick = useCallback(
     (patient: Patient) => {
       setNavSource("list");
+      setBreadcrumbTrail([
+        { label: "Senarai Pesakit", href: "/pesakit" },
+        { label: patient.nama },
+      ]);
       navigate(`/pesakit/${patient.id}`);
     },
-    [navigate, setNavSource]
+    [navigate, setNavSource, setBreadcrumbTrail]
   );
 
   /** Pagination sliding window — Section 5.4 */

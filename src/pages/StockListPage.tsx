@@ -115,11 +115,18 @@ export default function StockListPage() {
     setPage(0);
   }, []);
 
+  const pushBreadcrumb = useNavStore((s) => s.pushBreadcrumb);
+
   const handleItemClick = useCallback(
     (item: Item) => {
+      const displayTitle = [item.nama_item, item.kekuatan].filter(Boolean).join(" ");
+      setBreadcrumbTrail([
+        { label: "Senarai Inventori", href: "/stok" },
+        { label: displayTitle },
+      ]);
       navigate(`/stok/${item.id}`);
     },
-    [navigate]
+    [navigate, setBreadcrumbTrail]
   );
 
   const pageButtons = useMemo(() => {

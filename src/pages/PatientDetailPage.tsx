@@ -37,6 +37,8 @@ import {
   formatPhone,
   getInitials,
   toTitleCase,
+  myKadToDob,
+  formatAge,
 } from "@/lib/utils";
 import {
   usePatient,
@@ -379,6 +381,9 @@ export default function PatientDetailPage() {
               {patient.nombor_kad_pengenalan
                 ? formatMyKad(patient.nombor_kad_pengenalan)
                 : "Tiada KP"}
+              {patient.nombor_kad_pengenalan && (
+                <> · Umur: {formatAge(myKadToDob(patient.nombor_kad_pengenalan))}</>
+              )}
             </p>
           </div>
         </div>

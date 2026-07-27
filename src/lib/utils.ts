@@ -163,6 +163,20 @@ export function digitsOnly(raw: string | null | undefined): string {
   return raw.replace(/\D/g, "");
 }
 
+/** Extract date of birth from MyKad number (first 6 digits = YYMMDD). */
+export function myKadToDob(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const digits = raw.replace(/\D/g, "").slice(0, 6);
+  if (digits.length < 6) return null;
+  const yy = parseInt(digits.slice(0, 2), 10);
+  const mm = parseInt(digits.slice(2, 4), 10);
+  const dd = parseInt(digits.slice(4, 6), 10);
+  if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
+  // MyKad century rule: if year prefix >= 0, it's 20xx; otherwise 19xx
+  const year = yy < 30 ? 2000 + yy : 1900 + yy;
+  return `${year}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
+}
+
 /** Calculate age in years from a date of birth string. */
 export function calculateAge(dob: string | Date | null | undefined): number | null {
   if (!dob) return null;

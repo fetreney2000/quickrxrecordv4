@@ -327,16 +327,33 @@ export function useBatchAdjust(itemId: string | undefined) {
 }
 
 // ============================================================================
-// PATIENTS USING ITEM - Optimized with paginated joined query
+// PATIENTS USING ITEM - Optimized with batched queries to avoid URL limits
 // ============================================================================
 export const PATIENT_PAGE_SIZE = 50;
+
+/**
+ * Batch a large array into smaller chunks to avoid Supabase URL length limits.
+ */
+async function batchInQuery<T>(
+  ids: string[],
+  batchFn: (batchIds: string[]) => Promise<T[]>
+): Promise<T[]> {
+  const BATCH_SIZE = 100;
+  const results: T[] = [];
+  for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+    const batch = ids.slice(i, i + BATCH_SIZE);
+    const batchResults = await batchFn(batch);
+    results.push(...batchResults);
+  }
+  return results;
+}
 
 export function useItemPatients(itemId: string | undefined) {
   return useQuery({
     queryKey: ["item-patients", itemId],
     enabled: !!itemId,
     queryFn: async () => {
-      // Single paginated joined query: assignments with patient data
+      // Fetch assignments with patient data via joined query
       const { data: assignments, error: aErr } = await supabase
         .from("patient_item_assignments")
         .select(`
@@ -351,16 +368,23 @@ export function useItemPatients(itemId: string | undefined) {
       if (aErr) throw aErr;
       if (!assignments || assignments.length === 0) return [];
 
-      // Get latest supply for each assignment using a single aggregated query
-      const { data: supplies, error: sErr } = await supabase
-        .from("supply_records")
-        .select("assignment_id, tarikh_dibekal, kuantiti")
-        .in("assignment_id", assignments.map((a) => a.id))
-        .order("tarikh_dibekal", { ascending: false });
-      if (sErr) throw sErr;
+      // Batch the supplies query to avoid URL length errors with thousands of IDs
+      const assignmentIds = assignments.map((a: any) => a.id);
+      const allSupplies = await batchInQuery(
+        assignmentIds,
+        async (batchIds) => {
+          const { data, error } = await supabase
+            .from("supply_records")
+            .select("assignment_id, tarikh_dibekal, kuantiti")
+            .in("assignment_id", batchIds)
+            .order("tarikh_dibekal", { ascending: false });
+          if (error) throw error;
+          return (data ?? []) as any[];
+        }
+      );
 
       const lastSupplyMap = new Map<string, { tarikh: string; qty: number }>();
-      ((supplies ?? []) as any[]).forEach((s) => {
+      allSupplies.forEach((s: any) => {
         if (!lastSupplyMap.has(s.assignment_id)) {
           lastSupplyMap.set(s.assignment_id, {
             tarikh: s.tarikh_dibekal,

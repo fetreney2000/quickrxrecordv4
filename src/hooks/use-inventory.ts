@@ -368,8 +368,7 @@ export function useItemPatients(itemId: string | undefined) {
       if (aErr) throw aErr;
       if (!assignments || assignments.length === 0) return [];
 
-      // Fetch ALL supply records for this item by joining through assignments.
-      // Use the batched approach which is proven to work correctly.
+      // Fetch ALL supply records for this item using batched queries.
       const assignmentIds = assignments.map((a: any) => a.id);
       const allSupplies = await batchInQuery(
         assignmentIds,
@@ -393,6 +392,34 @@ export function useItemPatients(itemId: string | undefined) {
           });
         }
       });
+
+      // Fallback: for any assignment still missing a supply, fetch individually
+      const missingIds = assignments
+        .filter((a: any) => !lastSupplyMap.has(a.id))
+        .map((a: any) => a.id);
+      
+      if (missingIds.length > 0) {
+        const fallbackSupplies = await batchInQuery(
+          missingIds,
+          async (batchIds) => {
+            const { data, error } = await supabase
+              .from("supply_records")
+              .select("assignment_id, tarikh_dibekal, kuantiti")
+              .in("assignment_id", batchIds)
+              .order("tarikh_dibekal", { ascending: false });
+            if (error) return [];
+            return (data ?? []) as any[];
+          }
+        );
+        fallbackSupplies.forEach((s: any) => {
+          if (!lastSupplyMap.has(s.assignment_id)) {
+            lastSupplyMap.set(s.assignment_id, {
+              tarikh: s.tarikh_dibekal,
+              qty: s.kuantiti,
+            });
+          }
+        });
+      }
 
       return assignments.map((a: any) => ({
         id: a.id,

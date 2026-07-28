@@ -59,7 +59,7 @@ const ALL_CARDS: StatCardConfig[] = [
 ];
 
 const STATUS_BG: Record<ExpiryStatus, string> = { critical: "rgba(254,226,226,0.4)", warning: "rgba(254,215,170,0.3)", safe: "transparent" };
-const STATUS_TEXT_COLOR: Record<ExpiryStatus, string> = { critical: "#dc2626", warning: "#ea580c", safe: "#16a34a" };
+const STATUS_TEXT_COLOR: Record<ExpiryStatus, string> = { critical: "var(--destructive)", warning: "var(--warning)", safe: "var(--success)" };
 
 function PulsingDot({ color = "#16a34a" }: { color?: string }) {
   return <span className="rounded-full" style={{ width: 6, height: 6, background: color, boxShadow: `0 0 8px ${color}` }} />;
@@ -91,10 +91,7 @@ export default function DashboardPage() {
   const roleLabel = ROLE_LABELS[peranan] || peranan;
 
   return (
-    <div className="relative space-y-5 overflow-hidden">
-      <div className="absolute pointer-events-none" style={{ width: 400, height: 400, top: -100, right: -100, background: "var(--bg-accent-blue)", borderRadius: "50%", filter: "blur(40px)" }} />
-      <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "linear-gradient(rgba(0,0,0,0.01) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.01) 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
-
+    <div className="relative space-y-5">
       <Breadcrumb />
 
       <div className="flex flex-col items-start md:flex-row md:items-center justify-between gap-3">
@@ -182,8 +179,8 @@ function ExpiryRow({ batch, item, status, daysLeft }: ExpiryRowProps) {
   return (
     <tr style={{ background: STATUS_BG[status], borderBottom: "1px solid rgba(0,0,0,0.04)" }}>
       <td className="px-3 py-2.5 text-xs"><div className="font-semibold" style={{ color: "var(--text-primary)" }}>{item?.nama_item ?? "—"}</div>{item?.kod_item && <div className="text-2xs" style={{ color: "var(--text-secondary)" }}>{item.kod_item}{item.kekuatan ? ` · ${item.kekuatan}` : ""}</div>}</td>
-      <td className="px-3 py-2.5 text-xs font-mono" style={{ color: "#374151" }}>{batch.nombor_kelompok}</td>
-      <td className="px-3 py-2.5 text-xs" style={{ color: "#374151" }}>{formatDate(batch.tarikh_luput)}</td>
+      <td className="px-3 py-2.5 text-xs font-mono" style={{ color: "var(--text-primary)" }}>{batch.nombor_kelompok}</td>
+      <td className="px-3 py-2.5 text-xs" style={{ color: "var(--text-primary)" }}>{formatDate(batch.tarikh_luput)}</td>
       <td className="px-3 py-2.5 text-xs text-center font-semibold" style={{ color: "var(--text-primary)" }}>{batch.kuantiti.toLocaleString("ms-MY")}</td>
       <td className="px-3 py-2.5 text-xs text-center font-semibold" style={{ color: STATUS_TEXT_COLOR[status] }}>{daysLeft < 0 ? "Luput" : `${daysLeft} hari`}</td>
       <td className="px-3 py-2.5"><ExpiryBadge status={status} size="sm" /></td>

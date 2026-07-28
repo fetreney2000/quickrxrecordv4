@@ -34,7 +34,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ background: "#f0f2f5" }}
+        style={{ background: "var(--background)" }}
       >
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
       </div>

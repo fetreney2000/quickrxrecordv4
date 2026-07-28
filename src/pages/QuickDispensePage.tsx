@@ -321,6 +321,7 @@ export default function QuickDispensePage() {
                 onBlur={() => setTimeout(() => setShowResults(false), 200)}
                 className="h-11 pl-10 text-sm font-medium"
                 style={{
+                  color: "var(--text-primary)",
                   background: searchFocused ? "var(--card)" : "rgba(240,147,43,0.04)",
                   border: searchFocused ? "1px solid rgba(240,147,43,0.3)" : "1px solid transparent",
                   borderRadius: 14,
@@ -332,7 +333,7 @@ export default function QuickDispensePage() {
               )}
               {showResults && searchQuery.trim().length >= 2 && (
                 <div
-                  className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl border z-50 overflow-y-auto"
+                  className="absolute left-0 right-0 top-full mt-2 bg-background rounded-2xl border z-50 overflow-y-auto"
                   style={{ borderColor: "rgba(240,147,43,0.2)", boxShadow: "0 12px 40px rgba(0,0,0,0.12)", maxHeight: 320 }}
                 >
                   {searchResults.length === 0 && !searching ? (
@@ -348,7 +349,10 @@ export default function QuickDispensePage() {
                         type="button"
                         key={p.id}
                         onMouseDown={(e) => { e.preventDefault(); setSelectedPatient(p); setSearchQuery(""); setShowResults(false); setSelectedItem(null); }}
-                        className="w-full text-left px-4 py-2.5 hover:bg-orange-50/50 border-b border-orange-50 last:border-b-0"
+                        className="w-full text-left px-4 py-2.5 border-b last:border-b-0 transition-colors"
+                        style={{ borderColor: "var(--border-light)" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(240,147,43,0.06)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                       >
                         <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded-lg flex items-center justify-center text-white text-2xs font-bold" style={{ background: "linear-gradient(135deg, #f0932b, #e07a1f)" }}>

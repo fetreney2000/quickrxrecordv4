@@ -24,7 +24,7 @@ export function DashboardLayout() {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ background: "#f0f2f5" }}
+        style={{ background: "var(--background)" }}
       >
         <div className="flex flex-col items-center gap-3">
           <Loader2

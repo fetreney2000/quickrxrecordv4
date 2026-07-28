@@ -120,63 +120,15 @@ export function Header() {
       <header
         className="sticky top-0 z-40"
         style={{
-          background: "rgba(255,255,255,0.95)",
+          background: "var(--card)",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
-          borderBottom: "1px solid rgba(0,0,0,0.06)",
+          borderBottom: "1px solid var(--border-light)",
           boxShadow:
             "0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
           height: 64,
         }}
       >
-        {/* Gradient background overlay */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "linear-gradient(90deg, rgba(24,119,242,0.03) 0%, rgba(124,58,237,0.02) 50%, rgba(6,182,212,0.02) 100%)",
-          }}
-        />
-
-        {/* Orbs - positioned at top of header, partially hidden */}
-        <div
-          className="absolute inset-0 overflow-hidden pointer-events-none"
-          aria-hidden
-        >
-          <div
-            className="header-orb-1 absolute rounded-full"
-            style={{
-              width: 200,
-              height: 200,
-              top: -60,
-              left: "10%",
-              background: "rgba(24,119,242,0.06)",
-              filter: "blur(40px)",
-            }}
-          />
-          <div
-            className="header-orb-2 absolute rounded-full"
-            style={{
-              width: 160,
-              height: 160,
-              top: -30,
-              right: "20%",
-              background: "rgba(124,58,237,0.05)",
-              filter: "blur(40px)",
-            }}
-          />
-          <div
-            className="header-orb-3 absolute rounded-full"
-            style={{
-              width: 120,
-              height: 120,
-              top: -40,
-              left: "50%",
-              background: "rgba(6,182,212,0.05)",
-              filter: "blur(40px)",
-            }}
-          />
-        </div>
 
         <div className="relative h-full px-4 md:px-6 flex items-center justify-between gap-3">
           {/* Search bar (centered on desktop, full width on mobile) */}
@@ -201,15 +153,14 @@ export function Header() {
                   }}
                   onFocus={() => setOpen(true)}
                   placeholder="Cari pesakit..."
-                  className="header-search-input w-full h-10 pl-10 pr-10 text-sm rounded-[14px] border border-transparent transition-all outline-none"
+                  className="header-search-input w-full h-10 pl-10 pr-10 text-sm rounded-[14px] border transition-all outline-none"
                   style={{
-                    background: open ? "white" : "rgba(24,119,242,0.04)",
-                    borderColor: open
-                      ? "rgba(24,119,242,0.3)"
-                      : "transparent",
+                    background: open ? "var(--card)" : "var(--bg-accent-blue)",
+                    borderColor: open ? "var(--text-blue)" : "transparent",
+                    color: "var(--text-primary)",
                     boxShadow: open
-                      ? "0 0 0 4px rgba(24,119,242,0.1), 0 1px 2px rgba(0,0,0,0.05)"
-                      : "none",
+                      ? "0 0 0 4px rgba(24,119,242,0.12), 0 1px 2px rgba(0,0,0,0.05)"
+                      : "0 1px 2px rgba(0,0,0,0.04)",
                   }}
                 />
                 {isFetching && (
@@ -219,8 +170,9 @@ export function Header() {
 
               {showDropdown && (
                 <div
-                  className="absolute left-0 right-0 top-full mt-2 bg-white rounded-[14px] border border-blue-100 overflow-hidden z-50"
+                  className="absolute left-0 right-0 top-full mt-2 bg-background rounded-[14px] border overflow-hidden z-50"
                   style={{
+                    borderColor: "var(--border-light)",
                     boxShadow:
                       "0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06)",
                     maxHeight: 320,
@@ -238,7 +190,10 @@ export function Header() {
                               e.preventDefault();
                               handleSelect(p.id);
                             }}
-                            className="w-full text-left px-4 py-2.5 hover:bg-blue-50/60 transition-colors border-b border-blue-50/50 last:border-b-0"
+                            className="w-full text-left px-4 py-2.5 transition-colors border-b last:border-b-0"
+                            style={{ borderColor: "var(--border-light)" }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-accent-blue)"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                           >
                             <div className="flex items-center gap-2">
                               <User className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />

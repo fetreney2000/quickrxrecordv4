@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Loader2, User } from "lucide-react";
+import { Search, Loader2, User, Plus } from "lucide-react";
+import { AddPatientDialog } from "@/components/patient/add-patient-dialog";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
@@ -20,6 +21,7 @@ export function Header() {
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   const [open, setOpen] = useState(false);
+  const [showAddPatient, setShowAddPatient] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const setNavSource = useNavStore((s) => s.setNavSource);
 
@@ -258,8 +260,15 @@ export function Header() {
                       ))}
                     </ul>
                   ) : !isFetching ? (
-                    <div className="py-8 text-center text-sm text-muted-foreground">
-                      Tiada pesakit dijumpai.
+                    <div className="py-6 text-center space-y-3">
+                      <p className="text-sm text-muted-foreground">Tiada pesakit dijumpai.</p>
+                      {can("manage_patients") && (
+                        <button type="button" onClick={() => { setShowAddPatient(true); setOpen(false); }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors"
+                          style={{ background: "linear-gradient(135deg, #1877f2, #0d5bd4)", color: "white", boxShadow: "0 2px 8px rgba(24,119,242,0.25)" }}>
+                          <Plus className="w-3 h-3" /> Daftar Pesakit Baharu
+                        </button>
+                      )}
                     </div>
                   ) : null}
                 </div>
@@ -269,6 +278,7 @@ export function Header() {
             <div className="flex-1" />
           )}
         </div>
+      <AddPatientDialog open={showAddPatient} onOpenChange={setShowAddPatient} />
       </header>
     </>
   );

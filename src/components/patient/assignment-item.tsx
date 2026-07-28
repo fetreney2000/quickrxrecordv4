@@ -9,6 +9,8 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Trash2,
   Calendar,
   Loader2,
@@ -53,9 +55,14 @@ function SortableHeader({ label, sortKey, currentSort, onSort }: { label: string
   );
 }
 
+const DOSE_PAGE_SIZE = 20;
+const SUPPLY_PAGE_SIZE = 20;
+
 export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpdateDose, onStop, onEditSupply, onDeleteSupply, canEdit, formsMap }: AssignmentItemProps) {
   const [doseSort, setDoseSort] = useState<{ key: string; dir: SortDir } | null>(null);
   const [supplySort, setSupplySort] = useState<{ key: string; dir: SortDir } | null>(null);
+  const [dosePage, setDosePage] = useState(0);
+  const [supplyPage, setSupplyPage] = useState(0);
   const { data: doseHistory = [], isLoading: doseLoading } = useDoseHistory(expanded ? assignment.id : null);
   const { data: supplyHistory = [], isLoading: supplyLoading } = useSupplyHistory(expanded ? assignment.id : null);
   const item = assignment.item;
@@ -85,6 +92,18 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
     });
     return supplySort.dir === "asc" ? sorted : sorted.reverse();
   }, [supplyHistory, supplySort]);
+
+  const pagedDose = useMemo(() => {
+    const start = dosePage * DOSE_PAGE_SIZE;
+    return sortedDose.slice(start, start + DOSE_PAGE_SIZE);
+  }, [sortedDose, dosePage]);
+  const doseTotalPages = Math.max(1, Math.ceil(sortedDose.length / DOSE_PAGE_SIZE));
+
+  const pagedSupply = useMemo(() => {
+    const start = supplyPage * SUPPLY_PAGE_SIZE;
+    return sortedSupply.slice(start, start + SUPPLY_PAGE_SIZE);
+  }, [sortedSupply, supplyPage]);
+  const supplyTotalPages = Math.max(1, Math.ceil(sortedSupply.length / SUPPLY_PAGE_SIZE));
 
   const toggleSort = (type: "dose" | "supply", key: string) => {
     if (type === "dose") setDoseSort((prev) => { if (prev?.key === key) return prev.dir === "asc" ? { key, dir: "desc" } : null; return { key, dir: "asc" }; });
@@ -141,19 +160,19 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
       {expanded && (
         <div className="ml-12 mt-2 space-y-2">
           <FoldableCard title={<span className="flex items-center gap-2"><Calendar className="w-3.5 h-3.5" style={{ color: "#1877f2" }} /> Sejarah Dos{doseHistory.length > 0 && <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-md" style={{ background: "rgba(24,119,242,0.10)", color: "#1877f2" }}>{doseHistory.length}</span>}</span>} defaultOpen={true}>
-            {doseLoading ? <div className="flex items-center gap-2 py-3"><Loader2 className="w-3 h-3 animate-spin" style={{ color: "#1877f2" }} /><span className="text-2xs" style={{ color: "#65676b" }}>Memuatkan...</span></div> : doseHistory.length === 0 ? <p className="text-2xs py-2" style={{ color: "#9ca3af" }}>Tiada sejarah dos.</p> : (
+            {doseLoading ? <div className="flex items-center gap-2 py-3"><Loader2 className="w-3 h-3 animate-spin" style={{ color: "#1877f2" }} /><span className="text-2xs" style={{ color: "#65676b" }}>Memuatkan...</span></div> : doseHistory.length === 0 ? <p className="text-2xs py-2" style={{ color: "#9ca3af" }}>Tiada sejarah dos.</p> : <>
               <div className="overflow-x-auto mt-1">
                 <table className="w-full text-2xs">
                   <thead>
                     <tr className="border-b" style={{ borderColor: "#f0f2f5" }}>
-                      <SortableHeader label="Tarikh" sortKey="tarikh" currentSort={doseSort} onSort={(k) => toggleSort("dose", k)} />
-                      <SortableHeader label="Dos" sortKey="dos" currentSort={doseSort} onSort={(k) => toggleSort("dose", k)} />
-                      <SortableHeader label="Dikemaskini Oleh" sortKey="dikemaskini_oleh" currentSort={doseSort} onSort={(k) => toggleSort("dose", k)} />
-                      <SortableHeader label="Catatan" sortKey="catatan" currentSort={doseSort} onSort={(k) => toggleSort("dose", k)} />
+                      <SortableHeader label="Tarikh" sortKey="tarikh" currentSort={doseSort} onSort={(k) => { setDosePage(0); toggleSort("dose", k); }} />
+                      <SortableHeader label="Dos" sortKey="dos" currentSort={doseSort} onSort={(k) => { setDosePage(0); toggleSort("dose", k); }} />
+                      <SortableHeader label="Dikemaskini Oleh" sortKey="dikemaskini_oleh" currentSort={doseSort} onSort={(k) => { setDosePage(0); toggleSort("dose", k); }} />
+                      <SortableHeader label="Catatan" sortKey="catatan" currentSort={doseSort} onSort={(k) => { setDosePage(0); toggleSort("dose", k); }} />
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedDose.map((d) => (
+                    {pagedDose.map((d) => (
                       <tr key={d.id} className="border-b last:border-b-0" style={{ borderColor: "#f0f2f5" }}>
                         <td className="px-2 py-1.5" style={{ color: "#1c1e21" }}>{formatDate(d.tarikh)}</td>
                         <td className="px-2 py-1.5 font-semibold" style={{ color: "#1877f2" }}>{d.dos}</td>
@@ -164,26 +183,33 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                   </tbody>
                 </table>
               </div>
-            )}
+              {doseTotalPages > 1 && <div className="flex items-center justify-end gap-1 mt-2 pt-2 border-t border-[#f0f2f5]">
+                <button disabled={dosePage === 0} onClick={() => setDosePage((p) => Math.max(0, p - 1))} className="h-6 px-1.5 rounded-md flex items-center justify-center text-2xs font-semibold transition-colors" style={{ background: dosePage === 0 ? "transparent" : "white", color: dosePage === 0 ? "#9ca3af" : "#1c1e21", border: "1px solid #dddfe2", opacity: dosePage === 0 ? 0.4 : 1, cursor: dosePage === 0 ? "default" : "pointer" }}><ChevronLeft className="w-3 h-3" /></button>
+                {Array.from({ length: doseTotalPages }, (_, i) => (
+                  <button key={i} onClick={() => setDosePage(i)} className="min-w-[22px] h-6 px-1 text-2xs font-semibold rounded-md transition-colors" style={i === dosePage ? { background: "linear-gradient(135deg, #1877f2, #0d5bd4)", color: "white", border: "1px solid transparent" } : { background: "white", color: "#1c1e21", border: "1px solid #dddfe2", fontWeight: 400 }}>{i + 1}</button>
+                ))}
+                <button disabled={dosePage >= doseTotalPages - 1} onClick={() => setDosePage((p) => Math.min(doseTotalPages - 1, p + 1))} className="h-6 px-1.5 rounded-md flex items-center justify-center text-2xs font-semibold transition-colors" style={{ background: dosePage >= doseTotalPages - 1 ? "transparent" : "white", color: dosePage >= doseTotalPages - 1 ? "#9ca3af" : "#1c1e21", border: "1px solid #dddfe2", opacity: dosePage >= doseTotalPages - 1 ? 0.4 : 1, cursor: dosePage >= doseTotalPages - 1 ? "default" : "pointer" }}><ChevronRight className="w-3 h-3" /></button>
+              </div>}
+            </>}
           </FoldableCard>
 
           <FoldableCard title={<span className="flex items-center gap-2"><Package className="w-3.5 h-3.5" style={{ color: "#1877f2" }} /> Sejarah Bekalan{supplyHistory.length > 0 && <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-md" style={{ background: "rgba(24,119,242,0.10)", color: "#1877f2" }}>{supplyHistory.length}</span>}</span>} defaultOpen={true}>
-            {supplyLoading ? <div className="flex items-center gap-2 py-3"><Loader2 className="w-3 h-3 animate-spin" style={{ color: "#1877f2" }} /><span className="text-2xs" style={{ color: "#65676b" }}>Memuatkan...</span></div> : supplyHistory.length === 0 ? <p className="text-2xs py-2" style={{ color: "#9ca3af" }}>Tiada sejarah bekalan.</p> : (
+            {supplyLoading ? <div className="flex items-center gap-2 py-3"><Loader2 className="w-3 h-3 animate-spin" style={{ color: "#1877f2" }} /><span className="text-2xs" style={{ color: "#65676b" }}>Memuatkan...</span></div> : supplyHistory.length === 0 ? <p className="text-2xs py-2" style={{ color: "#9ca3af" }}>Tiada sejarah bekalan.</p> : <>
               <div className="overflow-x-auto mt-1">
                 <table className="w-full text-2xs">
                   <thead>
                     <tr className="border-b" style={{ borderColor: "#f0f2f5" }}>
-                      <SortableHeader label="Tarikh" sortKey="tarikh_dibekal" currentSort={supplySort} onSort={(k) => toggleSort("supply", k)} />
-                      <SortableHeader label="Kuantiti" sortKey="kuantiti" currentSort={supplySort} onSort={(k) => toggleSort("supply", k)} />
-                      <SortableHeader label="Dos" sortKey="dos" currentSort={supplySort} onSort={(k) => toggleSort("supply", k)} />
-                      <SortableHeader label="Tempoh" sortKey="tempoh_dibekal" currentSort={supplySort} onSort={(k) => toggleSort("supply", k)} />
-                      <SortableHeader label="Kakitangan" sortKey="kakitangan_pembekal" currentSort={supplySort} onSort={(k) => toggleSort("supply", k)} />
-                      <SortableHeader label="Catatan" sortKey="catatan_bekalan" currentSort={supplySort} onSort={(k) => toggleSort("supply", k)} />
+                      <SortableHeader label="Tarikh" sortKey="tarikh_dibekal" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
+                      <SortableHeader label="Kuantiti" sortKey="kuantiti" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
+                      <SortableHeader label="Dos" sortKey="dos" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
+                      <SortableHeader label="Tempoh" sortKey="tempoh_dibekal" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
+                      <SortableHeader label="Kakitangan" sortKey="kakitangan_pembekal" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
+                      <SortableHeader label="Catatan" sortKey="catatan_bekalan" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       {canEdit && <th className="text-left text-2xs font-semibold uppercase tracking-wider px-2 py-1.5" style={{ color: "#65676b" }}>Tindakan</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedSupply.map((s) => (
+                    {pagedSupply.map((s) => (
                       <tr key={s.id} className="border-b last:border-b-0" style={{ borderColor: "#f0f2f5" }}>
                         <td className="px-2 py-1.5" style={{ color: "#1c1e21" }}>{formatDate(s.tarikh_dibekal)}</td>
                         <td className="px-2 py-1.5" style={{ color: "#1c1e21" }}>{s.kuantiti}</td>
@@ -197,7 +223,14 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                   </tbody>
                 </table>
               </div>
-            )}
+              {supplyTotalPages > 1 && <div className="flex items-center justify-end gap-1 mt-2 pt-2 border-t border-[#f0f2f5]">
+                <button disabled={supplyPage === 0} onClick={() => setSupplyPage((p) => Math.max(0, p - 1))} className="h-6 px-1.5 rounded-md flex items-center justify-center text-2xs font-semibold transition-colors" style={{ background: supplyPage === 0 ? "transparent" : "white", color: supplyPage === 0 ? "#9ca3af" : "#1c1e21", border: "1px solid #dddfe2", opacity: supplyPage === 0 ? 0.4 : 1, cursor: supplyPage === 0 ? "default" : "pointer" }}><ChevronLeft className="w-3 h-3" /></button>
+                {Array.from({ length: supplyTotalPages }, (_, i) => (
+                  <button key={i} onClick={() => setSupplyPage(i)} className="min-w-[22px] h-6 px-1 text-2xs font-semibold rounded-md transition-colors" style={i === supplyPage ? { background: "linear-gradient(135deg, #1877f2, #0d5bd4)", color: "white", border: "1px solid transparent" } : { background: "white", color: "#1c1e21", border: "1px solid #dddfe2", fontWeight: 400 }}>{i + 1}</button>
+                ))}
+                <button disabled={supplyPage >= supplyTotalPages - 1} onClick={() => setSupplyPage((p) => Math.min(supplyTotalPages - 1, p + 1))} className="h-6 px-1.5 rounded-md flex items-center justify-center text-2xs font-semibold transition-colors" style={{ background: supplyPage >= supplyTotalPages - 1 ? "transparent" : "white", color: supplyPage >= supplyTotalPages - 1 ? "#9ca3af" : "#1c1e21", border: "1px solid #dddfe2", opacity: supplyPage >= supplyTotalPages - 1 ? 0.4 : 1, cursor: supplyPage >= supplyTotalPages - 1 ? "default" : "pointer" }}><ChevronRight className="w-3 h-3" /></button>
+              </div>}
+            </>}
           </FoldableCard>
         </div>
       )}

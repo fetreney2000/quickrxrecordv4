@@ -65,29 +65,6 @@ export default function CopyrightPage() {
       <div>
         <Card>
           <CardContent className="p-0 relative">
-            {/* Gradient border */}
-            <div
-              className="pointer-events-none absolute inset-0 rounded-2xl"
-              style={{
-                padding: 1.5,
-                background:
-                  "linear-gradient(135deg, rgba(228,29,72,0.4), rgba(24,119,242,0.3), rgba(124,58,237,0.3))",
-                WebkitMask:
-                  "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-                WebkitMaskComposite: "xor",
-                maskComposite: "exclude",
-              }}
-            />
-
-            {/* Accent bar */}
-            <div
-              className="absolute top-0 left-6 right-6 h-[3px] rounded-full"
-              style={{
-                background:
-                  "linear-gradient(90deg, #e11d48, #1877f2, #7c3aed, #e11d48)",
-              }}
-            />
-
             <div className="p-6 sm:p-8 space-y-6">
               {/* Profile Header */}
               <div className="text-center">

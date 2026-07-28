@@ -37,7 +37,7 @@ export function usePatientSearch(query: string) {
           `nama.ilike.${like},nombor_kad_pengenalan.ilike.${like},nombor_pendaftaran_hospital.ilike.${like}`
         )
         .order("nama", { ascending: true })
-        .limit(10);
+        .limit(50);
       if (error) throw error;
       return (data ?? []) as Patient[];
     },

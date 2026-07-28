@@ -173,6 +173,39 @@ export function useSupplyHistory(assignmentId: string | null) {
 }
 
 // ============================================================================
+// 4b. Latest supply date per assignment (for weeks-since badge)
+// ============================================================================
+export function useLatestSupplyDates(assignmentIds: string[]) {
+  return useQuery({
+    queryKey: ["latest-supply-dates", assignmentIds],
+    enabled: assignmentIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("supply_records")
+        .select("assignment_id, tarikh_dibekal")
+        .in("assignment_id", assignmentIds)
+        .order("tarikh_dibekal", { ascending: false });
+      if (error) throw error;
+      const map = new Map<string, string>();
+      for (const row of data ?? []) {
+        if (!map.has(row.assignment_id)) {
+          map.set(row.assignment_id, row.tarikh_dibekal);
+        }
+      }
+      return map;
+    },
+  });
+}
+
+export function weeksSince(dateStr: string | undefined): number | null {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24 * 7));
+}
+
+// ============================================================================
 // 5. Available batches (FEFO) for an item
 // ============================================================================
 export function useAvailableBatches(itemId: string | null) {

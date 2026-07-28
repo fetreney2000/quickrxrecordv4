@@ -151,31 +151,6 @@ export default function LoginPage() {
               "0 25px 50px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
           }}
         >
-          {/* Gradient border via pseudo-element */}
-          <div
-            className="pointer-events-none absolute"
-            style={{
-              inset: 0,
-              borderRadius: 20,
-              padding: 1.5,
-              background:
-                "linear-gradient(135deg, rgba(24,119,242,0.5), rgba(124,58,237,0.4), rgba(6,182,212,0.3), rgba(24,119,242,0.5))",
-              WebkitMask:
-                "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-              WebkitMaskComposite: "xor",
-              maskComposite: "exclude",
-            }}
-          />
-
-          {/* Accent bar */}
-          <div
-            className="absolute top-0 left-8 right-8 h-[3px] rounded-full"
-            style={{
-              background:
-                "linear-gradient(90deg, #1877f2, #7c3aed, #06b6d4, #1877f2)",
-            }}
-          />
-
           {/* Mobile logo (only on small screens) */}
           <div className="md:hidden flex justify-center mb-4">
             <RxLogo />

@@ -585,25 +585,12 @@ function InventoryTab({
       style={{
         background: "rgba(255,255,255,0.85)",
         backdropFilter: "blur(12px)",
-        border: "1.5px solid transparent",
-        borderImage:
-          "linear-gradient(135deg, rgba(244,63,94,0.4), rgba(24,119,242,0.4), rgba(124,58,237,0.4)) 1",
+        border: "1px solid #e4e6eb",
         borderRadius: 16,
         boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
       }}
     >
       <CardContent className="p-0 relative">
-        {/* Accent bar — red→blue→purple→red */}
-        <div
-          className="absolute top-0 left-6 right-6 h-[3px] rounded-full"
-          style={{
-            background:
-              "linear-gradient(90deg, #f43f5e, #1877f2, #7c3aed, #f43f5e)",
-            backgroundSize: "200% 100%",
-            animation: "gradient-x 4s linear infinite",
-          }}
-        />
-
         {/* Header */}
         <div className="p-4 sm:p-5 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#f0f2f5]">
           <div className="flex items-center gap-2">
@@ -796,25 +783,12 @@ function TransactionsTab({
       style={{
         background: "rgba(255,255,255,0.85)",
         backdropFilter: "blur(12px)",
-        border: "1.5px solid transparent",
-        borderImage:
-          "linear-gradient(135deg, rgba(124,58,237,0.4), rgba(24,119,242,0.4), rgba(6,182,212,0.4)) 1",
+        border: "1px solid #e4e6eb",
         borderRadius: 16,
         boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
       }}
     >
       <CardContent className="p-0 relative">
-        {/* Accent bar — purple→blue→cyan→purple */}
-        <div
-          className="absolute top-0 left-6 right-6 h-[3px] rounded-full"
-          style={{
-            background:
-              "linear-gradient(90deg, #7c3aed, #1877f2, #06b6d4, #7c3aed)",
-            backgroundSize: "200% 100%",
-            animation: "gradient-x 4s linear infinite",
-          }}
-        />
-
         {/* Header */}
         <div className="p-4 sm:p-5 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#f0f2f5]">
           <div className="flex items-center gap-2">

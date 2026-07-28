@@ -33,32 +33,7 @@ const cardBaseStyle: React.CSSProperties = {
   boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
 };
 
-const gradientBorderStyle = (
-  gradient: string
-): React.CSSProperties => ({
-  position: "absolute",
-  inset: 0,
-  borderRadius: "16px",
-  padding: "1px",
-  background: gradient,
-  WebkitMask:
-    "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-  WebkitMaskComposite: "xor",
-  maskComposite: "exclude",
-  pointerEvents: "none",
-});
 
-const gradientTopBarStyle = (
-  gradient: string
-): React.CSSProperties => ({
-  position: "absolute",
-  top: 0,
-  left: 0,
-  right: 0,
-  height: "3px",
-  borderRadius: "16px 16px 0 0",
-  background: gradient,
-});
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -84,14 +59,7 @@ const inputFocusStyle: React.CSSProperties = {
 // Gradient constants
 // ============================================================================
 
-const PROFILE_GRADIENT_BORDER =
-  "linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(24, 119, 242, 0.15), rgba(124, 58, 237, 0.1))";
-const PROFILE_GRADIENT_TOP =
-  "linear-gradient(90deg, #22c55e, #1877f2, #7c3aed, #22c55e)";
-const PASSWORD_GRADIENT_BORDER =
-  "linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(239, 68, 68, 0.1), rgba(124, 58, 237, 0.08))";
-const PASSWORD_GRADIENT_TOP =
-  "linear-gradient(90deg, #f59e0b, #ef4444, #7c3aed, #f59e0b)";
+
 
 // ============================================================================
 // Types
@@ -320,11 +288,6 @@ export default function ProfilePage() {
       <div
         style={{ ...cardBaseStyle, marginBottom: 20, overflow: "hidden" }}
       >
-        {/* Gradient border */}
-        <div style={gradientBorderStyle(PROFILE_GRADIENT_BORDER)} />
-        {/* Gradient top bar */}
-        <div style={gradientTopBarStyle(PROFILE_GRADIENT_TOP)} />
-
         {/* Card header */}
         <div
           style={{
@@ -603,11 +566,6 @@ export default function ProfilePage() {
       <div
         style={{ ...cardBaseStyle, overflow: "hidden" }}
       >
-        {/* Gradient border */}
-        <div style={gradientBorderStyle(PASSWORD_GRADIENT_BORDER)} />
-        {/* Gradient top bar */}
-        <div style={gradientTopBarStyle(PASSWORD_GRADIENT_TOP)} />
-
         {/* Card header */}
         <div
           style={{

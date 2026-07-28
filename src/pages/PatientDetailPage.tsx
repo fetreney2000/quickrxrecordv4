@@ -49,6 +49,8 @@ import {
   useDeleteSupplyRecord,
   useUpdateSupplyRecord,
   useItemsWithStats,
+  useLatestSupplyDates,
+  weeksSince,
   type AssignmentWithItem,
 } from "@/hooks/use-patient-detail";
 import { InfoField, StatCardMini } from "@/components/patient/patient-info-helpers";
@@ -97,6 +99,15 @@ export default function PatientDetailPage() {
   const { data: assignments = [] } = usePatientAssignments(id);
   const { data: itemsWithStats = [] } = useItemsWithStats();
   const { data: itemForms = [] } = useItemForms();
+  const assignmentIds = useMemo(() => assignments.map((a) => a.id), [assignments]);
+  const { data: latestSupplyDates } = useLatestSupplyDates(assignmentIds);
+  const weeksSinceMap = useMemo(() => {
+    const map = new Map<string, number | null>();
+    for (const a of assignments) {
+      map.set(a.id, weeksSince(latestSupplyDates?.get(a.id)));
+    }
+    return map;
+  }, [assignments, latestSupplyDates]);
   const updatePatient = useUpdatePatient(id);
   const deactivatePatient = useDeactivatePatient(id);
   const addAssignment = useAddAssignment(id);
@@ -207,7 +218,7 @@ export default function PatientDetailPage() {
       <div><FoldableCard title={<span className="flex items-center gap-2"><Pill className="w-4 h-4" style={{ color: "#1877f2" }} /> Item Didaftarkan<Badge variant="green" className="text-2xs">{stats.active} aktif</Badge>{stats.inactive > 0 && <Badge variant="slate" className="text-2xs">{stats.inactive} tamat</Badge>}</span>}
         headerExtra={canEdit && patient.aktif ? <Button size="sm" onClick={() => setOpenAddAssignment(true)} style={{ background: "linear-gradient(135deg, #1877f2, #0d5bd4)" }}><Plus className="w-3.5 h-3.5" /> Tambah Item</Button> : null}>
         {assignments.length === 0 ? <div className="flex flex-col items-center justify-center py-12 gap-2" style={{ color: "#9ca3af" }}><Pill className="w-10 h-10 opacity-40" /><p className="text-sm font-medium" style={{ color: "#65676b" }}>Tiada item didaftarkan</p>{canEdit && patient.aktif && <p className="text-xs">Klik "Tambah Item" untuk mula.</p>}</div> : <>
-          <div className="divide-y divide-[#f0f2f5]">{pagedAssignments.map((a) => <AssignmentItem key={a.id} assignment={a} expanded={expandedAssignment === a.id} onToggle={() => setExpandedAssignment(expandedAssignment === a.id ? null : a.id)} onSupply={() => setOpenSupply(a.id)} onUpdateDose={() => setOpenUpdateDose(a.id)} onStop={() => setOpenStopAssign(a.id)} onEditSupply={(s) => setEditSupplyRecord(s)} onDeleteSupply={(id) => setDeleteSupplyId({ id, assignmentId: a.id })} canEdit={canEdit && patient.aktif} formsMap={formsMap} />)}</div>
+          <div className="divide-y divide-[#f0f2f5]">{pagedAssignments.map((a) => <AssignmentItem key={a.id} assignment={a} expanded={expandedAssignment === a.id} onToggle={() => setExpandedAssignment(expandedAssignment === a.id ? null : a.id)} onSupply={() => setOpenSupply(a.id)} onUpdateDose={() => setOpenUpdateDose(a.id)} onStop={() => setOpenStopAssign(a.id)} onEditSupply={(s) => setEditSupplyRecord(s)} onDeleteSupply={(id) => setDeleteSupplyId({ id, assignmentId: a.id })} canEdit={canEdit && patient.aktif} formsMap={formsMap} weeksSinceLastSupply={weeksSinceMap.get(a.id) ?? null} />)}</div>
           {assignmentTotalPages > 1 && <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-[#f0f2f5]"><p className="text-xs" style={{ color: "#65676b" }}>Halaman {assignmentPage + 1} daripada {assignmentTotalPages}</p><div className="flex items-center gap-1"><Button variant="outline" size="sm" disabled={assignmentPage === 0} onClick={() => setAssignmentPage((p) => Math.max(0, p - 1))} className="h-7 px-2" style={{ opacity: assignmentPage === 0 ? 0.4 : 1 }}><ChevronLeft className="w-3.5 h-3.5" /></Button><Button variant="outline" size="sm" disabled={assignmentPage >= assignmentTotalPages - 1} onClick={() => setAssignmentPage((p) => Math.min(assignmentTotalPages - 1, p + 1))} className="h-7 px-2" style={{ opacity: assignmentPage >= assignmentTotalPages - 1 ? 0.4 : 1 }}><ChevronRight className="w-3.5 h-3.5" /></Button></div></div>}
         </>}
       </FoldableCard></div>

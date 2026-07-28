@@ -118,7 +118,7 @@ export default function PatientListPage() {
 
       <div>
         <div className="relative rounded-2xl overflow-hidden" style={{ background: "rgba(255,255,255,0.85)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", boxShadow: "0 4px 16px rgba(0,0,0,0.06)" }}>
-          <div className="pointer-events-none absolute inset-0 z-10" style={{ borderRadius: 16, padding: 1, background: "linear-gradient(135deg, rgba(24,119,242,0.5), rgba(124,58,237,0.5), rgba(6,182,212,0.3), rgba(24,119,242,0.5))", WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)", WebkitMaskComposite: "xor", maskComposite: "exclude" }} />
+			
           <div className="p-4 sm:p-5 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#f0f2f5]">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <div className="relative flex-1 min-w-0" style={{ maxWidth: 400 }}>

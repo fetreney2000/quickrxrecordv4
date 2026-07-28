@@ -38,6 +38,7 @@ interface AssignmentItemProps {
   onDeleteSupply: (id: string) => void;
   canEdit: boolean;
   formsMap: Map<string, string>;
+  weeksSinceLastSupply: number | null;
 }
 
 type SortDir = "asc" | "desc";
@@ -58,7 +59,7 @@ function SortableHeader({ label, sortKey, currentSort, onSort }: { label: string
 const DOSE_PAGE_SIZE = 20;
 const SUPPLY_PAGE_SIZE = 20;
 
-export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpdateDose, onStop, onEditSupply, onDeleteSupply, canEdit, formsMap }: AssignmentItemProps) {
+export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpdateDose, onStop, onEditSupply, onDeleteSupply, canEdit, formsMap, weeksSinceLastSupply }: AssignmentItemProps) {
   const [doseSort, setDoseSort] = useState<{ key: string; dir: SortDir } | null>(null);
   const [supplySort, setSupplySort] = useState<{ key: string; dir: SortDir } | null>(null);
   const [dosePage, setDosePage] = useState(0);
@@ -136,6 +137,7 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
               </div>
               <div className="flex items-center gap-2 mt-1">
                 {assignment.aktif ? <Badge variant="green" className="text-2xs">Aktif</Badge> : <Badge variant="slate" className="text-2xs">Tidak Aktif</Badge>}
+                {assignment.aktif && weeksSinceLastSupply !== null && <SupplyWeeksBadge weeks={weeksSinceLastSupply} />}
               </div>
             </div>
             {canEdit && assignment.aktif && (
@@ -235,5 +237,16 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
         </div>
       )}
     </div>
+  );
+}
+
+function SupplyWeeksBadge({ weeks }: { weeks: number }) {
+  const color = weeks <= 5 ? "#10b981" : weeks <= 13 ? "#f59e0b" : "#ef4444";
+  const bg = weeks <= 5 ? "rgba(16,185,129,0.10)" : weeks <= 13 ? "rgba(245,158,11,0.10)" : "rgba(239,68,68,0.10)";
+  const label = weeks <= 5 ? `${weeks} minggu` : weeks <= 13 ? `${weeks} minggu` : `${weeks} minggu`;
+  return (
+    <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-md" style={{ background: bg, color }}>
+      {label}
+    </span>
   );
 }

@@ -383,7 +383,7 @@ export default function ManagementPage() {
               className="text-[22px] font-bold"
               style={{ color: "#1c1e21" }}
             >
-              Pengurusan Pengguna
+              Pengurusan
             </h1>
             <p className="text-[13px]" style={{ color: "#65676b" }}>
               Pusat pentadbiran sistem — pengguna, permintaan reset, rujukan
@@ -392,10 +392,10 @@ export default function ManagementPage() {
         </div>
         <Button
           onClick={() => setOpenAdd(true)}
-          style={{ background: "#1877f2" }}
-          className="text-white"
+          className="text-white font-semibold"
+          style={{ background: "linear-gradient(135deg, #1877f2, #0d5bd4)", boxShadow: "0 2px 8px rgba(24,119,242,0.2)" }}
         >
-          <UserPlus className="h-4 w-4 mr-1" />
+          <UserPlus className="h-4 w-4 mr-1.5" />
           Tambah Pengguna
         </Button>
       </div>

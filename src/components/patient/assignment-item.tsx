@@ -243,10 +243,9 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
 function SupplyWeeksBadge({ weeks }: { weeks: number }) {
   const color = weeks <= 5 ? "#10b981" : weeks <= 13 ? "#f59e0b" : "#ef4444";
   const bg = weeks <= 5 ? "rgba(16,185,129,0.10)" : weeks <= 13 ? "rgba(245,158,11,0.10)" : "rgba(239,68,68,0.10)";
-  const label = weeks <= 5 ? `${weeks} minggu` : weeks <= 13 ? `${weeks} minggu` : `${weeks} minggu`;
   return (
     <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-md" style={{ background: bg, color }}>
-      {label}
+      Bekalan: {weeks}mgu
     </span>
   );
 }

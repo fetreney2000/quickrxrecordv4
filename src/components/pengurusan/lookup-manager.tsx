@@ -202,7 +202,7 @@ export default function LookupManager({ type }: LookupManagerProps) {
           </div>
           <div>
             <h3 className="text-base font-semibold">{config.title}</h3>
-            <p className="text-xs" style={{ color: "#65676b" }}>
+            <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
               {config.description}
             </p>
           </div>
@@ -225,7 +225,7 @@ export default function LookupManager({ type }: LookupManagerProps) {
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
           </div>
         ) : records.length === 0 ? (
-          <div className="text-center py-8 text-sm" style={{ color: "#65676b" }}>
+          <div className="text-center py-8 text-sm" style={{ color: "var(--text-secondary)" }}>
             Tiada {config.label.toLowerCase()} didaftarkan.
           </div>
         ) : (
@@ -234,19 +234,19 @@ export default function LookupManager({ type }: LookupManagerProps) {
               <tr>
                 <th
                   className="px-3 py-2.5 text-left text-2xs font-semibold uppercase tracking-wider"
-                  style={{ color: "#65676b", borderBottom: "2px solid #e4e6eb", background: "#f8f9fa" }}
+                  style={{ color: "var(--text-secondary)", borderBottom: "2px solid var(--border-medium)", background: "var(--bg-secondary)" }}
                 >
                   #
                 </th>
                 <th
                   className="px-3 py-2.5 text-left text-2xs font-semibold uppercase tracking-wider"
-                  style={{ color: "#65676b", borderBottom: "2px solid #e4e6eb", background: "#f8f9fa" }}
+                  style={{ color: "var(--text-secondary)", borderBottom: "2px solid var(--border-medium)", background: "var(--bg-secondary)" }}
                 >
                   Nama
                 </th>
                 <th
                   className="px-3 py-2.5 text-right text-2xs font-semibold uppercase tracking-wider"
-                  style={{ color: "#65676b", borderBottom: "2px solid #e4e6eb", background: "#f8f9fa" }}
+                  style={{ color: "var(--text-secondary)", borderBottom: "2px solid var(--border-medium)", background: "var(--bg-secondary)" }}
                 >
                   Tindakan
                 </th>
@@ -257,14 +257,14 @@ export default function LookupManager({ type }: LookupManagerProps) {
                 <tr
                   key={record.id}
                   style={{
-                    background: idx % 2 === 1 ? "#f8f8f8" : "#ffffff",
-                    borderBottom: "1px solid #f0f2f5",
+                    background: idx % 2 === 1 ? "var(--bg-secondary)" : "var(--card)",
+                    borderBottom: "1px solid var(--border-light)",
                   }}
                 >
-                  <td className="px-3 py-3 text-sm" style={{ color: "#65676b" }}>
+                  <td className="px-3 py-3 text-sm" style={{ color: "var(--text-secondary)" }}>
                     {idx + 1}
                   </td>
-                  <td className="px-3 py-3 text-sm font-medium">
+                  <td className="px-3 py-3 text-sm font-medium" style={{ color: "var(--text-primary)" }}>
                     {editId === record.id ? (
                       <input
                         ref={editInputRef}
@@ -313,7 +313,7 @@ export default function LookupManager({ type }: LookupManagerProps) {
                           onClick={() => startEdit(record)}
                           title="Edit"
                         >
-                          <Edit className="h-4 w-4" style={{ color: "#65676b" }} />
+                          <Edit className="h-4 w-4" style={{ color: "var(--text-secondary)" }} />
                         </Button>
                         <Button
                           size="icon-sm"
@@ -384,7 +384,7 @@ export default function LookupManager({ type }: LookupManagerProps) {
           <div className="space-y-3 py-2">
             <div
               className="rounded-lg p-3 text-sm"
-              style={{ background: "#fef2f2", color: "#991b1b" }}
+              style={{ background: "rgba(239,68,68,0.08)", color: "var(--destructive)" }}
             >
               <p className="font-semibold mb-1">Amaran</p>
               <p>

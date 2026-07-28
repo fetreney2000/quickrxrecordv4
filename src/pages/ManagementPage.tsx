@@ -462,7 +462,7 @@ export default function ManagementPage() {
                             style={{
                               color: "var(--text-secondary)",
                               borderBottom: "2px solid var(--border-medium)",
-                              background: "#f8f9fa",
+                              background: "var(--bg-secondary)",
                             }}
                           >
                             {header}
@@ -534,9 +534,9 @@ export default function ManagementPage() {
                   className="rounded-2xl border p-4 transition-colors"
                   style={{
                     background:
-                      req.status === "pending" ? "#fffbeb" : "#f9fafb",
+                      req.status === "pending" ? "rgba(217,119,6,0.08)" : "var(--card)",
                     borderColor:
-                      req.status === "pending" ? "#fde68a" : "#e5e7eb",
+                      req.status === "pending" ? "rgba(217,119,6,0.25)" : "var(--border-light)",
                   }}
                 >
                   <div className="flex items-center justify-between">
@@ -787,8 +787,8 @@ export default function ManagementPage() {
             <div
               className="rounded-lg p-3 text-sm"
               style={{
-                background: confirmToggle?.newStatus ? "#f0fdf4" : "#fef2f2",
-                color: confirmToggle?.newStatus ? "#166534" : "#991b1b",
+                background: confirmToggle?.newStatus ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)",
+                color: confirmToggle?.newStatus ? "var(--success)" : "var(--destructive)",
               }}
             >
               <p className="font-semibold mb-2">
@@ -861,7 +861,7 @@ export default function ManagementPage() {
           <div className="space-y-3 py-2">
             <div
               className="rounded-lg p-3 text-sm"
-              style={{ background: "#fffbeb", color: "#92400e" }}
+              style={{ background: "rgba(217,119,6,0.08)", color: "var(--warning)" }}
             >
               <p className="font-semibold mb-2">
                 Set semula kata laluan untuk "{confirmReset?.name}"?
@@ -983,9 +983,9 @@ function UserRow({
         className="cursor-pointer transition-colors"
         style={{
           background: isExpanded
-            ? "#f0f0f0"
+            ? "var(--bg-secondary)"
             : idx % 2 === 1
-            ? "#f8f8f8"
+            ? "var(--bg-secondary)"
             : "var(--card)",
           borderBottom: "1px solid var(--border-light)",
         }}
@@ -1000,10 +1000,10 @@ function UserRow({
             />
           </div>
         </td>
-        <td className="px-3 py-3 text-sm font-medium">{user.nama}</td>
+        <td className="px-3 py-3 text-sm font-medium" style={{ color: "var(--text-primary)" }}>{user.nama}</td>
         <td
           className="px-3 py-3 text-sm"
-          style={{ fontFamily: "monospace", fontSize: "14px" }}
+          style={{ fontFamily: "monospace", fontSize: "14px", color: "var(--text-primary)" }}
         >
           {user.nama_pengguna}
         </td>
@@ -1029,7 +1029,7 @@ function UserRow({
               >
                 <div
                   className="px-6 py-4"
-                  style={{ background: "#f0f0f0" }}
+                  style={{ background: "var(--bg-secondary)" }}
                 >
                   {/* User Info Grid */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">

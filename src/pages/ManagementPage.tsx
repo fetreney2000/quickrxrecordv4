@@ -393,7 +393,7 @@ export default function ManagementPage() {
         <Button
           onClick={() => setOpenAdd(true)}
           className="text-white font-semibold"
-          style={{ background: "linear-gradient(135deg, #1877f2, #0d5bd4)", boxShadow: "0 2px 8px rgba(24,119,242,0.2)" }}
+          style={{ background: "linear-gradient(135deg, #1877f2, #0d5bd4)" }}
         >
           <UserPlus className="h-4 w-4 mr-1.5" />
           Tambah Pengguna

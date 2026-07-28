@@ -34,17 +34,17 @@ import type { Patient } from "@/types";
 const labelStyle: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 600,
-  color: "#65676b",
+  color: "var(--text-secondary)",
   marginBottom: 4,
   display: "block",
 };
 const inputBaseStyle: React.CSSProperties = {
-  background: "white",
-  border: "1px solid #dddfe2",
+  background: "var(--card)",
+  border: "1px solid var(--border)",
   borderRadius: 10,
   fontSize: 13,
   fontWeight: 500,
-  color: "#1c1e21",
+  color: "var(--text-primary)",
   height: 40,
   padding: "0 12px",
   width: "100%",
@@ -116,7 +116,7 @@ export function MergeDialog({ open, onOpenChange, primaryPatient }: MergeDialogP
             </div>
             <div>
               <DialogTitle>Gabungkan Pesakit</DialogTitle>
-              <p className="text-xs mt-0.5" style={{ color: "#65676b" }}>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
                 {step === "search"
                   ? "Cari dan pilih pesakit pendua"
                   : "Sahkan penggabungan"}
@@ -142,7 +142,7 @@ export function MergeDialog({ open, onOpenChange, primaryPatient }: MergeDialogP
 
             {selectedIds.size > 0 && (
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-2xs font-semibold" style={{ color: "#65676b" }}>
+                <span className="text-2xs font-semibold" style={{ color: "var(--text-secondary)" }}>
                   Dipilih:
                 </span>
                 {selectedPatients.map((p) => (
@@ -169,15 +169,15 @@ export function MergeDialog({ open, onOpenChange, primaryPatient }: MergeDialogP
 
             <div
               className="border rounded-xl overflow-y-auto"
-              style={{ borderColor: "#e4e6eb", maxHeight: 300 }}
+              style={{ borderColor: "var(--border-medium)", maxHeight: 300 }}
             >
               {searching ? (
-                <div className="flex items-center justify-center py-8 gap-2 text-xs" style={{ color: "#65676b" }}>
+                <div className="flex items-center justify-center py-8 gap-2 text-xs" style={{ color: "var(--text-secondary)" }}>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   Mencari...
                 </div>
               ) : searchResults.length === 0 ? (
-                <div className="text-center text-xs py-8" style={{ color: "#9ca3af" }}>
+                <div className="text-center text-xs py-8" style={{ color: "var(--text-muted)" }}>
                   {searchQuery.trim().length < 2
                     ? "Taip sekurang-kurangnya 2 aksara untuk mencari."
                     : "Tiada pesakit dijumpai."}
@@ -196,14 +196,14 @@ export function MergeDialog({ open, onOpenChange, primaryPatient }: MergeDialogP
                           "w-full text-left px-3 py-2 text-xs border-b last:border-b-0 transition-colors",
                           isSelected ? "bg-purple-50" : "hover:bg-purple-50/50"
                         )}
-                        style={{ borderColor: "#f0f2f5" }}
+                        style={{ borderColor: "var(--border-light)" }}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="min-w-0 flex-1">
-                            <p className="font-semibold truncate" style={{ color: "#1c1e21" }}>
+                            <p className="font-semibold truncate" style={{ color: "var(--text-primary)" }}>
                               {p.nama}
                             </p>
-                            <p style={{ color: "#65676b" }}>
+                            <p style={{ color: "var(--text-secondary)" }}>
                               {p.nombor_kad_pengenalan || "Tiada KP"}
                               {p.nombor_pendaftaran_hospital
                                 ? ` · ${p.nombor_pendaftaran_hospital}`
@@ -261,22 +261,22 @@ export function MergeDialog({ open, onOpenChange, primaryPatient }: MergeDialogP
               </div>
             </div>
 
-            <div className="text-xs font-semibold" style={{ color: "#1c1e21" }}>
+            <div className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
               Pesakit Utama:
             </div>
             <div
               className="p-2 rounded-lg text-xs"
-              style={{ background: "rgba(24,119,242,0.06)", border: "1px solid rgba(24,119,242,0.15)" }}
+              style={{ background: "var(--bg-accent-blue)", border: "1px solid rgba(24,119,242,0.15)" }}
             >
               <span className="font-semibold" style={{ color: "#1877f2" }}>
                 {primaryPatient.nama}
               </span>
-              <span style={{ color: "#65676b" }}>
+              <span style={{ color: "var(--text-secondary)" }}>
                 {" "}— {primaryPatient.nombor_kad_pengenalan || "Tiada KP"}
               </span>
             </div>
 
-            <div className="text-xs font-semibold" style={{ color: "#1c1e21" }}>
+            <div className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
               Pesakit Pendua ({selectedIds.size}):
             </div>
             <div className="space-y-1">
@@ -287,10 +287,10 @@ export function MergeDialog({ open, onOpenChange, primaryPatient }: MergeDialogP
                   style={{ background: "rgba(220,38,38,0.04)", border: "1px solid rgba(220,38,38,0.12)" }}
                 >
                   <User className="w-3 h-3" style={{ color: "#dc2626" }} />
-                  <span className="font-semibold" style={{ color: "#1c1e21" }}>
+                  <span className="font-semibold" style={{ color: "var(--text-primary)" }}>
                     {p.nama}
                   </span>
-                  <span style={{ color: "#65676b" }}>
+                  <span style={{ color: "var(--text-secondary)" }}>
                     — {p.nombor_kad_pengenalan || "Tiada KP"}
                   </span>
                 </div>

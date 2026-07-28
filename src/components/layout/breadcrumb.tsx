@@ -21,7 +21,7 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
         return (
           <span key={i} className="flex items-center gap-1.5 min-w-0">
             {i > 0 && (
-              <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#9ca3af" }} />
+              <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--text-muted)" }} />
             )}
             {item.href && !isLast ? (
               <Link
@@ -34,7 +34,7 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
             ) : (
               <span
                 className="flex items-center gap-1 truncate font-medium"
-                style={{ color: isLast ? "#1c1e21" : "#65676b" }}
+                style={{ color: isLast ? "var(--text-primary)" : "var(--text-secondary)" }}
               >
                 {i === 0 ? <Home className="w-3.5 h-3.5" /> : null}
                 <span className="truncate">{item.label}</span>

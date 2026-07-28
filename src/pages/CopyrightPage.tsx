@@ -48,13 +48,13 @@ export default function CopyrightPage() {
         <div>
           <h1
             className="text-[22px] font-bold leading-tight"
-            style={{ color: "#1c1e21", letterSpacing: "-0.01em" }}
+            style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}
           >
             Hak Cipta
           </h1>
           <p
             className="text-[13px] font-medium mt-0.5"
-            style={{ color: "#65676b" }}
+            style={{ color: "var(--text-secondary)" }}
           >
             Maklumat pembangun dan notis hak cipta
           </p>
@@ -80,13 +80,13 @@ export default function CopyrightPage() {
                 </div>
                 <h2
                   className="text-[18px] font-bold"
-                  style={{ color: "#1c1e21" }}
+                  style={{ color: "var(--text-primary)" }}
                 >
                   QuickRxRecord v4.0
                 </h2>
                 <p
                   className="text-[13px] font-medium mt-0.5"
-                  style={{ color: "#65676b" }}
+                  style={{ color: "var(--text-secondary)" }}
                 >
                   Sistem Pengurusan Inventori dan Pesakit
                 </p>
@@ -124,7 +124,7 @@ export default function CopyrightPage() {
               >
                 <p
                   className="text-xs"
-                  style={{ color: "#9ca3af" }}
+                  style={{ color: "var(--text-muted)" }}
                 >
                   © {currentYear} QuickRxRecord · Jabatan Farmasi Hospital
                   Keningau. Hak cipta terpelihara.
@@ -160,13 +160,13 @@ function InfoRow({ icon, iconColor, label, value }: InfoRowProps) {
       <div className="flex-1 min-w-0">
         <p
           className="text-[11px] font-medium uppercase tracking-wider"
-          style={{ color: "#9ca3af" }}
+          style={{ color: "var(--text-muted)" }}
         >
           {label}
         </p>
         <p
           className="text-[13px] font-semibold truncate"
-          style={{ color: "#1c1e21" }}
+          style={{ color: "var(--text-primary)" }}
         >
           {value}
         </p>

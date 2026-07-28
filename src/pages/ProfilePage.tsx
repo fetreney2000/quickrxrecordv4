@@ -27,7 +27,7 @@ const cardBaseStyle: React.CSSProperties = {
   position: "relative",
   borderRadius: "16px",
   padding: "20px 24px",
-  background: "rgba(255, 255, 255, 0.85)",
+  background: "var(--card)",
   backdropFilter: "blur(12px)",
   WebkitBackdropFilter: "blur(12px)",
   boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
@@ -44,7 +44,7 @@ const inputStyle: React.CSSProperties = {
   background: "#fff",
   fontSize: "14px",
   fontWeight: 500,
-  color: "#1c1e21",
+  color: "var(--text-primary)",
   outline: "none",
   transition: "all 0.2s ease",
 };
@@ -264,7 +264,7 @@ export default function ProfilePage() {
           style={{
             fontSize: 22,
             fontWeight: 700,
-            color: "#1c1e21",
+            color: "var(--text-primary)",
             lineHeight: 1.3,
           }}
         >
@@ -274,7 +274,7 @@ export default function ProfilePage() {
           style={{
             fontSize: 13,
             fontWeight: 400,
-            color: "#65676b",
+            color: "var(--text-secondary)",
             marginTop: 4,
           }}
         >
@@ -316,7 +316,7 @@ export default function ProfilePage() {
                 style={{
                   fontSize: 15,
                   fontWeight: 700,
-                  color: "#1c1e21",
+                  color: "var(--text-primary)",
                 }}
               >
                 Maklumat Peribadi
@@ -325,7 +325,7 @@ export default function ProfilePage() {
                 style={{
                   fontSize: 12,
                   fontWeight: 400,
-                  color: "#65676b",
+                  color: "var(--text-secondary)",
                   marginTop: 1,
                 }}
               >
@@ -355,7 +355,7 @@ export default function ProfilePage() {
                 transition: "all 0.2s ease",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(24, 119, 242, 0.08)";
+                e.currentTarget.style.background = "var(--bg-accent-blue)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = "transparent";
@@ -377,7 +377,7 @@ export default function ProfilePage() {
                   borderRadius: 10,
                   border: "1px solid #dddfe2",
                   background: "#fff",
-                  color: "#65676b",
+                  color: "var(--text-secondary)",
                   fontSize: 12,
                   fontWeight: 600,
                   cursor: "pointer",
@@ -387,7 +387,7 @@ export default function ProfilePage() {
                   e.currentTarget.style.borderColor = "#bec3c9";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "#dddfe2";
+                  e.currentTarget.style.borderColor = "var(--border)";
                 }}
               >
                 Batal
@@ -449,7 +449,7 @@ export default function ProfilePage() {
                     display: "block",
                     fontSize: 12,
                     fontWeight: 600,
-                    color: "#65676b",
+                    color: "var(--text-secondary)",
                     marginBottom: 6,
                   }}
                 >
@@ -481,7 +481,7 @@ export default function ProfilePage() {
                     display: "block",
                     fontSize: 12,
                     fontWeight: 600,
-                    color: "#65676b",
+                    color: "var(--text-secondary)",
                     marginBottom: 6,
                   }}
                 >
@@ -512,7 +512,7 @@ export default function ProfilePage() {
                     display: "block",
                     fontSize: 12,
                     fontWeight: 600,
-                    color: "#65676b",
+                    color: "var(--text-secondary)",
                     marginBottom: 6,
                   }}
                 >
@@ -593,7 +593,7 @@ export default function ProfilePage() {
               style={{
                 fontSize: 15,
                 fontWeight: 700,
-                color: "#1c1e21",
+                color: "var(--text-primary)",
               }}
             >
               Tukar Kata Laluan
@@ -602,7 +602,7 @@ export default function ProfilePage() {
               style={{
                 fontSize: 12,
                 fontWeight: 400,
-                color: "#65676b",
+                color: "var(--text-secondary)",
                 marginTop: 1,
               }}
             >
@@ -659,7 +659,7 @@ export default function ProfilePage() {
                     display: "block",
                     fontSize: 12,
                     fontWeight: 600,
-                    color: "#65676b",
+                    color: "var(--text-secondary)",
                     marginBottom: 6,
                   }}
                 >
@@ -694,7 +694,7 @@ export default function ProfilePage() {
                       background: "none",
                       border: "none",
                       cursor: "pointer",
-                      color: "#65676b",
+                      color: "var(--text-secondary)",
                       padding: 4,
                       display: "flex",
                       alignItems: "center",
@@ -713,7 +713,7 @@ export default function ProfilePage() {
                     display: "block",
                     fontSize: 12,
                     fontWeight: 600,
-                    color: "#65676b",
+                    color: "var(--text-secondary)",
                     marginBottom: 6,
                   }}
                 >
@@ -747,7 +747,7 @@ export default function ProfilePage() {
                       background: "none",
                       border: "none",
                       cursor: "pointer",
-                      color: "#65676b",
+                      color: "var(--text-secondary)",
                       padding: 4,
                       display: "flex",
                       alignItems: "center",
@@ -778,7 +778,7 @@ export default function ProfilePage() {
                             background:
                               i <= pwdStrength.level
                                 ? pwdStrength.color
-                                : "#e4e6eb",
+                                : "var(--border-medium)",
                             transition: "background 0.2s ease",
                           }}
                         />
@@ -804,7 +804,7 @@ export default function ProfilePage() {
                     display: "block",
                     fontSize: 12,
                     fontWeight: 600,
-                    color: "#65676b",
+                    color: "var(--text-secondary)",
                     marginBottom: 6,
                   }}
                 >
@@ -838,7 +838,7 @@ export default function ProfilePage() {
                       background: "none",
                       border: "none",
                       cursor: "pointer",
-                      color: "#65676b",
+                      color: "var(--text-secondary)",
                       padding: 4,
                       display: "flex",
                       alignItems: "center",
@@ -891,7 +891,7 @@ export default function ProfilePage() {
                     borderRadius: 10,
                     border: "1px solid #dddfe2",
                     background: "#fff",
-                    color: "#65676b",
+                    color: "var(--text-secondary)",
                     fontSize: 13,
                     fontWeight: 600,
                     cursor: "pointer",
@@ -901,7 +901,7 @@ export default function ProfilePage() {
                     e.currentTarget.style.borderColor = "#bec3c9";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "#dddfe2";
+                    e.currentTarget.style.borderColor = "var(--border)";
                   }}
                 >
                   Batal
@@ -987,7 +987,7 @@ function FieldDisplay({
           display: "block",
           fontSize: 11,
           fontWeight: 600,
-          color: "#65676b",
+          color: "var(--text-secondary)",
           textTransform: "uppercase",
           letterSpacing: "0.05em",
           marginBottom: 4,
@@ -999,7 +999,7 @@ function FieldDisplay({
         style={{
           fontSize: 14,
           fontWeight: 500,
-          color: "#1c1e21",
+          color: "var(--text-primary)",
           lineHeight: 1.4,
         }}
       >

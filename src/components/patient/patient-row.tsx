@@ -31,11 +31,11 @@ export function PatientRow({ patient, index, onClick }: PatientRowProps) {
         style={{
           gridTemplateColumns: "3fr 3fr 3fr 2fr 2fr",
           gap: 12,
-          borderBottom: "1px solid #f0f2f5",
+          borderBottom: "1px solid var(--border-light)",
         }}
         onMouseEnter={(e) =>
           ((e.currentTarget as HTMLElement).style.background =
-            "rgba(24,119,242,0.03)")
+            "var(--bg-accent-blue)")
         }
         onMouseLeave={(e) =>
           ((e.currentTarget as HTMLElement).style.background = "transparent")
@@ -52,40 +52,40 @@ export function PatientRow({ patient, index, onClick }: PatientRowProps) {
           </div>
           <span
             className="text-[13px] font-medium truncate"
-            style={{ color: "#1c1e21" }}
+            style={{ color: "var(--text-primary)" }}
           >
             {patient.nama}
           </span>
         </div>
         <span
           className="text-[13px] truncate"
-          style={{ color: "#1c1e21" }}
+          style={{ color: "var(--text-primary)" }}
         >
           {patient.nombor_kad_pengenalan ? (
             formatMyKad(patient.nombor_kad_pengenalan)
           ) : (
-            <em style={{ color: "#9ca3af" }}>-</em>
+            <em style={{ color: "var(--text-muted)" }}>-</em>
           )}
         </span>
         <span
           className="text-[13px] truncate"
-          style={{ color: "#1c1e21" }}
+          style={{ color: "var(--text-primary)" }}
         >
           {patient.nombor_pendaftaran_hospital || (
-            <em style={{ color: "#9ca3af" }}>-</em>
+            <em style={{ color: "var(--text-muted)" }}>-</em>
           )}
         </span>
         <span
           className="text-[13px] truncate"
-          style={{ color: "#1c1e21" }}
+          style={{ color: "var(--text-primary)" }}
         >
           {patient.dokumen_lain || (
-            <em style={{ color: "#9ca3af" }}>-</em>
+            <em style={{ color: "var(--text-muted)" }}>-</em>
           )}
         </span>
         <span
           className="text-[13px] font-medium tabular-nums"
-          style={{ color: "#1c1e21" }}
+          style={{ color: "var(--text-primary)" }}
         >
           {patient.bilangan_item ?? 0}
         </span>
@@ -109,7 +109,7 @@ export function PatientRow({ patient, index, onClick }: PatientRowProps) {
         )}
         onMouseEnter={(e) =>
           ((e.currentTarget as HTMLElement).style.background =
-            "rgba(24,119,242,0.03)")
+            "var(--bg-accent-blue)")
         }
         onMouseLeave={(e) =>
           ((e.currentTarget as HTMLElement).style.background = "transparent")
@@ -126,13 +126,13 @@ export function PatientRow({ patient, index, onClick }: PatientRowProps) {
         <div className="flex-1 min-w-0">
           <p
             className="text-[14px] font-medium truncate"
-            style={{ color: "#1c1e21" }}
+            style={{ color: "var(--text-primary)" }}
           >
             {patient.nama}
           </p>
           <div
             className="flex items-center gap-2 text-[12px] truncate"
-            style={{ color: "#65676b" }}
+            style={{ color: "var(--text-secondary)" }}
           >
             {patient.nombor_kad_pengenalan && (
               <span className="flex items-center gap-0.5">
@@ -150,7 +150,7 @@ export function PatientRow({ patient, index, onClick }: PatientRowProps) {
         </div>
         <ArrowRight
           className="w-4 h-4 flex-shrink-0"
-          style={{ color: "#9ca3af" }}
+          style={{ color: "var(--text-muted)" }}
         />
       </div>
     </>

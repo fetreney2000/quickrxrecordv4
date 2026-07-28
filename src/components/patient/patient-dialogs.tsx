@@ -33,17 +33,17 @@ import type { Item } from "@/types";
 const labelStyle: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 600,
-  color: "#65676b",
+  color: "var(--text-secondary)",
   marginBottom: 4,
   display: "block",
 };
 const inputBaseStyle: React.CSSProperties = {
-  background: "white",
-  border: "1px solid #dddfe2",
+  background: "var(--card)",
+  border: "1px solid var(--border)",
   borderRadius: 10,
   fontSize: 13,
   fontWeight: 500,
-  color: "#1c1e21",
+  color: "var(--text-primary)",
   height: 40,
   padding: "0 12px",
   width: "100%",
@@ -82,7 +82,7 @@ export function DeactivateDialog({
             </div>
             <div>
               <DialogTitle>Nyahaktifkan Pesakit</DialogTitle>
-              <p className="text-xs mt-0.5" style={{ color: "#65676b" }}>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
                 Tindakan ini boleh diterbalikkan
               </p>
             </div>
@@ -195,7 +195,7 @@ export function AddAssignmentDialog({
             </div>
             <div>
               <DialogTitle>Tambah Item Baharu</DialogTitle>
-              <p className="text-xs mt-0.5" style={{ color: "#65676b" }}>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
                 Pilih item, tetapkan dos, dan simpan
               </p>
             </div>
@@ -230,12 +230,12 @@ export function AddAssignmentDialog({
           {/* Item list */}
           <div
             className="border rounded-xl overflow-y-auto"
-            style={{ borderColor: "#e4e6eb", maxHeight: 200 }}
+            style={{ borderColor: "var(--border-medium)", maxHeight: 200 }}
           >
             {filtered.length === 0 ? (
               <div
                 className="text-center text-xs py-6"
-                style={{ color: "#9ca3af" }}
+                style={{ color: "var(--text-muted)" }}
               >
                 Tiada item dijumpai.
               </div>
@@ -260,14 +260,14 @@ export function AddAssignmentDialog({
                         ? "bg-blue-50"
                         : "hover:bg-blue-50/50"
                     )}
-                    style={{ borderColor: "#f0f2f5" }}
+                    style={{ borderColor: "var(--border-light)" }}
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold truncate" style={{ color: "#1c1e21" }}>
+                        <p className="font-semibold truncate" style={{ color: "var(--text-primary)" }}>
                           {i.nama_item}
                         </p>
-                        <p style={{ color: "#65676b" }}>
+                        <p style={{ color: "var(--text-secondary)" }}>
                           {i.kod_item}
                           {i.kekuatan ? ` · ${i.kekuatan}` : ""}
                         </p>
@@ -297,7 +297,7 @@ export function AddAssignmentDialog({
                           <span
                             className="text-2xs font-semibold px-2 py-0.5 rounded-full"
                             style={{
-                              background: "rgba(24,119,242,0.1)",
+                              background: "var(--bg-accent-blue)",
                               color: "#1877f2",
                             }}
                           >
@@ -306,7 +306,7 @@ export function AddAssignmentDialog({
                         ) : hasKuota ? (
                           <span
                             className="text-2xs font-medium"
-                            style={{ color: "#65676b" }}
+                            style={{ color: "var(--text-secondary)" }}
                           >
                             Baki: {baki}/{kuota}
                           </span>
@@ -460,7 +460,7 @@ export function SupplyDialog({
             </div>
             <div>
               <DialogTitle>Bekal Ubat</DialogTitle>
-              <p className="text-xs mt-0.5" style={{ color: "#65676b" }}>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
                 {assignment.item?.nama_item}
               </p>
             </div>
@@ -536,7 +536,7 @@ export function SupplyDialog({
           <div>
             <Label style={labelStyle}>Nombor Kelompok</Label>
             {batchesLoading ? (
-              <div className="flex items-center gap-2 text-xs" style={{ color: "#65676b" }}>
+              <div className="flex items-center gap-2 text-xs" style={{ color: "var(--text-secondary)" }}>
                 <Loader2 className="w-3 h-3 animate-spin" /> Memuatkan kelompok...
               </div>
             ) : batches.length === 0 ? (
@@ -552,7 +552,7 @@ export function SupplyDialog({
             ) : (
               <div
                 className="border rounded-xl overflow-y-auto"
-                style={{ borderColor: "#e4e6eb", maxHeight: 160 }}
+                style={{ borderColor: "var(--border-medium)", maxHeight: 160 }}
               >
                 {batches.map((b) => (
                   <label
@@ -561,7 +561,7 @@ export function SupplyDialog({
                       "flex items-center gap-2 px-3 py-2 text-xs border-b last:border-b-0 cursor-pointer",
                       batchId === b.id ? "bg-blue-50" : "hover:bg-blue-50/50"
                     )}
-                    style={{ borderColor: "#f0f2f5" }}
+                    style={{ borderColor: "var(--border-light)" }}
                   >
                     <input
                       type="radio"
@@ -572,10 +572,10 @@ export function SupplyDialog({
                       style={{ accentColor: "#1877f2" }}
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="font-mono font-semibold" style={{ color: "#1c1e21" }}>
+                      <p className="font-mono font-semibold" style={{ color: "var(--text-primary)" }}>
                         {b.nombor_kelompok}
                       </p>
-                      <p style={{ color: "#65676b" }}>
+                      <p style={{ color: "var(--text-secondary)" }}>
                         Luput: {formatDate(b.tarikh_luput)} · Stok:{" "}
                         {b.kuantiti}
                       </p>
@@ -673,7 +673,7 @@ export function UpdateDoseDialog({
             </div>
             <div>
               <DialogTitle>Kemaskini Dos</DialogTitle>
-              <p className="text-xs mt-0.5" style={{ color: "#65676b" }}>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
                 Tukar dos dan tambah sejarah
               </p>
             </div>

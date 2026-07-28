@@ -41,12 +41,12 @@ const EMPTY_FORM: NewBatchForm = {
 };
 
 const inputStyle: React.CSSProperties = {
-  background: "white",
-  border: "1px solid #dddfe2",
+  background: "var(--card)",
+  border: "1px solid var(--border)",
   borderRadius: 10,
   fontSize: 13,
   fontWeight: 500,
-  color: "#1c1e21",
+  color: "var(--text-primary)",
   height: 40,
   padding: "0 12px",
   width: "100%",
@@ -56,7 +56,7 @@ const inputStyle: React.CSSProperties = {
 const labelStyle: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 600,
-  color: "#65676b",
+  color: "var(--text-secondary)",
   marginBottom: 4,
   display: "block",
 };
@@ -142,7 +142,7 @@ export function AddBatchDialog({
               </DialogTitle>
               <p
                 className="text-xs mt-0.5"
-                style={{ color: "#65676b" }}
+                style={{ color: "var(--text-secondary)" }}
               >
                 Tambah kelompok baharu atau tambah stok ke kelompok sedia ada
               </p>

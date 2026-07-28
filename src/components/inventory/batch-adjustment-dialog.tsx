@@ -71,7 +71,7 @@ interface BatchAdjustmentDialogProps {
 const labelStyle: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 600,
-  color: "#65676b",
+  color: "var(--text-secondary)",
   marginBottom: 4,
   display: "block",
 };
@@ -79,7 +79,7 @@ const labelStyle: React.CSSProperties = {
 const fieldStyle: React.CSSProperties = {
   fontSize: 13,
   fontWeight: 500,
-  color: "#1c1e21",
+  color: "var(--text-primary)",
   padding: "4px 0",
 };
 
@@ -204,7 +204,7 @@ export function BatchAdjustmentDialog({
                     ? "Sahkan Pelarasan (Tambah)"
                     : "Sahkan Pelarasan (Kurang)"}
               </DialogTitle>
-              <p className="text-xs mt-0.5" style={{ color: "#65676b" }}>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
                 Sila semak maklumat sebelum meneruskan
               </p>
             </div>
@@ -237,7 +237,7 @@ export function BatchAdjustmentDialog({
                 <Label style={labelStyle}>Stok Semasa</Label>
                 <p
                   className="font-bold"
-                  style={{ ...fieldStyle, color: "#1c1e21" }}
+                  style={{ ...fieldStyle, color: "var(--text-primary)" }}
                 >
                   {formatNumber(batch.kuantiti)} unit
                 </p>
@@ -254,7 +254,7 @@ export function BatchAdjustmentDialog({
                         ? "#16a34a"
                         : isDown
                           ? "#dc2626"
-                          : "#65676b",
+                          : "var(--text-secondary)",
                   }}
                 >
                   {formatNumber(finalKuantiti)} unit{" "}
@@ -279,12 +279,12 @@ export function BatchAdjustmentDialog({
               value={reason}
               onChange={(e) => setReason(e.target.value as ReasonCode)}
               style={{
-                background: "white",
-                border: "1px solid #dddfe2",
+                background: "var(--card)",
+                border: "1px solid var(--border)",
                 borderRadius: 10,
                 fontSize: 13,
                 fontWeight: 500,
-                color: "#1c1e21",
+                color: "var(--text-primary)",
                 height: 40,
                 padding: "0 12px",
                 width: "100%",
@@ -300,7 +300,7 @@ export function BatchAdjustmentDialog({
             </select>
             <p
               className="text-2xs mt-1"
-              style={{ color: "#9ca3af" }}
+              style={{ color: "var(--text-muted)" }}
             >
               {REASON_CHANGES[reason] === "up" && "Penambahan stok"}
               {REASON_CHANGES[reason] === "down" && "Pengurangan stok"}

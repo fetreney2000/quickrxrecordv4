@@ -489,13 +489,13 @@ export default function ReportPage() {
         <div className="min-w-0">
           <h1
             className="text-[22px] font-bold leading-tight truncate"
-            style={{ color: "#1c1e21", letterSpacing: "-0.01em" }}
+            style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}
           >
             Laporan
           </h1>
           <p
             className="text-[13px] font-medium mt-0.5"
-            style={{ color: "#65676b" }}
+            style={{ color: "var(--text-secondary)" }}
           >
             Laporan inventori dan transaksi bekalan
           </p>
@@ -517,8 +517,8 @@ export default function ReportPage() {
                 onClick={() => setActiveTab(tab.key)}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-[10px] text-[13px] font-semibold transition-all duration-200"
                 style={{
-                  background: isActive ? "#ffffff" : "transparent",
-                  color: isActive ? "#1c1e21" : "#65676b",
+                  background: isActive ? "var(--card)" : "transparent",
+                  color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
                   boxShadow: isActive
                     ? "0 1px 4px rgba(0,0,0,0.08)"
                     : "none",
@@ -532,7 +532,7 @@ export default function ReportPage() {
                         ? "#f43f5e"
                         : tab.key === "transactions"
                         ? "#7c3aed"
-                        : "#65676b",
+                        : "var(--text-secondary)",
                   }}
                 />
                 {tab.label}
@@ -583,9 +583,9 @@ function InventoryTab({
     <Card
       className="relative overflow-hidden"
       style={{
-        background: "rgba(255,255,255,0.85)",
+        background: "var(--card)",
         backdropFilter: "blur(12px)",
-        border: "1px solid #e4e6eb",
+        border: "1px solid var(--border-medium)",
         borderRadius: 16,
         boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
       }}
@@ -597,7 +597,7 @@ function InventoryTab({
             <Package className="w-4 h-4" style={{ color: "#f43f5e" }} />
             <h2
               className="text-[15px] font-bold"
-              style={{ color: "#1c1e21" }}
+              style={{ color: "var(--text-primary)" }}
             >
               Paras Stok Inventori
             </h2>
@@ -636,7 +636,7 @@ function InventoryTab({
         {loading ? (
           <div
             className="flex flex-col items-center justify-center py-12 gap-2"
-            style={{ color: "#65676b" }}
+            style={{ color: "var(--text-secondary)" }}
           >
             <Loader2
               className="w-6 h-6 animate-spin"
@@ -647,10 +647,10 @@ function InventoryTab({
         ) : !data || data.length === 0 ? (
           <div
             className="flex flex-col items-center justify-center py-12 gap-2"
-            style={{ color: "#9ca3af" }}
+            style={{ color: "var(--text-muted)" }}
           >
             <Package className="w-10 h-10 opacity-40" />
-            <p className="text-sm font-medium" style={{ color: "#65676b" }}>
+            <p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
               Tiada data inventori.
             </p>
           </div>
@@ -671,8 +671,8 @@ function InventoryTab({
                       key={h}
                       className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.05em]"
                       style={{
-                        color: "#65676b",
-                        borderBottom: "2px solid #e4e6eb",
+                        color: "var(--text-secondary)",
+                        borderBottom: "2px solid var(--border-medium)",
                         background: "#f8f9fa",
                       }}
                     >
@@ -696,7 +696,7 @@ function InventoryTab({
                     >
                       <td
                         className="px-3 py-3 text-[13px]"
-                        style={{ borderBottom: "1px solid #f0f2f5" }}
+                        style={{ borderBottom: "1px solid var(--border-light)" }}
                       >
                         <span style={{ fontFamily: "monospace" }}>
                           {item.kod_item}
@@ -705,7 +705,7 @@ function InventoryTab({
                       <td
                         className="px-3 py-3 text-[13px]"
                         style={{
-                          borderBottom: "1px solid #f0f2f5",
+                          borderBottom: "1px solid var(--border-light)",
                           fontWeight: 500,
                         }}
                       >
@@ -713,29 +713,29 @@ function InventoryTab({
                       </td>
                       <td
                         className="px-3 py-3 text-[13px]"
-                        style={{ borderBottom: "1px solid #f0f2f5" }}
+                        style={{ borderBottom: "1px solid var(--border-light)" }}
                       >
                         {item.kekuatan ?? "-"}
                       </td>
                       <td
                         className="px-3 py-3 text-[13px]"
-                        style={{ borderBottom: "1px solid #f0f2f5" }}
+                        style={{ borderBottom: "1px solid var(--border-light)" }}
                       >
                         {item.kuota ?? "-"}
                       </td>
                       <td
                         className="px-3 py-3 text-[13px]"
                         style={{
-                          borderBottom: "1px solid #f0f2f5",
+                          borderBottom: "1px solid var(--border-light)",
                           fontWeight: 600,
-                          color: "#1c1e21",
+                          color: "var(--text-primary)",
                         }}
                       >
                         {totalStock.toLocaleString("ms-MY")}
                       </td>
                       <td
                         className="px-3 py-3"
-                        style={{ borderBottom: "1px solid #f0f2f5" }}
+                        style={{ borderBottom: "1px solid var(--border-light)" }}
                       >
                         {isLowStock ? (
                           <span
@@ -781,9 +781,9 @@ function TransactionsTab({
     <Card
       className="relative overflow-hidden"
       style={{
-        background: "rgba(255,255,255,0.85)",
+        background: "var(--card)",
         backdropFilter: "blur(12px)",
-        border: "1px solid #e4e6eb",
+        border: "1px solid var(--border-medium)",
         borderRadius: 16,
         boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
       }}
@@ -795,7 +795,7 @@ function TransactionsTab({
             <Activity className="w-4 h-4" style={{ color: "#7c3aed" }} />
             <h2
               className="text-[15px] font-bold"
-              style={{ color: "#1c1e21" }}
+              style={{ color: "var(--text-primary)" }}
             >
               Log Transaksi Bekalan
             </h2>
@@ -834,7 +834,7 @@ function TransactionsTab({
         {loading ? (
           <div
             className="flex flex-col items-center justify-center py-12 gap-2"
-            style={{ color: "#65676b" }}
+            style={{ color: "var(--text-secondary)" }}
           >
             <Loader2
               className="w-6 h-6 animate-spin"
@@ -845,10 +845,10 @@ function TransactionsTab({
         ) : displayData.length === 0 ? (
           <div
             className="flex flex-col items-center justify-center py-12 gap-2"
-            style={{ color: "#9ca3af" }}
+            style={{ color: "var(--text-muted)" }}
           >
             <Activity className="w-10 h-10 opacity-40" />
-            <p className="text-sm font-medium" style={{ color: "#65676b" }}>
+            <p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
               Tiada data transaksi.
             </p>
           </div>
@@ -870,8 +870,8 @@ function TransactionsTab({
                       key={h}
                       className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.05em]"
                       style={{
-                        color: "#65676b",
-                        borderBottom: "2px solid #e4e6eb",
+                        color: "var(--text-secondary)",
+                        borderBottom: "2px solid var(--border-medium)",
                         background: "#f8f9fa",
                       }}
                     >
@@ -889,7 +889,7 @@ function TransactionsTab({
                     <td
                       className="px-3 py-3 text-[13px]"
                       style={{
-                        borderBottom: "1px solid #f0f2f5",
+                        borderBottom: "1px solid var(--border-light)",
                         whiteSpace: "nowrap",
                       }}
                     >
@@ -897,41 +897,41 @@ function TransactionsTab({
                     </td>
                     <td
                       className="px-3 py-3 text-[13px]"
-                      style={{ borderBottom: "1px solid #f0f2f5" }}
+                      style={{ borderBottom: "1px solid var(--border-light)" }}
                     >
                       {t.assignment?.patient?.nama ?? "-"}
                     </td>
                     <td
                       className="px-3 py-3 text-[13px]"
-                      style={{ borderBottom: "1px solid #f0f2f5" }}
+                      style={{ borderBottom: "1px solid var(--border-light)" }}
                     >
                       {t.assignment?.item?.nama_item ?? "-"}
                     </td>
                     <td
                       className="px-3 py-3 text-[13px]"
-                      style={{ borderBottom: "1px solid #f0f2f5" }}
+                      style={{ borderBottom: "1px solid var(--border-light)" }}
                     >
                       {t.dos}
                     </td>
                     <td
                       className="px-3 py-3 text-[13px]"
                       style={{
-                        borderBottom: "1px solid #f0f2f5",
+                        borderBottom: "1px solid var(--border-light)",
                         fontWeight: 600,
-                        color: "#1c1e21",
+                        color: "var(--text-primary)",
                       }}
                     >
                       {t.kuantiti}
                     </td>
                     <td
                       className="px-3 py-3 text-[13px]"
-                      style={{ borderBottom: "1px solid #f0f2f5", fontFamily: "monospace" }}
+                      style={{ borderBottom: "1px solid var(--border-light)", fontFamily: "monospace" }}
                     >
                       {t.batch?.nombor_kelompok ?? "-"}
                     </td>
                     <td
                       className="px-3 py-3 text-[13px]"
-                      style={{ borderBottom: "1px solid #f0f2f5" }}
+                      style={{ borderBottom: "1px solid var(--border-light)" }}
                     >
                       {t.staff?.nama ?? "-"}
                     </td>

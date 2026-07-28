@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Loader2, User, Plus } from "lucide-react";
+import { Search, Loader2, User, Plus, Moon, Sun } from "lucide-react";
 import { AddPatientDialog } from "@/components/patient/add-patient-dialog";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import { formatMyKad, cn } from "@/lib/utils";
 import { useNavStore } from "@/lib/nav-store";
+import { useTheme } from "@/lib/theme-provider";
 
 interface SearchResult {
   id: string;
@@ -24,6 +25,7 @@ export function Header() {
   const [showAddPatient, setShowAddPatient] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const setNavSource = useNavStore((s) => s.setNavSource);
+  const { theme, toggle: toggleTheme } = useTheme();
 
   const canViewPatients = can("view_patients");
 
@@ -277,6 +279,15 @@ export function Header() {
           ) : (
             <div className="flex-1" />
           )}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors hover:bg-muted"
+            style={{ color: "var(--text-secondary)" }}
+            aria-label={theme === "dark" ? "Tukar ke mod terang" : "Tukar ke mod gelap"}
+          >
+            {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
         </div>
       <AddPatientDialog open={showAddPatient} onOpenChange={setShowAddPatient} />
       </header>

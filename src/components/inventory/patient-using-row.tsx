@@ -103,7 +103,7 @@ export function PatientUsingRow({ data, index, itemName, itemId }: PatientUsingR
         style={{
           gridTemplateColumns: "2.5fr 1.8fr 1.2fr 1.5fr 1.2fr",
           gap: 12,
-          borderBottom: "1px solid #f0f2f5",
+          borderBottom: "1px solid var(--border-light)",
         }}
         onMouseEnter={(e) =>
           ((e.currentTarget as HTMLElement).style.background =
@@ -122,24 +122,24 @@ export function PatientUsingRow({ data, index, itemName, itemId }: PatientUsingR
           >
             {patient?.nama?.[0]?.toUpperCase() || "?"}
           </div>
-          <span className="text-[13px] font-medium truncate" style={{ color: "#1c1e21" }}>
+          <span className="text-[13px] font-medium truncate" style={{ color: "var(--text-primary)" }}>
             {patient?.nama || "—"}
           </span>
         </div>
-        <span className="text-[13px] truncate font-mono" style={{ color: "#65676b" }}>
+        <span className="text-[13px] truncate font-mono" style={{ color: "var(--text-secondary)" }}>
           {patient?.nombor_kad_pengenalan ? formatMyKad(patient.nombor_kad_pengenalan) : "—"}
         </span>
         <span className="text-[13px] font-semibold truncate" style={{ color: "#7c3aed" }}>
-          {data.dos || <em style={{ color: "#9ca3af" }}>-</em>}
+          {data.dos || <em style={{ color: "var(--text-muted)" }}>-</em>}
         </span>
-        <span className="text-[13px]" style={{ color: "#1c1e21" }}>
+        <span className="text-[13px]" style={{ color: "var(--text-primary)" }}>
           {data.last_supply ? (
             <span className="flex flex-col">
               <span>{formatDate(data.last_supply.tarikh)}</span>
-              <span className="text-2xs" style={{ color: "#9ca3af" }}>{data.last_supply.qty} unit</span>
+              <span className="text-2xs" style={{ color: "var(--text-muted)" }}>{data.last_supply.qty} unit</span>
             </span>
           ) : (
-            <em style={{ color: "#9ca3af" }}>-</em>
+            <em style={{ color: "var(--text-muted)" }}>-</em>
           )}
         </span>
         <div className="flex items-center justify-between">
@@ -147,7 +147,7 @@ export function PatientUsingRow({ data, index, itemName, itemId }: PatientUsingR
             style={{ background: status.bg, color: status.fg, border: `1px solid ${status.border}` }}>
             {status.label}
           </span>
-          <ArrowRight className="w-3.5 h-3.5" style={{ color: "#9ca3af" }} />
+          <ArrowRight className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
         </div>
       </div>
 
@@ -175,13 +175,13 @@ export function PatientUsingRow({ data, index, itemName, itemId }: PatientUsingR
           {patient?.nama?.[0]?.toUpperCase() || "?"}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-medium truncate" style={{ color: "#1c1e21" }}>{patient?.nama || "—"}</p>
-          <div className="flex items-center gap-2 text-[12px] mt-0.5 truncate" style={{ color: "#65676b" }}>
+          <p className="text-[14px] font-medium truncate" style={{ color: "var(--text-primary)" }}>{patient?.nama || "—"}</p>
+          <div className="flex items-center gap-2 text-[12px] mt-0.5 truncate" style={{ color: "var(--text-secondary)" }}>
             {patient?.nombor_kad_pengenalan && <span className="font-mono">{formatMyKad(patient.nombor_kad_pengenalan)}</span>}
             {data.dos && <><span>·</span><span style={{ color: "#7c3aed" }} className="font-semibold">{data.dos}</span></>}
           </div>
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-2xs" style={{ color: "#9ca3af" }}>
+            <span className="text-2xs" style={{ color: "var(--text-muted)" }}>
               {data.last_supply ? `Terakhir: ${formatDate(data.last_supply.tarikh)}` : "Tiada bekalan"}
             </span>
             <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-2xs font-semibold"

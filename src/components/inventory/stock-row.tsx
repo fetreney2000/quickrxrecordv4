@@ -45,19 +45,19 @@ export function StockRow({ item, index, onClick }: StockRowProps) {
         style={{
           gridTemplateColumns: "1.2fr 3fr 1fr 1fr 1fr",
           gap: 12,
-          borderBottom: "1px solid #f0f2f5",
+          borderBottom: "1px solid var(--border-light)",
         }}
       >
         <span className="text-[13px] font-mono font-semibold truncate" style={{ color: "#7c3aed" }}>{item.kod_item}</span>
         <div className="min-w-0">
-          <p className="text-[13px] font-medium truncate" style={{ color: "#1c1e21" }}>
+          <p className="text-[13px] font-medium truncate" style={{ color: "var(--text-primary)" }}>
             {displayName || item.nama_item}
-            {item.item_forms?.nama ? <span style={{ color: "#65676b" }}> · {item.item_forms.nama}</span> : null}
+            {item.item_forms?.nama ? <span style={{ color: "var(--text-secondary)" }}> · {item.item_forms.nama}</span> : null}
           </p>
-          {item.nama_dagangan && <p className="text-[11px] truncate mt-0.5" style={{ color: "#9ca3af" }}>{item.nama_dagangan}</p>}
+          {item.nama_dagangan && <p className="text-[11px] truncate mt-0.5" style={{ color: "var(--text-muted)" }}>{item.nama_dagangan}</p>}
         </div>
-        <span className="text-[13px] font-medium tabular-nums" style={{ color: "#1c1e21" }}>
-          {item.kuota != null ? formatNumber(item.kuota) : <em style={{ color: "#9ca3af" }}>-</em>}
+        <span className="text-[13px] font-medium tabular-nums" style={{ color: "var(--text-primary)" }}>
+          {item.kuota != null ? formatNumber(item.kuota) : <em style={{ color: "var(--text-muted)" }}>-</em>}
         </span>
         <div>
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold"
@@ -66,8 +66,8 @@ export function StockRow({ item, index, onClick }: StockRowProps) {
             {formatNumber(stock)}
           </span>
         </div>
-        <span className="text-[13px] font-medium tabular-nums" style={{ color: "#1c1e21" }}>
-          {item.kuota != null ? formatNumber(Math.max(0, item.kuota - stock)) : <em style={{ color: "#9ca3af" }}>-</em>}
+        <span className="text-[13px] font-medium tabular-nums" style={{ color: "var(--text-primary)" }}>
+          {item.kuota != null ? formatNumber(Math.max(0, item.kuota - stock)) : <em style={{ color: "var(--text-muted)" }}>-</em>}
         </span>
       </div>
 
@@ -90,8 +90,8 @@ export function StockRow({ item, index, onClick }: StockRowProps) {
           <span className="font-mono" style={{ fontSize: 10 }}>{item.kod_item.slice(0, 3).toUpperCase()}</span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-medium truncate" style={{ color: "#1c1e21" }}>{displayName || item.nama_item}</p>
-          <div className="flex items-center gap-2 text-[12px] mt-0.5 truncate" style={{ color: "#65676b" }}>
+          <p className="text-[14px] font-medium truncate" style={{ color: "var(--text-primary)" }}>{displayName || item.nama_item}</p>
+          <div className="flex items-center gap-2 text-[12px] mt-0.5 truncate" style={{ color: "var(--text-secondary)" }}>
             <span className="font-mono font-semibold" style={{ color: "#7c3aed" }}>{item.kod_item}</span>
             {item.nama_dagangan && <span>· {item.nama_dagangan}</span>}
           </div>
@@ -100,7 +100,7 @@ export function StockRow({ item, index, onClick }: StockRowProps) {
           style={stock > 0 ? { background: "rgba(22,163,74,0.10)", color: "#16a34a", border: "1px solid rgba(22,163,74,0.25)" } : { background: "rgba(228,30,63,0.10)", color: "#e41e3f", border: "1px solid rgba(228,30,63,0.25)" }}>
           {formatNumber(stock)}
         </span>
-        <ArrowRight className="w-4 h-4 flex-shrink-0" style={{ color: "#9ca3af" }} />
+        <ArrowRight className="w-4 h-4 flex-shrink-0" style={{ color: "var(--text-muted)" }} />
       </div>
     </>
   );

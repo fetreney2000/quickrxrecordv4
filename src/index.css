@@ -69,6 +69,58 @@
       0 4px 10px rgba(0, 0, 0, 0.06);
     --shadow-dropdown: 0 10px 25px rgba(0, 0, 0, 0.15),
       0 4px 10px rgba(0, 0, 0, 0.08);
+
+    /* App-specific aliases */
+    --text-primary: #1c1e21;
+    --text-secondary: #65676b;
+    --text-muted: #9ca3af;
+    --text-blue: #1877f2;
+    --bg-accent-blue: rgba(24, 119, 242, 0.04);
+    --bg-secondary: #f0f2f5;
+    --border-light: #f0f2f5;
+    --border-medium: #e4e6eb;
+  }
+
+  .dark {
+    --background: #18191b;
+    --foreground: #e4e6eb;
+    --card: #242527;
+    --card-foreground: #e4e6eb;
+    --popover: #242527;
+    --popover-foreground: #e4e6eb;
+    --primary: #4a9eff;
+    --primary-foreground: #ffffff;
+    --secondary: #3e4045;
+    --secondary-foreground: #e4e6eb;
+    --muted: #2d2e32;
+    --muted-foreground: #b0b3b8;
+    --accent: #3e4045;
+    --accent-foreground: #e4e6eb;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --success: #4ade80;
+    --success-foreground: #ffffff;
+    --warning: #fbbf24;
+    --warning-foreground: #1c1e21;
+    --border: #3e4045;
+    --input: #3e4045;
+    --ring: #4a9eff;
+    --sidebar: #0c0f1a;
+    --sidebar-foreground: #b0b3b8;
+    --sidebar-accent: rgba(255, 255, 255, 0.08);
+    --sidebar-border: rgba(255, 255, 255, 0.08);
+    --gradient-card: linear-gradient(135deg, #242527, #1e1f23);
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-card-hover: 0 10px 25px rgba(0, 0, 0, 0.4);
+    --shadow-dropdown: 0 10px 25px rgba(0, 0, 0, 0.5);
+    --text-primary: #e4e6eb;
+    --text-secondary: #b0b3b8;
+    --text-muted: #7a7d87;
+    --text-blue: #4a9eff;
+    --bg-accent-blue: rgba(74, 158, 255, 0.08);
+    --bg-secondary: #2d2e32;
+    --border-light: #3e4045;
+    --border-medium: #3e4045;
   }
 
   * {

@@ -71,18 +71,18 @@ const TX_PAGE_SIZE = 50;
 const labelStyle: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 600,
-  color: "#65676b",
+  color: "var(--text-secondary)",
   marginBottom: 4,
   display: "block",
 };
 
 const inputBaseStyle: React.CSSProperties = {
-  background: "white",
-  border: "1px solid #dddfe2",
+  background: "var(--card)",
+  border: "1px solid var(--border)",
   borderRadius: 10,
   fontSize: 13,
   fontWeight: 500,
-  color: "#1c1e21",
+  color: "var(--text-primary)",
   height: 40,
   padding: "0 12px",
   width: "100%",
@@ -426,7 +426,7 @@ export default function StockDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-2" style={{ color: "#65676b" }}>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-2" style={{ color: "var(--text-secondary)" }}>
         <Loader2 className="w-7 h-7 animate-spin" style={{ color: "#7c3aed" }} />
         <p className="text-sm">Memuatkan item...</p>
       </div>
@@ -437,7 +437,7 @@ export default function StockDetailPage() {
     return (
       <div className="space-y-4">
         <Breadcrumb items={[{ label: "Senarai Inventori", href: "/stok" }, { label: "Tidak Dijumpai" }]} />
-        <div className="flex flex-col items-center justify-center min-h-[40vh] gap-2" style={{ color: "#65676b" }}>
+        <div className="flex flex-col items-center justify-center min-h-[40vh] gap-2" style={{ color: "var(--text-secondary)" }}>
           <Pill className="w-10 h-10 opacity-40" />
           <p className="text-sm font-medium">Item tidak dijumpai.</p>
           <Button variant="outline" onClick={() => navigate("/stok")} className="mt-3">Kembali ke Senarai Inventori</Button>
@@ -459,8 +459,8 @@ export default function StockDetailPage() {
             <Pill className="w-5 h-5" strokeWidth={2.2} />
           </div>
           <div className="min-w-0">
-            <h1 className="text-[22px] sm:text-[20px] font-bold leading-tight truncate" style={{ color: "#1c1e21", letterSpacing: "-0.01em" }}>{displayTitle}</h1>
-            <p className="text-[13px] font-medium mt-0.5 truncate" style={{ color: "#65676b" }}>
+            <h1 className="text-[22px] sm:text-[20px] font-bold leading-tight truncate" style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}>{displayTitle}</h1>
+            <p className="text-[13px] font-medium mt-0.5 truncate" style={{ color: "var(--text-secondary)" }}>
               <span className="font-mono font-semibold" style={{ color: "#7c3aed" }}>{item.kod_item}</span>
               {item.nama_dagangan && <> · {item.nama_dagangan}</>}
               {item.aktif ? " · Aktif" : " · Tidak Aktif"}
@@ -496,10 +496,10 @@ export default function StockDetailPage() {
         <FoldableCard title={<span className="flex items-center gap-2"><Users className="w-4 h-4" style={{ color: "#7c3aed" }} /> Pesakit Yang Menggunakan <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-md" style={{ background: "rgba(124,58,237,0.10)", color: "#7c3aed" }}>{filteredPatients.length}</span></span>}>
           <div className="pt-3 pb-2 flex flex-col sm:flex-row gap-2 sm:items-center">
             <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: "#9ca3af" }} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
               <Input value={patientSearch} onChange={(e) => { setPatientSearch(e.target.value); setPatientPage(0); }} placeholder="Cari nama atau No. KP..." className="h-8 pl-9 text-xs" style={{ background: "rgba(124,58,237,0.04)", border: "1px solid transparent", borderRadius: 10 }} />
             </div>
-            <select value={defaulterFilter} onChange={(e) => { setDefaulterFilter(e.target.value); setPatientPage(0); }} className="h-8 text-xs px-2 rounded-xl" style={{ background: "white", border: "1px solid #dddfe2", color: "#1c1e21", fontWeight: 500 }}>
+            <select value={defaulterFilter} onChange={(e) => { setDefaulterFilter(e.target.value); setPatientPage(0); }} className="h-8 text-xs px-2 rounded-xl" style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)", fontWeight: 500 }}>
               <option value="all">Semua Pesakit</option>
               <option value="3m">Tercicir 3 bulan</option>
               <option value="6m">Tercicir 6 bulan</option>
@@ -509,7 +509,7 @@ export default function StockDetailPage() {
             </select>
           </div>
           {patients.length === 0 ? <EmptyState icon={Users} title="Tiada pesakit berdaftar" hint="Item ini belum didaftarkan kepada mana-mana pesakit." /> : filteredPatients.length === 0 ? <EmptyState icon={Search} title="Tiada pesakit dijumpai" hint="Cuba tukar penapis atau kata kunci carian." /> : <>
-            <div className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "2.5fr 1.8fr 1.2fr 1.5fr 1.2fr", gap: 12, color: "#65676b", background: "rgba(0,0,0,0.02)", borderBottom: "2px solid #e4e6eb", borderTop: "1px solid #f0f2f5" }}>
+            <div className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "2.5fr 1.8fr 1.2fr 1.5fr 1.2fr", gap: 12, color: "var(--text-secondary)", background: "rgba(0,0,0,0.02)", borderBottom: "2px solid var(--border-medium)", borderTop: "1px solid var(--border-light)" }}>
               <span>Nama</span><span>No. KP</span><span>Dos</span><span>Bekalan Terakhir</span><span>Status</span>
             </div>
             {pagedPatients.map((p, idx) => <PatientUsingRow key={p.id} data={p as any} index={idx} itemName={displayTitle} itemId={id} />)}
@@ -524,7 +524,7 @@ export default function StockDetailPage() {
           headerExtra={canAddBatch && item.aktif ? <Button size="sm" onClick={() => setOpenAddBatch(true)} style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}><Plus className="w-3.5 h-3.5" /> Tambah Stok</Button> : null}
         >
           {batches.length === 0 ? <EmptyState icon={Package} title="Tiada kelompok" hint={canAddBatch ? "Klik \u201cTambah Stok\u201d untuk mendaftarkan kelompok baharu." : "Item ini belum mempunyai kelompok."} /> : <>
-            <div className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "2fr 1.5fr 1.2fr 1.2fr 1fr", gap: 12, color: "#65676b", background: "rgba(0,0,0,0.02)", borderBottom: "2px solid #e4e6eb", borderTop: "1px solid #f0f2f5" }}>
+            <div className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "2fr 1.5fr 1.2fr 1.2fr 1fr", gap: 12, color: "var(--text-secondary)", background: "rgba(0,0,0,0.02)", borderBottom: "2px solid var(--border-medium)", borderTop: "1px solid var(--border-light)" }}>
               <span>Nombor Kelompok</span><span>Tarikh Luput</span><span>Kuantiti</span><span>Status</span><span className="text-right">Tindakan</span>
             </div>
             {pagedBatches.map((b, idx) => <BatchRow key={b.id} batch={b} index={idx} canEdit={canAddBatch && item.aktif} onConfirmAdjust={handleBatchAdjust} onDispose={handleBatchDispose} />)}
@@ -541,9 +541,9 @@ export default function StockDetailPage() {
           <div className="pt-3 pb-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
             <div><Label style={labelStyle}>Dari</Label><Input type="date" value={filterDateFrom} onChange={(e) => { setFilterDateFrom(e.target.value); setTxPage(0); }} className="h-8 text-xs" style={inputBaseStyle} /></div>
             <div><Label style={labelStyle}>Hingga</Label><Input type="date" value={filterDateTo} onChange={(e) => { setFilterDateTo(e.target.value); setTxPage(0); }} className="h-8 text-xs" style={inputBaseStyle} /></div>
-            <div><Label style={labelStyle}>Pesakit</Label><select value={filterPatient} onChange={(e) => { setFilterPatient(e.target.value); setTxPage(0); }} className="h-8 text-xs w-full px-2" style={{ background: "white", border: "1px solid #dddfe2", borderRadius: 10, color: "#1c1e21", fontWeight: 500 }}><option value="">Semua</option>{patientsList.map((p) => <option key={p.id} value={p.nama}>{p.nama}</option>)}</select></div>
-            <div><Label style={labelStyle}>Kakitangan</Label><select value={filterStaff} onChange={(e) => { setFilterStaff(e.target.value); setTxPage(0); }} className="h-8 text-xs w-full px-2" style={{ background: "white", border: "1px solid #dddfe2", borderRadius: 10, color: "#1c1e21", fontWeight: 500 }}><option value="">Semua</option>{staffList.map((s) => <option key={s.id} value={s.nama}>{s.nama}</option>)}</select></div>
-            <div><Label style={labelStyle}>Jenis</Label><select value={filterTxType} onChange={(e) => { setFilterTxType(e.target.value as any); setTxPage(0); }} className="h-8 text-xs w-full px-2" style={{ background: "white", border: "1px solid #dddfe2", borderRadius: 10, color: "#1c1e21", fontWeight: 500 }}><option value="all">Semua</option><option value="bekalan">Bekalan</option><option value="pelarasan">Pelarasan</option></select></div>
+            <div><Label style={labelStyle}>Pesakit</Label><select value={filterPatient} onChange={(e) => { setFilterPatient(e.target.value); setTxPage(0); }} className="h-8 text-xs w-full px-2" style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, color: "var(--text-primary)", fontWeight: 500 }}><option value="">Semua</option>{patientsList.map((p) => <option key={p.id} value={p.nama}>{p.nama}</option>)}</select></div>
+            <div><Label style={labelStyle}>Kakitangan</Label><select value={filterStaff} onChange={(e) => { setFilterStaff(e.target.value); setTxPage(0); }} className="h-8 text-xs w-full px-2" style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, color: "var(--text-primary)", fontWeight: 500 }}><option value="">Semua</option>{staffList.map((s) => <option key={s.id} value={s.nama}>{s.nama}</option>)}</select></div>
+            <div><Label style={labelStyle}>Jenis</Label><select value={filterTxType} onChange={(e) => { setFilterTxType(e.target.value as any); setTxPage(0); }} className="h-8 text-xs w-full px-2" style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, color: "var(--text-primary)", fontWeight: 500 }}><option value="all">Semua</option><option value="bekalan">Bekalan</option><option value="pelarasan">Pelarasan</option></select></div>
           </div>
           <div className="flex items-center justify-end pb-2">
             <button type="button" onClick={() => { setFilterDateFrom(""); setFilterDateTo(""); setFilterPatient(""); setFilterStaff(""); setFilterTxType("all"); setTxPage(0); }} className="text-2xs font-semibold flex items-center gap-1 hover:opacity-80" style={{ color: "#7c3aed" }}><RotateCcw className="w-3 h-3" /> Reset Penapis</button>
@@ -555,7 +555,7 @@ export default function StockDetailPage() {
             <TxStatBadge icon={Users} color="#1877f2" label="Pesakit Menerima" value={txStats.patientCount.toString()} />
           </div>
           {filteredTransactions.length === 0 ? <EmptyState icon={History} title="Tiada sejarah transaksi" hint={transactions.length === 0 ? "Belum ada transaksi untuk item ini." : "Tiada rekod menepati penapis semasa."} /> : <>
-            <div className="hidden lg:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "1.5fr 1.3fr 1.3fr 1fr 1.8fr 1.3fr 1.3fr", gap: 12, color: "#65676b", background: "rgba(0,0,0,0.02)", borderBottom: "2px solid #e4e6eb", borderTop: "1px solid #f0f2f5" }}>
+            <div className="hidden lg:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "1.5fr 1.3fr 1.3fr 1fr 1.8fr 1.3fr 1.3fr", gap: 12, color: "var(--text-secondary)", background: "rgba(0,0,0,0.02)", borderBottom: "2px solid var(--border-medium)", borderTop: "1px solid var(--border-light)" }}>
               <span>Tarikh</span><span>Jenis</span><span>Kelompok</span><span>Perubahan</span><span>Keterangan</span><span>Kakitangan</span><span>Pesakit</span>
             </div>
             {pagedTransactions.map((tx, idx) => <TransactionRow key={tx.id} tx={tx} index={idx} />)}
@@ -611,9 +611,9 @@ function ItemEditForm({ editData, setEditData, forms, categories }: { editData: 
 
 function EmptyState({ icon: Icon, title, hint }: { icon: LucideIcon; title: string; hint: string }) {
   return (
-    <div className="flex flex-col items-center justify-center py-10 gap-2" style={{ color: "#9ca3af" }}>
+    <div className="flex flex-col items-center justify-center py-10 gap-2" style={{ color: "var(--text-muted)" }}>
       <Icon className="w-10 h-10 opacity-40" />
-      <p className="text-sm font-medium" style={{ color: "#65676b" }}>{title}</p>
+      <p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>{title}</p>
       <p className="text-xs">{hint}</p>
     </div>
   );
@@ -636,7 +636,7 @@ function Pagination({ page, totalPages, onChange, totalCount, itemLabel }: { pag
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3 pt-3 border-t border-[#f0f2f5]">
-      <p className="text-xs" style={{ color: "#65676b" }}>
+      <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
         {totalCount} {itemLabel} · Halaman {page + 1}/{totalPages}
       </p>
       <div className="flex items-center gap-1">
@@ -647,9 +647,9 @@ function Pagination({ page, totalPages, onChange, totalCount, itemLabel }: { pag
           className="w-7 h-7 flex items-center justify-center rounded-lg text-xs font-medium transition-colors disabled:opacity-30"
           style={{
             background: page === 0 ? "transparent" : "rgba(0,0,0,0.04)",
-            color: "#65676b",
+            color: "var(--text-secondary)",
             border: "1px solid",
-            borderColor: page === 0 ? "transparent" : "#e4e6eb",
+            borderColor: page === 0 ? "transparent" : "var(--border-medium)",
             cursor: page === 0 ? "default" : "pointer",
           }}
         >
@@ -657,7 +657,7 @@ function Pagination({ page, totalPages, onChange, totalCount, itemLabel }: { pag
         </button>
         {buttons.map((b, i) =>
           b === "..." ? (
-            <span key={`dots-${i}`} className="w-7 h-7 flex items-center justify-center text-xs" style={{ color: "#9ca3af" }}>…</span>
+            <span key={`dots-${i}`} className="w-7 h-7 flex items-center justify-center text-xs" style={{ color: "var(--text-muted)" }}>…</span>
           ) : (
             <button
               key={b}
@@ -667,7 +667,7 @@ function Pagination({ page, totalPages, onChange, totalCount, itemLabel }: { pag
               style={
                 (b as number) === page + 1
                   ? { background: "linear-gradient(135deg, #7c3aed, #6d28d9)", color: "white", border: "none", cursor: "pointer" }
-                  : { background: "white", color: "#1c1e21", border: "1px solid #e4e6eb", cursor: "pointer" }
+                  : { background: "var(--card)", color: "var(--text-primary)", border: "1px solid var(--border-medium)", cursor: "pointer" }
               }
             >
               {b}
@@ -681,9 +681,9 @@ function Pagination({ page, totalPages, onChange, totalCount, itemLabel }: { pag
           className="w-7 h-7 flex items-center justify-center rounded-lg text-xs font-medium transition-colors disabled:opacity-30"
           style={{
             background: page >= totalPages - 1 ? "transparent" : "rgba(0,0,0,0.04)",
-            color: "#65676b",
+            color: "var(--text-secondary)",
             border: "1px solid",
-            borderColor: page >= totalPages - 1 ? "transparent" : "#e4e6eb",
+            borderColor: page >= totalPages - 1 ? "transparent" : "var(--border-medium)",
             cursor: page >= totalPages - 1 ? "default" : "pointer",
           }}
         >
@@ -696,12 +696,12 @@ function Pagination({ page, totalPages, onChange, totalCount, itemLabel }: { pag
 
 function TxStatBadge({ icon: Icon, color, label, value }: { icon: LucideIcon; color: string; label: string; value: string }) {
   return (
-    <div className="rounded-xl p-2.5" style={{ background: "white", border: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 2px rgba(0,0,0,0.03)" }}>
+    <div className="rounded-xl p-2.5" style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 2px rgba(0,0,0,0.03)" }}>
       <div className="flex items-center gap-2">
         <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${color}15`, color }}><Icon className="w-3.5 h-3.5" strokeWidth={2.2} /></div>
         <div className="min-w-0 flex-1">
-          <p className="text-2xs font-semibold uppercase tracking-wider truncate" style={{ color: "#65676b" }}>{label}</p>
-          <p className="text-sm font-extrabold truncate" style={{ color: "#1c1e21" }}>{value}</p>
+          <p className="text-2xs font-semibold uppercase tracking-wider truncate" style={{ color: "var(--text-secondary)" }}>{label}</p>
+          <p className="text-sm font-extrabold truncate" style={{ color: "var(--text-primary)" }}>{value}</p>
         </div>
       </div>
     </div>

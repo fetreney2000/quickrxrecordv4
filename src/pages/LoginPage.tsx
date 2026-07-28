@@ -183,7 +183,7 @@ export default function LoginPage() {
                   className="w-3.5 h-3.5"
                   style={{
                     color:
-                      focusedField === "username" ? "#1877f2" : "#9ca3af",
+                      focusedField === "username" ? "#1877f2" : "var(--text-muted)",
                   }}
                 />
                 Nama Pengguna
@@ -226,7 +226,7 @@ export default function LoginPage() {
                   className="w-3.5 h-3.5"
                   style={{
                     color:
-                      focusedField === "password" ? "#1877f2" : "#9ca3af",
+                      focusedField === "password" ? "#1877f2" : "var(--text-muted)",
                   }}
                 />
                 Kata Laluan

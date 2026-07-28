@@ -45,7 +45,7 @@ export function FoldableCard({
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <h2
             className="text-base font-bold truncate"
-            style={{ color: "#1c1e21" }}
+            style={{ color: "var(--text-primary)" }}
           >
             {title}
           </h2>
@@ -58,7 +58,7 @@ export function FoldableCard({
           <div style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>
             <ChevronDown
               className="w-4 h-4"
-              style={{ color: "#65676b" }}
+              style={{ color: "var(--text-secondary)" }}
             />
           </div>
         </div>

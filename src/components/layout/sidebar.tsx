@@ -141,7 +141,7 @@ export function Sidebar() {
             height: 300,
             top: -50,
             left: -100,
-            background: "rgba(24,119,242,0.10)",
+            background: "var(--bg-accent-blue)",
             filter: "blur(60px)",
           }}
         />

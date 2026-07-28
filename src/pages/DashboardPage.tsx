@@ -92,7 +92,7 @@ export default function DashboardPage() {
 
   return (
     <div className="relative space-y-5 overflow-hidden">
-      <div className="absolute pointer-events-none" style={{ width: 400, height: 400, top: -100, right: -100, background: "rgba(24,119,242,0.04)", borderRadius: "50%", filter: "blur(40px)" }} />
+      <div className="absolute pointer-events-none" style={{ width: 400, height: 400, top: -100, right: -100, background: "var(--bg-accent-blue)", borderRadius: "50%", filter: "blur(40px)" }} />
       <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "linear-gradient(rgba(0,0,0,0.01) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.01) 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
 
       <Breadcrumb />
@@ -103,8 +103,8 @@ export default function DashboardPage() {
             <Activity className="w-5 h-5" strokeWidth={2.5} />
           </div>
           <div className="min-w-0">
-            <h1 className="text-[22px] font-bold leading-tight truncate" style={{ color: "#1c1e21", letterSpacing: "-0.01em" }}>Selamat Datang, {toTitleCase(profile?.nama ?? "Pengguna")}</h1>
-            <p className="text-[13px] font-medium mt-0.5" style={{ color: "#65676b" }}>{roleLabel} — Papan Pemuka</p>
+            <h1 className="text-[22px] font-bold leading-tight truncate" style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}>Selamat Datang, {toTitleCase(profile?.nama ?? "Pengguna")}</h1>
+            <p className="text-[13px] font-medium mt-0.5" style={{ color: "var(--text-secondary)" }}>{roleLabel} — Papan Pemuka</p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
@@ -135,21 +135,21 @@ export default function DashboardPage() {
                 <Calendar className="w-4 h-4" strokeWidth={2.5} />
               </div>
               <div className="flex-1">
-                <h2 className="text-base font-bold leading-tight" style={{ color: "#1c1e21" }}>Papan Pemuka Luput</h2>
-                <p className="text-xs mt-0.5" style={{ color: "#65676b" }}>Pantau kelompok ubat yang akan tamat tempoh</p>
+                <h2 className="text-base font-bold leading-tight" style={{ color: "var(--text-primary)" }}>Papan Pemuka Luput</h2>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Pantau kelompok ubat yang akan tamat tempoh</p>
               </div>
             </div>
             <div className="mb-4"><ExpirySummaryBadges critical={expiryStats.critical} warning={expiryStats.warning} safe={expiryStats.safe} /></div>
             <div className="overflow-x-auto rounded-[14px]" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
-              <table className="w-full border-collapse" style={{ background: "white" }}>
+              <table className="w-full border-collapse" style={{ background: "var(--card)" }}>
                 <thead>
-                  <tr style={{ background: "rgba(0,0,0,0.02)", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
-                    <th className="text-left px-3 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ color: "#65676b" }}>Nama Item</th>
-                    <th className="text-left px-3 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ color: "#65676b" }}>Kelompok</th>
-                    <th className="text-left px-3 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ color: "#65676b" }}>Tarikh Luput</th>
-                    <th className="text-center px-3 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ color: "#65676b" }}>Stok</th>
-                    <th className="text-center px-3 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ color: "#65676b" }}>Hari</th>
-                    <th className="text-left px-3 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ color: "#65676b" }}>Status</th>
+                  <tr style={{ background: "var(--bg-secondary)", borderBottom: "1px solid var(--border-light)" }}>
+                    <th className="text-left px-3 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>Nama Item</th>
+                    <th className="text-left px-3 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>Kelompok</th>
+                    <th className="text-left px-3 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>Tarikh Luput</th>
+                    <th className="text-center px-3 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>Stok</th>
+                    <th className="text-center px-3 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>Hari</th>
+                    <th className="text-left px-3 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -159,10 +159,10 @@ export default function DashboardPage() {
                     return <ExpiryRow key={batch.id} batch={batch} item={item} status={status} daysLeft={daysLeft} />;
                   })}
                   {!expiryLoading && expiryBatches && expiryBatches.length === 0 && (
-                    <tr><td colSpan={6} className="text-center py-8 text-sm" style={{ color: "#65676b" }}>Tiada kelompok ubat ditemui.</td></tr>
+                    <tr><td colSpan={6} className="text-center py-8 text-sm" style={{ color: "var(--text-secondary)" }}>Tiada kelompok ubat ditemui.</td></tr>
                   )}
                   {expiryLoading && (
-                    <tr><td colSpan={6} className="text-center py-8 text-sm" style={{ color: "#65676b" }}>Memuatkan...</td></tr>
+                    <tr><td colSpan={6} className="text-center py-8 text-sm" style={{ color: "var(--text-secondary)" }}>Memuatkan...</td></tr>
                   )}
                 </tbody>
               </table>
@@ -171,7 +171,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {statsLoading && !stats && <div className="text-center text-sm" style={{ color: "#65676b" }}>Memuatkan statistik...</div>}
+      {statsLoading && !stats && <div className="text-center text-sm" style={{ color: "var(--text-secondary)" }}>Memuatkan statistik...</div>}
     </div>
   );
 }
@@ -181,10 +181,10 @@ interface ExpiryRowProps { batch: ExpiryBatch; item: ReturnType<typeof getExpiry
 function ExpiryRow({ batch, item, status, daysLeft }: ExpiryRowProps) {
   return (
     <tr style={{ background: STATUS_BG[status], borderBottom: "1px solid rgba(0,0,0,0.04)" }}>
-      <td className="px-3 py-2.5 text-xs"><div className="font-semibold" style={{ color: "#1c1e21" }}>{item?.nama_item ?? "—"}</div>{item?.kod_item && <div className="text-2xs" style={{ color: "#65676b" }}>{item.kod_item}{item.kekuatan ? ` · ${item.kekuatan}` : ""}</div>}</td>
+      <td className="px-3 py-2.5 text-xs"><div className="font-semibold" style={{ color: "var(--text-primary)" }}>{item?.nama_item ?? "—"}</div>{item?.kod_item && <div className="text-2xs" style={{ color: "var(--text-secondary)" }}>{item.kod_item}{item.kekuatan ? ` · ${item.kekuatan}` : ""}</div>}</td>
       <td className="px-3 py-2.5 text-xs font-mono" style={{ color: "#374151" }}>{batch.nombor_kelompok}</td>
       <td className="px-3 py-2.5 text-xs" style={{ color: "#374151" }}>{formatDate(batch.tarikh_luput)}</td>
-      <td className="px-3 py-2.5 text-xs text-center font-semibold" style={{ color: "#1c1e21" }}>{batch.kuantiti.toLocaleString("ms-MY")}</td>
+      <td className="px-3 py-2.5 text-xs text-center font-semibold" style={{ color: "var(--text-primary)" }}>{batch.kuantiti.toLocaleString("ms-MY")}</td>
       <td className="px-3 py-2.5 text-xs text-center font-semibold" style={{ color: STATUS_TEXT_COLOR[status] }}>{daysLeft < 0 ? "Luput" : `${daysLeft} hari`}</td>
       <td className="px-3 py-2.5"><ExpiryBadge status={status} size="sm" /></td>
     </tr>

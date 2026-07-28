@@ -36,12 +36,12 @@ import {
 import type { Patient } from "@/types";
 
 const inputStyle: React.CSSProperties = {
-  background: "white",
-  border: "1px solid #dddfe2",
+  background: "var(--card)",
+  border: "1px solid var(--border)",
   borderRadius: 12,
   fontSize: 13,
   fontWeight: 500,
-  color: "#1c1e21",
+  color: "var(--text-primary)",
   height: 40,
   padding: "0 12px",
   width: "100%",
@@ -50,7 +50,7 @@ const inputStyle: React.CSSProperties = {
 const labelStyle: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 600,
-  color: "#65676b",
+  color: "var(--text-secondary)",
   marginBottom: 4,
   display: "block",
 };
@@ -261,13 +261,13 @@ export default function QuickDispensePage() {
         <div>
           <h1
             className="text-[22px] sm:text-[18px] font-bold"
-            style={{ color: "#1c1e21" }}
+            style={{ color: "var(--text-primary)" }}
           >
             Dispen Pantas
           </h1>
           <p
             className="text-[12px] font-medium mt-0.5"
-            style={{ color: "#65676b" }}
+            style={{ color: "var(--text-secondary)" }}
           >
             Bekal ubat dalam 3 langkah mudah
           </p>
@@ -304,13 +304,13 @@ export default function QuickDispensePage() {
       {!selectedPatient && (
         <Card>
           <CardContent className="p-6 sm:p-8">
-            <h2 className="text-[15px] font-bold mb-3" style={{ color: "#1c1e21" }}>
+            <h2 className="text-[15px] font-bold mb-3" style={{ color: "var(--text-primary)" }}>
               Cari Pesakit
             </h2>
             <div className="relative">
               <Search
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
-                style={{ color: searchFocused ? "#f0932b" : "#9ca3af" }}
+                style={{ color: searchFocused ? "#f0932b" : "var(--text-muted)" }}
               />
               <Input
                 ref={searchInputRef}
@@ -321,7 +321,7 @@ export default function QuickDispensePage() {
                 onBlur={() => setTimeout(() => setShowResults(false), 200)}
                 className="h-11 pl-10 text-sm font-medium"
                 style={{
-                  background: searchFocused ? "white" : "rgba(240,147,43,0.04)",
+                  background: searchFocused ? "var(--card)" : "rgba(240,147,43,0.04)",
                   border: searchFocused ? "1px solid rgba(240,147,43,0.3)" : "1px solid transparent",
                   borderRadius: 14,
                   boxShadow: searchFocused ? "0 0 0 4px rgba(240,147,43,0.08)" : "0 4px 16px rgba(240,147,43,0.06)",
@@ -337,7 +337,7 @@ export default function QuickDispensePage() {
                 >
                   {searchResults.length === 0 && !searching ? (
                     <div className="text-center py-6 space-y-3">
-                      <p className="text-xs" style={{ color: "#9ca3af" }}>Tiada pesakit dijumpai.</p>
+                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>Tiada pesakit dijumpai.</p>
                       <Button type="button" variant="outline" size="sm" onClick={() => setShowAddPatient(true)} className="text-xs h-8" style={{ borderColor: "rgba(240,147,43,0.3)", color: "#f0932b" }}>
                         <Plus className="w-3.5 h-3.5 mr-1" /> Daftar Pesakit Baharu
                       </Button>
@@ -354,10 +354,10 @@ export default function QuickDispensePage() {
                           <div className="w-6 h-6 rounded-lg flex items-center justify-center text-white text-2xs font-bold" style={{ background: "linear-gradient(135deg, #f0932b, #e07a1f)" }}>
                             {getInitials(p.nama)}
                           </div>
-                          <p className="text-[13px] font-semibold truncate" style={{ color: "#1c1e21" }}>{p.nama}</p>
+                          <p className="text-[13px] font-semibold truncate" style={{ color: "var(--text-primary)" }}>{p.nama}</p>
                         </div>
                         {p.nombor_kad_pengenalan && (
-                          <p className="text-2xs mt-0.5 ml-8" style={{ color: "#65676b" }}>KP: {formatMyKad(p.nombor_kad_pengenalan)}</p>
+                          <p className="text-2xs mt-0.5 ml-8" style={{ color: "var(--text-secondary)" }}>KP: {formatMyKad(p.nombor_kad_pengenalan)}</p>
                         )}
                       </button>
                     ))
@@ -373,16 +373,16 @@ export default function QuickDispensePage() {
         <Card>
           <CardContent className="pt-5">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[14px] font-bold" style={{ color: "#1c1e21" }}>{selectedPatient.nama}</h3>
+              <h3 className="text-[14px] font-bold" style={{ color: "var(--text-primary)" }}>{selectedPatient.nama}</h3>
               <Button size="sm" variant="ghost" onClick={() => setSelectedPatient(null)} className="h-7"><X className="w-3.5 h-3.5" /> Tukar</Button>
             </div>
             {frequentItems.length > 0 && (
               <div className="mb-3">
-                <p className="text-2xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: "#65676b" }}>Item Kerap</p>
+                <p className="text-2xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-secondary)" }}>Item Kerap</p>
                 <div className="flex flex-wrap gap-1.5">
                   {frequentItems.map((it: any) => (
                     <button key={it.id} onClick={() => setSelectedItem({ assignment_id: "", item_id: it.id, dos: null, item: { id: it.id, kod_item: it.kod_item, nama_item: it.nama_item, kekuatan: it.kekuatan } })}
-                      className="text-[12px] font-medium px-2.5 py-1 rounded-full" style={{ background: "rgba(24,119,242,0.08)", color: "#1877f2", border: "1px solid rgba(24,119,242,0.2)" }}>
+                      className="text-[12px] font-medium px-2.5 py-1 rounded-full" style={{ background: "var(--bg-accent-blue)", color: "#1877f2", border: "1px solid rgba(24,119,242,0.2)" }}>
                       {it.nama_item}
                     </button>
                   ))}
@@ -390,14 +390,14 @@ export default function QuickDispensePage() {
               </div>
             )}
             <Input value={itemSearch} onChange={(e) => setItemSearch(e.target.value)} className="mb-2" style={inputStyle} />
-            <div className="border rounded-xl overflow-y-auto" style={{ borderColor: "#e4e6eb", maxHeight: 200 }}>
+            <div className="border rounded-xl overflow-y-auto" style={{ borderColor: "var(--border-medium)", maxHeight: 200 }}>
               {filteredItems.length === 0 ? (
-                <div className="text-center text-xs py-6" style={{ color: "#9ca3af" }}>Tiada padanan.</div>
+                <div className="text-center text-xs py-6" style={{ color: "var(--text-muted)" }}>Tiada padanan.</div>
               ) : (
                 filteredItems.map((a: any) => (
-                  <button key={a.assignment_id} onClick={() => setSelectedItem(a)} className="w-full text-left px-3 py-2 text-xs border-b last:border-b-0 hover:bg-blue-50/50" style={{ borderColor: "#f0f2f5" }}>
-                    <p className="font-semibold" style={{ color: "#1c1e21" }}>{a.item?.nama_item}</p>
-                    <p style={{ color: "#65676b" }}>{a.item?.kod_item} · Dos: {a.dos}</p>
+                  <button key={a.assignment_id} onClick={() => setSelectedItem(a)} className="w-full text-left px-3 py-2 text-xs border-b last:border-b-0 hover:bg-blue-50/50" style={{ borderColor: "var(--border-light)" }}>
+                    <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{a.item?.nama_item}</p>
+                    <p style={{ color: "var(--text-secondary)" }}>{a.item?.kod_item} · Dos: {a.dos}</p>
                   </button>
                 ))
               )}
@@ -416,13 +416,13 @@ export default function QuickDispensePage() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2 min-w-0">
                 <Pill className="w-4 h-4 text-blue-500" />
-                <p className="text-[14px] font-bold truncate" style={{ color: "#1c1e21" }}>{selectedItem.item?.nama_item}</p>
+                <p className="text-[14px] font-bold truncate" style={{ color: "var(--text-primary)" }}>{selectedItem.item?.nama_item}</p>
               </div>
               <Button size="sm" variant="ghost" onClick={() => setSelectedItem(null)} className="h-7"><X className="w-3.5 h-3.5" /> Tukar</Button>
             </div>
             {selectedPatient && (
               <div className="flex items-center gap-2 mb-3 p-2 rounded-lg text-xs" style={{ background: "rgba(240,147,43,0.06)", border: "1px solid rgba(240,147,43,0.12)" }}>
-                <span style={{ color: "#65676b" }}>{selectedPatient.nama}{selectedPatient.nombor_kad_pengenalan && <> · KP: {formatMyKad(selectedPatient.nombor_kad_pengenalan)}</>}{selectedPatient.nombor_pendaftaran_hospital && <> · Hosp: {selectedPatient.nombor_pendaftaran_hospital}</>}</span>
+                <span style={{ color: "var(--text-secondary)" }}>{selectedPatient.nama}{selectedPatient.nombor_kad_pengenalan && <> · KP: {formatMyKad(selectedPatient.nombor_kad_pengenalan)}</>}{selectedPatient.nombor_pendaftaran_hospital && <> · Hosp: {selectedPatient.nombor_pendaftaran_hospital}</>}</span>
               </div>
             )}
             <form onSubmit={handleSubmit} className="space-y-3">
@@ -434,11 +434,11 @@ export default function QuickDispensePage() {
                   <div className="space-y-1 max-h-40 overflow-y-auto">
                     {availableBatches.map((b: any) => (
                       <label key={b.id} className="flex items-center gap-2 px-3 py-2 text-xs border rounded-lg cursor-pointer"
-                        style={{ borderColor: selectedBatchId === b.id ? "#f59e0b" : "#e4e6eb", background: selectedBatchId === b.id ? "rgba(245,158,11,0.06)" : "white" }}>
+                        style={{ borderColor: selectedBatchId === b.id ? "#f59e0b" : "var(--border-medium)", background: selectedBatchId === b.id ? "rgba(245,158,11,0.06)" : "var(--card)" }}>
                         <input type="radio" name="batch" checked={selectedBatchId === b.id} onChange={() => setSelectedBatchId(b.id)} style={{ accentColor: "#f59e0b" }} />
                         <div className="flex-1">
-                          <p className="font-mono font-semibold" style={{ color: "#1c1e21" }}>{b.nombor_kelompok}</p>
-                          <p style={{ color: "#65676b" }}>Luput: {b.tarikh_luput} · Stok: {b.kuantiti}</p>
+                          <p className="font-mono font-semibold" style={{ color: "var(--text-primary)" }}>{b.nombor_kelompok}</p>
+                          <p style={{ color: "var(--text-secondary)" }}>Luput: {b.tarikh_luput} · Stok: {b.kuantiti}</p>
                         </div>
                       </label>
                     ))}
@@ -460,7 +460,7 @@ export default function QuickDispensePage() {
                 <div><Label style={labelStyle}>Catatan</Label><Input value={catatan} onChange={(e) => setCatatan(e.target.value)} style={inputStyle} /></div>
               </div>
               <Button type="submit" disabled={!canSubmit || supplyMut.isPending} className="w-full h-12 text-sm font-bold"
-                style={{ background: canSubmit ? "linear-gradient(135deg, #1877f2, #0d5bd4)" : "#9ca3af", color: "white" }}>
+                style={{ background: canSubmit ? "linear-gradient(135deg, #1877f2, #0d5bd4)" : "var(--text-muted)", color: "white" }}>
                 {supplyMut.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 <Zap className="w-4 h-4 mr-2" /> Bekal {quantity && `(${quantity})`}
               </Button>
@@ -480,12 +480,12 @@ export default function QuickDispensePage() {
                   <Plus className="w-4 h-4" style={{ color: "#059669" }} />
                 </div>
                 <div>
-                  <p className="text-[14px] font-bold" style={{ color: "#1c1e21" }}>{registerSelectedItem ? "Sahkan Pendaftaran" : "Daftar Item Baharu"}</p>
-                  <p className="text-[11px]" style={{ color: "#65676b" }}>{registerSelectedItem ? `Daftarkan ${registerSelectedItem.nama_item} kepada ${selectedPatient?.nama}` : `Pilih item untuk didaftarkan kepada ${selectedPatient?.nama}`}</p>
+                  <p className="text-[14px] font-bold" style={{ color: "var(--text-primary)" }}>{registerSelectedItem ? "Sahkan Pendaftaran" : "Daftar Item Baharu"}</p>
+                  <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>{registerSelectedItem ? `Daftarkan ${registerSelectedItem.nama_item} kepada ${selectedPatient?.nama}` : `Pilih item untuk didaftarkan kepada ${selectedPatient?.nama}`}</p>
                 </div>
               </div>
               <button type="button" onClick={() => { setShowRegisterDialog(false); setRegisterItemSearch(""); setRegisterSelectedItem(null); setRegisterDos(""); }} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-100">
-                <X className="w-4 h-4" style={{ color: "#65676b" }} />
+                <X className="w-4 h-4" style={{ color: "var(--text-secondary)" }} />
               </button>
             </div>
             {!registerSelectedItem && (
@@ -493,11 +493,11 @@ export default function QuickDispensePage() {
                 <div className="px-5 py-3"><Input autoFocus value={registerItemSearch} onChange={(e) => setRegisterItemSearch(e.target.value)} style={inputStyle} /></div>
                 <div className="px-5 pb-4 overflow-y-auto" style={{ maxHeight: 320 }}>
                   {allActiveItems.length === 0 ? (
-                    <div className="flex items-center justify-center gap-2 py-8" style={{ color: "#9ca3af" }}>
+                    <div className="flex items-center justify-center gap-2 py-8" style={{ color: "var(--text-muted)" }}>
                       <Loader2 className="w-4 h-4 animate-spin" /><span className="text-xs">Menyemak kuota terkini...</span>
                     </div>
                   ) : filteredRegisterItems.length === 0 ? (
-                    <div className="text-center text-xs py-6" style={{ color: "#9ca3af" }}>Tiada item padanan.</div>
+                    <div className="text-center text-xs py-6" style={{ color: "var(--text-muted)" }}>Tiada item padanan.</div>
                   ) : (
                     <div className="space-y-1">
                       {filteredRegisterItems.map((it: any) => (
@@ -507,19 +507,19 @@ export default function QuickDispensePage() {
                           onMouseEnter={(e) => { if (!it.kuota_penuh) e.currentTarget.style.background = "rgba(16,185,129,0.06)"; }}
                           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
                           <div>
-                            <p className="font-semibold" style={{ color: "#1c1e21" }}>{it.nama_item}</p>
-                            <p style={{ color: "#65676b" }}>{it.kod_item}{it.kekuatan ? ` · ${it.kekuatan}` : ""}</p>
+                            <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{it.nama_item}</p>
+                            <p style={{ color: "var(--text-secondary)" }}>{it.kod_item}{it.kekuatan ? ` · ${it.kekuatan}` : ""}</p>
                           </div>
                           <div className="text-right flex-shrink-0 ml-2">
                             {it.kuota_penuh ? (
                               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(220,38,38,0.10)", color: "#dc2626" }}>Kuota Penuh</span>
                             ) : it.baki_kuota != null ? (
-                              <div className="text-[10px] leading-tight" style={{ color: "#65676b" }}>
+                              <div className="text-[10px] leading-tight" style={{ color: "var(--text-secondary)" }}>
                                 <div className="font-medium">Baki: {it.baki_kuota}</div>
                                 <div>{it.patient_count ?? 0}/{it.kuota}</div>
                               </div>
                             ) : (
-                              <span className="text-[10px] font-medium" style={{ color: "#65676b" }}>Pesakit: {it.patient_count ?? 0}</span>
+                              <span className="text-[10px] font-medium" style={{ color: "var(--text-secondary)" }}>Pesakit: {it.patient_count ?? 0}</span>
                             )}
                           </div>
                         </button>
@@ -534,8 +534,8 @@ export default function QuickDispensePage() {
                 <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.15)" }}>
                   <Pill className="w-4 h-4 flex-shrink-0" style={{ color: "#059669" }} />
                   <div>
-                    <p className="text-[13px] font-bold" style={{ color: "#1c1e21" }}>{registerSelectedItem.nama_item}</p>
-                    <p className="text-[11px]" style={{ color: "#65676b" }}>{registerSelectedItem.kod_item}{registerSelectedItem.kekuatan ? ` · ${registerSelectedItem.kekuatan}` : ""}</p>
+                    <p className="text-[13px] font-bold" style={{ color: "var(--text-primary)" }}>{registerSelectedItem.nama_item}</p>
+                    <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>{registerSelectedItem.kod_item}{registerSelectedItem.kekuatan ? ` · ${registerSelectedItem.kekuatan}` : ""}</p>
                   </div>
                 </div>
                 <div>
@@ -546,7 +546,7 @@ export default function QuickDispensePage() {
                 <div className="flex gap-2 pt-1">
                   <Button type="button" variant="ghost" onClick={() => { setRegisterSelectedItem(null); setRegisterDos(""); }} className="flex-1 h-10 text-xs font-medium">Kembali</Button>
                   <Button type="button" disabled={!registerDos.trim() || addAssignmentMut.isPending} onClick={handleConfirmRegisterItem}
-                    className="flex-1 h-10 text-xs font-bold" style={{ background: registerDos.trim() && !addAssignmentMut.isPending ? "linear-gradient(135deg, #10b981, #059669)" : "#9ca3af", color: "white" }}>
+                    className="flex-1 h-10 text-xs font-bold" style={{ background: registerDos.trim() && !addAssignmentMut.isPending ? "linear-gradient(135deg, #10b981, #059669)" : "var(--text-muted)", color: "white" }}>
                     {addAssignmentMut.isPending && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />} Daftar
                   </Button>
                 </div>

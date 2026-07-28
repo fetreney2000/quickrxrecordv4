@@ -25,17 +25,17 @@ import {
 const labelStyle: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 600,
-  color: "#65676b",
+  color: "var(--text-secondary)",
   marginBottom: 4,
   display: "block",
 };
 const inputBaseStyle: React.CSSProperties = {
-  background: "white",
-  border: "1px solid #dddfe2",
+  background: "var(--card)",
+  border: "1px solid var(--border)",
   borderRadius: 10,
   fontSize: 13,
   fontWeight: 500,
-  color: "#1c1e21",
+  color: "var(--text-primary)",
   height: 40,
   padding: "0 12px",
   width: "100%",
@@ -76,7 +76,7 @@ export function StopAssignmentDialog({
             </div>
             <div>
               <DialogTitle>Tamatkan Item</DialogTitle>
-              <p className="text-xs mt-0.5" style={{ color: "#65676b" }}>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
                 Tindakan ini boleh diterbalikkan
               </p>
             </div>
@@ -206,7 +206,7 @@ export function EditSupplyDialog({
             </div>
             <div>
               <DialogTitle>Edit Rekod Bekalan</DialogTitle>
-              <p className="text-xs mt-0.5" style={{ color: "#65676b" }}>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
                 Kemaskini dos, kuantiti, dan catatan
               </p>
             </div>
@@ -230,7 +230,7 @@ export function EditSupplyDialog({
             <Input
               value={dos}
               readOnly
-              style={{ ...inputBaseStyle, background: "#f0f2f5", cursor: "not-allowed" }}
+              style={{ ...inputBaseStyle, background: "var(--bg-secondary)", cursor: "not-allowed" }}
             />
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -337,7 +337,7 @@ export function DeleteSupplyDialog({
             </div>
             <div>
               <DialogTitle>Padam Rekod Bekalan</DialogTitle>
-              <p className="text-xs mt-0.5" style={{ color: "#65676b" }}>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
                 Tindakan ini tidak boleh diterbalikkan
               </p>
             </div>

@@ -136,7 +136,7 @@ export default function ForgotPasswordPage() {
             >
               <HelpCircle
                 className="w-3.5 h-3.5"
-                style={{ color: focused ? "#1877f2" : "#9ca3af" }}
+                style={{ color: focused ? "#1877f2" : "var(--text-muted)" }}
               />
               Nama Pengguna
             </label>

@@ -57,12 +57,12 @@ const EMPTY_FORM: NewItemForm = {
 };
 
 const inputStyle: React.CSSProperties = {
-  background: "white",
-  border: "1px solid #dddfe2",
+  background: "var(--card)",
+  border: "1px solid var(--border)",
   borderRadius: 10,
   fontSize: 13,
   fontWeight: 500,
-  color: "#1c1e21",
+  color: "var(--text-primary)",
   height: 40,
   padding: "0 12px",
   width: "100%",
@@ -82,7 +82,7 @@ const textareaStyle: React.CSSProperties = {
 const labelStyle: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 600,
-  color: "#65676b",
+  color: "var(--text-secondary)",
   marginBottom: 4,
   display: "block",
 };
@@ -163,7 +163,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
               </DialogTitle>
               <p
                 className="text-xs mt-0.5"
-                style={{ color: "#65676b" }}
+                style={{ color: "var(--text-secondary)" }}
               >
                 Masukkan maklumat item untuk mendaftarkan rekod baharu
               </p>
@@ -297,7 +297,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
             {form.kuota && !isNaN(parseInt(form.kuota, 10)) && (
               <p
                 className="text-2xs mt-1"
-                style={{ color: "#9ca3af" }}
+                style={{ color: "var(--text-muted)" }}
               >
                 {formatNumber(parseInt(form.kuota, 10))} unit
               </p>

@@ -309,9 +309,9 @@ export default function ManagementPage() {
   if (!isAdmin) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <ShieldAlert className="h-16 w-16 mb-4" style={{ color: "#65676b" }} />
+        <ShieldAlert className="h-16 w-16 mb-4" style={{ color: "var(--text-secondary)" }} />
         <h2 className="text-lg font-semibold mb-2">Akses Ditolak</h2>
-        <p className="text-sm" style={{ color: "#65676b" }}>
+        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
           Anda tidak mempunyai akses ke halaman ini.
         </p>
       </div>
@@ -381,11 +381,11 @@ export default function ManagementPage() {
           <div>
             <h1
               className="text-[22px] font-bold"
-              style={{ color: "#1c1e21" }}
+              style={{ color: "var(--text-primary)" }}
             >
               Pengurusan
             </h1>
-            <p className="text-[13px]" style={{ color: "#65676b" }}>
+            <p className="text-[13px]" style={{ color: "var(--text-secondary)" }}>
               Pusat pentadbiran sistem — pengguna, permintaan reset, rujukan
             </p>
           </div>
@@ -428,7 +428,7 @@ export default function ManagementPage() {
         <TabsContent value="users">
           <Card className="overflow-hidden">
             {/* Search */}
-            <div className="p-4 border-b" style={{ borderColor: "#f0f2f5" }}>
+            <div className="p-4 border-b" style={{ borderColor: "var(--border-light)" }}>
               <Input
                 placeholder="Cari pengguna..."
                 value={userSearch}
@@ -445,7 +445,7 @@ export default function ManagementPage() {
             ) : filteredUsers.length === 0 ? (
               <div
                 className="text-center py-12 text-sm"
-                style={{ color: "#65676b" }}
+                style={{ color: "var(--text-secondary)" }}
               >
                 Tiada pengguna didaftarkan.
               </div>
@@ -460,8 +460,8 @@ export default function ManagementPage() {
                             key={header}
                             className="px-3 py-2.5 text-left text-2xs font-semibold uppercase tracking-wider"
                             style={{
-                              color: "#65676b",
-                              borderBottom: "2px solid #e4e6eb",
+                              color: "var(--text-secondary)",
+                              borderBottom: "2px solid var(--border-medium)",
                               background: "#f8f9fa",
                             }}
                           >
@@ -522,7 +522,7 @@ export default function ManagementPage() {
                 className="h-12 w-12 mb-3"
                 style={{ color: "#d9d9d9" }}
               />
-              <p className="text-sm" style={{ color: "#65676b" }}>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
                 Tiada permintaan.
               </p>
             </Card>
@@ -571,7 +571,7 @@ export default function ManagementPage() {
                         <p className="text-sm font-medium">
                           {req.profiles?.nama ?? "Pengguna Tidak Diketahui"}
                         </p>
-                        <p className="text-xs" style={{ color: "#65676b" }}>
+                        <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
                           @{req.profiles?.nama_pengguna ?? "—"} ·{" "}
                           {formatDateTime(req.requested_at)}
                         </p>
@@ -986,8 +986,8 @@ function UserRow({
             ? "#f0f0f0"
             : idx % 2 === 1
             ? "#f8f8f8"
-            : "#ffffff",
-          borderBottom: "1px solid #f0f2f5",
+            : "var(--card)",
+          borderBottom: "1px solid var(--border-light)",
         }}
       >
         <td className="px-3 py-3">
@@ -996,7 +996,7 @@ function UserRow({
           >
             <ChevronDown
               className="h-4 w-4"
-              style={{ color: "#65676b" }}
+              style={{ color: "var(--text-secondary)" }}
             />
           </div>
         </td>
@@ -1007,7 +1007,7 @@ function UserRow({
         >
           {user.nama_pengguna}
         </td>
-        <td className="px-3 py-3 text-sm" style={{ color: "#65676b" }}>
+        <td className="px-3 py-3 text-sm" style={{ color: "var(--text-secondary)" }}>
           {user.jawatan || "—"}
         </td>
         <td className="px-3 py-3 text-sm">
@@ -1034,7 +1034,7 @@ function UserRow({
                   {/* User Info Grid */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                     <div>
-                      <p className="text-sm" style={{ color: "#65676b" }}>
+                      <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
                         Nama Pengguna
                       </p>
                       <p className="text-sm font-medium">
@@ -1042,7 +1042,7 @@ function UserRow({
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm" style={{ color: "#65676b" }}>
+                      <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
                         Didaftarkan
                       </p>
                       <p className="text-sm font-medium">
@@ -1050,7 +1050,7 @@ function UserRow({
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm" style={{ color: "#65676b" }}>
+                      <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
                         Kemaskini
                       </p>
                       <p className="text-sm font-medium">
@@ -1058,7 +1058,7 @@ function UserRow({
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm" style={{ color: "#65676b" }}>
+                      <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
                         Peranan
                       </p>
                       <p className="text-sm font-medium">{user.peranan}</p>

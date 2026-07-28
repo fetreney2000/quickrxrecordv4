@@ -125,7 +125,7 @@ export function BatchRow({
         style={{
           gridTemplateColumns: "2fr 1.5fr 1.2fr 1.2fr 1fr",
           gap: 12,
-          borderBottom: "1px solid #f0f2f5",
+          borderBottom: "1px solid var(--border-light)",
         }}
       >
         <div className="flex items-center gap-2 min-w-0">
@@ -137,7 +137,7 @@ export function BatchRow({
             {batch.nombor_kelompok}
           </span>
         </div>
-        <span className="text-[13px]" style={{ color: "#1c1e21" }}>
+        <span className="text-[13px]" style={{ color: "var(--text-primary)" }}>
           {formatDate(batch.tarikh_luput)}
         </span>
         <div>
@@ -157,8 +157,8 @@ export function BatchRow({
                 style={{
                   border: "1px solid #7c3aed",
                   boxShadow: "0 0 0 3px rgba(124,58,237,0.15)",
-                  color: "#1c1e21",
-                  background: "white",
+                  color: "var(--text-primary)",
+                  background: "var(--card)",
                 }}
               />
               <button
@@ -172,7 +172,7 @@ export function BatchRow({
               <button
                 onClick={cancelEdit}
                 className="w-6 h-6 flex items-center justify-center rounded-md"
-                style={{ background: "#9ca3af", color: "white" }}
+                style={{ background: "var(--text-muted)", color: "white" }}
                 aria-label="Batal"
               >
                 <XIcon className="w-3 h-3" />
@@ -181,7 +181,7 @@ export function BatchRow({
           ) : (
             <span
               className="inline-flex items-center gap-1 text-[13px] font-semibold"
-              style={{ color: "#1c1e21" }}
+              style={{ color: "var(--text-primary)" }}
             >
               {formatNumber(batch.kuantiti)} unit
               {batch.kuantiti === 0 && (
@@ -248,7 +248,7 @@ export function BatchRow({
           >
             {batch.nombor_kelompok}
           </p>
-          <div className="flex items-center gap-2 mt-0.5 text-[12px] flex-wrap" style={{ color: "#65676b" }}>
+          <div className="flex items-center gap-2 mt-0.5 text-[12px] flex-wrap" style={{ color: "var(--text-secondary)" }}>
             <span>Luput: {formatDate(batch.tarikh_luput)}</span>
             <span
               className="inline-flex items-center px-1.5 py-0.5 rounded-full text-2xs font-semibold"
@@ -278,8 +278,8 @@ export function BatchRow({
                   style={{
                     border: "1px solid #7c3aed",
                     boxShadow: "0 0 0 3px rgba(124,58,237,0.15)",
-                    color: "#1c1e21",
-                    background: "white",
+                    color: "var(--text-primary)",
+                    background: "var(--card)",
                   }}
                 />
                 <button
@@ -292,7 +292,7 @@ export function BatchRow({
                 <button
                   onClick={cancelEdit}
                   className="w-7 h-7 flex items-center justify-center rounded-md"
-                  style={{ background: "#9ca3af", color: "white" }}
+                  style={{ background: "var(--text-muted)", color: "white" }}
                 >
                   <XIcon className="w-3.5 h-3.5" />
                 </button>
@@ -301,7 +301,7 @@ export function BatchRow({
               <>
                 <span
                   className="text-[14px] font-semibold"
-                  style={{ color: "#1c1e21" }}
+                  style={{ color: "var(--text-primary)" }}
                 >
                   {formatNumber(batch.kuantiti)} unit
                 </span>

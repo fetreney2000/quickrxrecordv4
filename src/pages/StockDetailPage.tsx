@@ -497,7 +497,7 @@ export default function StockDetailPage() {
           <div className="pt-3 pb-2 flex flex-col sm:flex-row gap-2 sm:items-center">
             <div className="relative flex-1 min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
-              <Input value={patientSearch} onChange={(e) => { setPatientSearch(e.target.value); setPatientPage(0); }} placeholder="Cari nama atau No. KP..." className="h-8 pl-9 text-xs" style={{ background: "rgba(124,58,237,0.04)", border: "1px solid transparent", borderRadius: 10 }} />
+              <Input value={patientSearch} onChange={(e) => { setPatientSearch(e.target.value); setPatientPage(0); }} placeholder="Cari nama atau No. KP..." className="h-8 pl-9 text-xs" style={{ background: "rgba(124,58,237,0.04)", border: "1px solid transparent", borderRadius: 10, color: "var(--text-primary)" }} />
             </div>
             <select value={defaulterFilter} onChange={(e) => { setDefaulterFilter(e.target.value); setPatientPage(0); }} className="h-8 text-xs px-2 rounded-xl" style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)", fontWeight: 500 }}>
               <option value="all">Semua Pesakit</option>
@@ -509,7 +509,7 @@ export default function StockDetailPage() {
             </select>
           </div>
           {patients.length === 0 ? <EmptyState icon={Users} title="Tiada pesakit berdaftar" hint="Item ini belum didaftarkan kepada mana-mana pesakit." /> : filteredPatients.length === 0 ? <EmptyState icon={Search} title="Tiada pesakit dijumpai" hint="Cuba tukar penapis atau kata kunci carian." /> : <>
-            <div className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "2.5fr 1.8fr 1.2fr 1.5fr 1.2fr", gap: 12, color: "var(--text-secondary)", background: "rgba(0,0,0,0.02)", borderBottom: "2px solid var(--border-medium)", borderTop: "1px solid var(--border-light)" }}>
+            <div className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "2.5fr 1.8fr 1.2fr 1.5fr 1.2fr", gap: 12, color: "var(--text-secondary)", background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-medium)", borderTop: "1px solid var(--border-light)" }}>
               <span>Nama</span><span>No. KP</span><span>Dos</span><span>Bekalan Terakhir</span><span>Status</span>
             </div>
             {pagedPatients.map((p, idx) => <PatientUsingRow key={p.id} data={p as any} index={idx} itemName={displayTitle} itemId={id} />)}
@@ -524,7 +524,7 @@ export default function StockDetailPage() {
           headerExtra={canAddBatch && item.aktif ? <Button size="sm" onClick={() => setOpenAddBatch(true)} style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}><Plus className="w-3.5 h-3.5" /> Tambah Stok</Button> : null}
         >
           {batches.length === 0 ? <EmptyState icon={Package} title="Tiada kelompok" hint={canAddBatch ? "Klik \u201cTambah Stok\u201d untuk mendaftarkan kelompok baharu." : "Item ini belum mempunyai kelompok."} /> : <>
-            <div className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "2fr 1.5fr 1.2fr 1.2fr 1fr", gap: 12, color: "var(--text-secondary)", background: "rgba(0,0,0,0.02)", borderBottom: "2px solid var(--border-medium)", borderTop: "1px solid var(--border-light)" }}>
+            <div className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "2fr 1.5fr 1.2fr 1.2fr 1fr", gap: 12, color: "var(--text-secondary)", background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-medium)", borderTop: "1px solid var(--border-light)" }}>
               <span>Nombor Kelompok</span><span>Tarikh Luput</span><span>Kuantiti</span><span>Status</span><span className="text-right">Tindakan</span>
             </div>
             {pagedBatches.map((b, idx) => <BatchRow key={b.id} batch={b} index={idx} canEdit={canAddBatch && item.aktif} onConfirmAdjust={handleBatchAdjust} onDispose={handleBatchDispose} />)}
@@ -555,7 +555,7 @@ export default function StockDetailPage() {
             <TxStatBadge icon={Users} color="#1877f2" label="Pesakit Menerima" value={txStats.patientCount.toString()} />
           </div>
           {filteredTransactions.length === 0 ? <EmptyState icon={History} title="Tiada sejarah transaksi" hint={transactions.length === 0 ? "Belum ada transaksi untuk item ini." : "Tiada rekod menepati penapis semasa."} /> : <>
-            <div className="hidden lg:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "1.5fr 1.3fr 1.3fr 1fr 1.8fr 1.3fr 1.3fr", gap: 12, color: "var(--text-secondary)", background: "rgba(0,0,0,0.02)", borderBottom: "2px solid var(--border-medium)", borderTop: "1px solid var(--border-light)" }}>
+            <div className="hidden lg:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "1.5fr 1.3fr 1.3fr 1fr 1.8fr 1.3fr 1.3fr", gap: 12, color: "var(--text-secondary)", background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-medium)", borderTop: "1px solid var(--border-light)" }}>
               <span>Tarikh</span><span>Jenis</span><span>Kelompok</span><span>Perubahan</span><span>Keterangan</span><span>Kakitangan</span><span>Pesakit</span>
             </div>
             {pagedTransactions.map((tx, idx) => <TransactionRow key={tx.id} tx={tx} index={idx} />)}

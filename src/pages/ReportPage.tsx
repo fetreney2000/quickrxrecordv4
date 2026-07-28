@@ -506,7 +506,7 @@ export default function ReportPage() {
       <div>
         <div
           className="inline-flex items-center gap-1 p-1 rounded-[14px]"
-          style={{ background: "rgba(240,242,245,0.8)" }}
+          style={{ background: "var(--bg-secondary)" }}
         >
           {tabs.map((tab) => {
             const isActive = activeTab === tab.key;
@@ -592,7 +592,7 @@ function InventoryTab({
     >
       <CardContent className="p-0 relative">
         {/* Header */}
-        <div className="p-4 sm:p-5 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#f0f2f5]">
+        <div className="p-4 sm:p-5 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--border-light)" }}>
           <div className="flex items-center gap-2">
             <Package className="w-4 h-4" style={{ color: "#f43f5e" }} />
             <h2
@@ -609,7 +609,7 @@ function InventoryTab({
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[12px] font-semibold transition-all disabled:opacity-40"
               style={{
                 background: "rgba(34,197,94,0.08)",
-                color: "#374151",
+                color: "var(--text-primary)",
                 border: "1px solid rgba(34,197,94,0.2)",
               }}
             >
@@ -622,7 +622,7 @@ function InventoryTab({
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[12px] font-semibold transition-all disabled:opacity-40"
               style={{
                 background: "rgba(239,68,68,0.08)",
-                color: "#374151",
+                color: "var(--text-primary)",
                 border: "1px solid rgba(239,68,68,0.2)",
               }}
             >
@@ -673,7 +673,7 @@ function InventoryTab({
                       style={{
                         color: "var(--text-secondary)",
                         borderBottom: "2px solid var(--border-medium)",
-                        background: "#f8f9fa",
+                        background: "var(--bg-secondary)",
                       }}
                     >
                       {h}
@@ -692,7 +692,10 @@ function InventoryTab({
                   return (
                     <tr
                       key={item.id}
-                      className="transition-colors hover:bg-[#f8f9fa]"
+                      className="transition-colors"
+                      style={{ background: "transparent" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-secondary)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                     >
                       <td
                         className="px-3 py-3 text-[13px]"
@@ -790,7 +793,7 @@ function TransactionsTab({
     >
       <CardContent className="p-0 relative">
         {/* Header */}
-        <div className="p-4 sm:p-5 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#f0f2f5]">
+        <div className="p-4 sm:p-5 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--border-light)" }}>
           <div className="flex items-center gap-2">
             <Activity className="w-4 h-4" style={{ color: "#7c3aed" }} />
             <h2
@@ -807,7 +810,7 @@ function TransactionsTab({
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[12px] font-semibold transition-all disabled:opacity-40"
               style={{
                 background: "rgba(34,197,94,0.08)",
-                color: "#374151",
+                color: "var(--text-primary)",
                 border: "1px solid rgba(34,197,94,0.2)",
               }}
             >
@@ -820,7 +823,7 @@ function TransactionsTab({
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[12px] font-semibold transition-all disabled:opacity-40"
               style={{
                 background: "rgba(239,68,68,0.08)",
-                color: "#374151",
+                color: "var(--text-primary)",
                 border: "1px solid rgba(239,68,68,0.2)",
               }}
             >
@@ -872,7 +875,7 @@ function TransactionsTab({
                       style={{
                         color: "var(--text-secondary)",
                         borderBottom: "2px solid var(--border-medium)",
-                        background: "#f8f9fa",
+                        background: "var(--bg-secondary)",
                       }}
                     >
                       {h}
@@ -884,7 +887,10 @@ function TransactionsTab({
                 {displayData.map((t) => (
                   <tr
                     key={t.id}
-                    className="transition-colors hover:bg-[#f8f9fa]"
+                    className="transition-colors"
+                    style={{ background: "transparent" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-secondary)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                   >
                     <td
                       className="px-3 py-3 text-[13px]"

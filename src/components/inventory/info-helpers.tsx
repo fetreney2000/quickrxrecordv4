@@ -48,8 +48,8 @@ export function InfoField({
       </div>
       <div className="min-w-0">
         <p
-          className="text-2xs font-semibold uppercase tracking-wider"
-          style={{ color: "#65676b" }}
+      className="text-2xs font-semibold uppercase tracking-wider"
+      style={{ color: "var(--text-secondary)" }}
         >
           {label}
         </p>
@@ -58,7 +58,7 @@ export function InfoField({
             "text-[13px] font-medium mt-0.5 break-words" +
             (mono ? " font-mono font-semibold" : "")
           }
-          style={mono ? { color: accent } : { color: "#1c1e21" }}
+          style={mono ? { color: accent } : { color: "var(--text-primary)" }}
         >
           {display}
         </p>
@@ -86,8 +86,8 @@ export function StatCardMini({
     <div
       className="rounded-2xl p-3"
       style={{
-        background: "white",
-        border: "1px solid rgba(0,0,0,0.06)",
+        background: "var(--card)",
+        border: "1px solid var(--border-light)",
         boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
       }}
     >
@@ -101,13 +101,13 @@ export function StatCardMini({
         <div className="min-w-0 flex-1">
           <p
             className="text-2xs font-semibold uppercase tracking-wider"
-            style={{ color: "#65676b" }}
+            style={{ color: "var(--text-secondary)" }}
           >
             {label}
           </p>
           <p
             className={isText ? "text-sm font-semibold" : "text-lg font-extrabold"}
-            style={{ color: "#1c1e21" }}
+            style={{ color: "var(--text-primary)" }}
           >
             {isText && typeof value === "string" && value.match(/^\d{4}-\d{2}-\d{2}/)
               ? formatDate(value)

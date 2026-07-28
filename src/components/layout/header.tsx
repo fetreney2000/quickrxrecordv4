@@ -155,8 +155,8 @@ export function Header() {
                   placeholder="Cari pesakit..."
                   className="header-search-input w-full h-10 pl-10 pr-10 text-sm rounded-[14px] border transition-all outline-none"
                   style={{
-                    background: open ? "var(--card)" : "var(--bg-accent-blue)",
-                    borderColor: open ? "var(--text-blue)" : "var(--border)",
+                    background: open ? "var(--card)" : "var(--card)",
+                    borderColor: open ? "var(--text-blue)" : "rgba(24,119,242,0.25)",
                     color: "var(--text-primary)",
                     boxShadow: open
                       ? "0 0 0 4px rgba(24,119,242,0.12), 0 1px 2px rgba(0,0,0,0.05)"

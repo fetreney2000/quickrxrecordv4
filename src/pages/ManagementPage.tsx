@@ -392,7 +392,7 @@ export default function ManagementPage() {
         </div>
         <Button
           onClick={() => setOpenAdd(true)}
-          className="text-white font-semibold shadow-none"
+          className="text-white font-semibold shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
           style={{ background: "linear-gradient(135deg, #1877f2, #0d5bd4)" }}
         >
           <UserPlus className="h-4 w-4 mr-1.5" />

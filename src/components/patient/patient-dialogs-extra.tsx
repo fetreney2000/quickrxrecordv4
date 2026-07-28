@@ -229,8 +229,8 @@ export function EditSupplyDialog({
             <Label style={labelStyle}>Dos</Label>
             <Input
               value={dos}
-              onChange={(e) => setDos(e.target.value.toUpperCase())}
-              style={inputBaseStyle}
+              readOnly
+              style={{ ...inputBaseStyle, background: "#f0f2f5", cursor: "not-allowed" }}
             />
           </div>
           <div className="grid grid-cols-2 gap-2">

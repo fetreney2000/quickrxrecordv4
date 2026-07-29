@@ -1,7 +1,7 @@
 /**
  * StockDetailPage — Halaman butiran item inventori.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -56,6 +56,8 @@ import {
 } from "@/hooks/use-inventory";
 import type { ItemBatch } from "@/types";
 import { InfoField, StatCardMini } from "@/components/inventory/info-helpers";
+import { SortIcon } from "@/components/patient/sort-icon";
+import type { SortDir } from "@/hooks/use-patients";
 import { AddBatchDialog } from "@/components/inventory/add-batch-dialog";
 import { BatchAdjustmentDialog } from "@/components/inventory/batch-adjustment-dialog";
 import { BatchRow } from "@/components/inventory/batch-row";
@@ -67,6 +69,40 @@ import type { Item } from "@/types";
 const BATCH_PAGE_SIZE = 50;
 const PATIENT_PAGE_SIZE = 50;
 const TX_PAGE_SIZE = 50;
+
+function getPatientSortVal(p: any, key: string): string | number {
+  switch (key) {
+    case "nama": return p.patient?.nama?.toLowerCase() || "";
+    case "nokp": return p.patient?.nombor_kad_pengenalan || "";
+    case "dos": return p.dos || "";
+    case "last_supply": return p.last_supply?.tarikh || "";
+    case "status": return p.last_supply?.tarikh || "9999-99-99";
+    default: return "";
+  }
+}
+
+function getBatchSortVal(b: any, key: string): string | number {
+  switch (key) {
+    case "nombor_kelompok": return b.nombor_kelompok || "";
+    case "tarikh_luput": return b.tarikh_luput || "";
+    case "kuantiti": return b.kuantiti ?? 0;
+    case "status": return b.tarikh_luput || "9999-99-99";
+    default: return "";
+  }
+}
+
+function getTxSortVal(tx: any, key: string): string | number {
+  switch (key) {
+    case "tarikh": return tx.tarikh;
+    case "jenis": return tx.jenis_label || "";
+    case "kelompok": return tx.kelompok || "";
+    case "perubahan": return tx.perubahan;
+    case "catatan": return tx.catatan || "";
+    case "kakitangan": return tx.kakitangan || "";
+    case "pesakit": return tx.pesakit || "";
+    default: return "";
+  }
+}
 
 const labelStyle: React.CSSProperties = {
   fontSize: 12,
@@ -140,6 +176,10 @@ export default function StockDetailPage() {
   const [batchPage, setBatchPage] = useState(0);
   const [patientPage, setPatientPage] = useState(0);
   const [txPage, setTxPage] = useState(0);
+
+  const [patientSort, setPatientSort] = useState<{ key: string; dir: SortDir } | null>(null);
+  const [batchSort, setBatchSort] = useState<{ key: string; dir: SortDir } | null>(null);
+  const [txSort, setTxSort] = useState<{ key: string; dir: SortDir } | null>(null);
 
   const [patientSearch, setPatientSearch] = useState("");
   const [defaulterFilter, setDefaulterFilter] = useState<string>("all");
@@ -224,24 +264,57 @@ export default function StockDetailPage() {
     });
   }, [transactions, filterDateFrom, filterDateTo, filterPatient, filterStaff, filterTxType]);
 
+  const sortedPatients = useMemo(() => {
+    if (!patientSort) return filteredPatients;
+    return [...filteredPatients].sort((a, b) => {
+      const va = getPatientSortVal(a, patientSort.key);
+      const vb = getPatientSortVal(b, patientSort.key);
+      if (va < vb) return patientSort.dir === "asc" ? -1 : 1;
+      if (va > vb) return patientSort.dir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [filteredPatients, patientSort]);
+
+  const sortedBatches = useMemo(() => {
+    if (!batchSort) return batches;
+    return [...batches].sort((a, b) => {
+      const va = getBatchSortVal(a, batchSort.key);
+      const vb = getBatchSortVal(b, batchSort.key);
+      if (va < vb) return batchSort.dir === "asc" ? -1 : 1;
+      if (va > vb) return batchSort.dir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [batches, batchSort]);
+
+  const sortedTransactions = useMemo(() => {
+    if (!txSort) return filteredTransactions;
+    return [...filteredTransactions].sort((a, b) => {
+      const va = getTxSortVal(a, txSort.key);
+      const vb = getTxSortVal(b, txSort.key);
+      if (va < vb) return txSort.dir === "asc" ? -1 : 1;
+      if (va > vb) return txSort.dir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [filteredTransactions, txSort]);
+
   const pagedBatches = useMemo(() => {
     const from = batchPage * BATCH_PAGE_SIZE;
-    return batches.slice(from, from + BATCH_PAGE_SIZE);
-  }, [batches, batchPage]);
+    return sortedBatches.slice(from, from + BATCH_PAGE_SIZE);
+  }, [sortedBatches, batchPage]);
 
   const pagedPatients = useMemo(() => {
     const from = patientPage * PATIENT_PAGE_SIZE;
-    return filteredPatients.slice(from, from + PATIENT_PAGE_SIZE);
-  }, [filteredPatients, patientPage]);
+    return sortedPatients.slice(from, from + PATIENT_PAGE_SIZE);
+  }, [sortedPatients, patientPage]);
 
   const pagedTransactions = useMemo(() => {
     const from = txPage * TX_PAGE_SIZE;
-    return filteredTransactions.slice(from, from + TX_PAGE_SIZE);
-  }, [filteredTransactions, txPage]);
+    return sortedTransactions.slice(from, from + TX_PAGE_SIZE);
+  }, [sortedTransactions, txPage]);
 
-  const batchTotalPages = Math.max(1, Math.ceil(batches.length / BATCH_PAGE_SIZE));
-  const patientTotalPages = Math.max(1, Math.ceil(filteredPatients.length / PATIENT_PAGE_SIZE));
-  const txTotalPages = Math.max(1, Math.ceil(filteredTransactions.length / TX_PAGE_SIZE));
+  const batchTotalPages = Math.max(1, Math.ceil(sortedBatches.length / BATCH_PAGE_SIZE));
+  const patientTotalPages = Math.max(1, Math.ceil(sortedPatients.length / PATIENT_PAGE_SIZE));
+  const txTotalPages = Math.max(1, Math.ceil(sortedTransactions.length / TX_PAGE_SIZE));
 
   const startEdit = () => {
     if (!item) return;
@@ -300,6 +373,30 @@ export default function StockDetailPage() {
   const handleBatchDispose = (batch: ItemBatch) => {
     setAdjustDialog({ type: "dispose", batch });
   };
+
+  const togglePatientSort = useCallback((key: string) => {
+    setPatientSort((prev) => {
+      if (prev?.key === key) return { key, dir: prev.dir === "asc" ? "desc" : "asc" };
+      return { key, dir: "asc" };
+    });
+    setPatientPage(0);
+  }, []);
+
+  const toggleBatchSort = useCallback((key: string) => {
+    setBatchSort((prev) => {
+      if (prev?.key === key) return { key, dir: prev.dir === "asc" ? "desc" : "asc" };
+      return { key, dir: "asc" };
+    });
+    setBatchPage(0);
+  }, []);
+
+  const toggleTxSort = useCallback((key: string) => {
+    setTxSort((prev) => {
+      if (prev?.key === key) return { key, dir: prev.dir === "asc" ? "desc" : "asc" };
+      return { key, dir: "asc" };
+    });
+    setTxPage(0);
+  }, []);
 
   const handleExportExcel = async () => {
     if (filteredTransactions.length === 0) {
@@ -510,7 +607,11 @@ export default function StockDetailPage() {
           </div>
           {patients.length === 0 ? <EmptyState icon={Users} title="Tiada pesakit berdaftar" hint="Item ini belum didaftarkan kepada mana-mana pesakit." /> : filteredPatients.length === 0 ? <EmptyState icon={Search} title="Tiada pesakit dijumpai" hint="Cuba tukar penapis atau kata kunci carian." /> : <>
             <div className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "2.5fr 1.8fr 1.2fr 1.5fr 1.2fr", gap: 12, color: "var(--text-secondary)", background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-medium)", borderTop: "1px solid var(--border-light)" }}>
-              <span>Nama</span><span>No. KP</span><span>Dos</span><span>Bekalan Terakhir</span><span>Status</span>
+              <button type="button" onClick={() => togglePatientSort("nama")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: patientSort?.key === "nama" ? "#7c3aed" : "var(--text-secondary)" }}>Nama <SortIcon active={patientSort?.key === "nama"} dir={patientSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => togglePatientSort("nokp")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: patientSort?.key === "nokp" ? "#7c3aed" : "var(--text-secondary)" }}>No. KP <SortIcon active={patientSort?.key === "nokp"} dir={patientSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => togglePatientSort("dos")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: patientSort?.key === "dos" ? "#7c3aed" : "var(--text-secondary)" }}>Dos <SortIcon active={patientSort?.key === "dos"} dir={patientSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => togglePatientSort("last_supply")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: patientSort?.key === "last_supply" ? "#7c3aed" : "var(--text-secondary)" }}>Bekalan Terakhir <SortIcon active={patientSort?.key === "last_supply"} dir={patientSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => togglePatientSort("status")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: patientSort?.key === "status" ? "#7c3aed" : "var(--text-secondary)" }}>Status <SortIcon active={patientSort?.key === "status"} dir={patientSort?.dir ?? "asc"} /></button>
             </div>
             {pagedPatients.map((p, idx) => <PatientUsingRow key={p.id} data={p as any} index={idx} itemName={displayTitle} itemId={id} />)}
             {patientTotalPages > 1 && <Pagination page={patientPage} totalPages={patientTotalPages} onChange={setPatientPage} totalCount={filteredPatients.length} itemLabel="pesakit" />}
@@ -525,7 +626,11 @@ export default function StockDetailPage() {
         >
           {batches.length === 0 ? <EmptyState icon={Package} title="Tiada kelompok" hint={canAddBatch ? "Klik \u201cTambah Stok\u201d untuk mendaftarkan kelompok baharu." : "Item ini belum mempunyai kelompok."} /> : <>
             <div className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "2fr 1.5fr 1.2fr 1.2fr 1fr", gap: 12, color: "var(--text-secondary)", background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-medium)", borderTop: "1px solid var(--border-light)" }}>
-              <span>Nombor Kelompok</span><span>Tarikh Luput</span><span>Kuantiti</span><span>Status</span><span className="text-right">Tindakan</span>
+              <button type="button" onClick={() => toggleBatchSort("nombor_kelompok")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: batchSort?.key === "nombor_kelompok" ? "#7c3aed" : "var(--text-secondary)" }}>Nombor Kelompok <SortIcon active={batchSort?.key === "nombor_kelompok"} dir={batchSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => toggleBatchSort("tarikh_luput")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: batchSort?.key === "tarikh_luput" ? "#7c3aed" : "var(--text-secondary)" }}>Tarikh Luput <SortIcon active={batchSort?.key === "tarikh_luput"} dir={batchSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => toggleBatchSort("kuantiti")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: batchSort?.key === "kuantiti" ? "#7c3aed" : "var(--text-secondary)" }}>Kuantiti <SortIcon active={batchSort?.key === "kuantiti"} dir={batchSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => toggleBatchSort("status")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: batchSort?.key === "status" ? "#7c3aed" : "var(--text-secondary)" }}>Status <SortIcon active={batchSort?.key === "status"} dir={batchSort?.dir ?? "asc"} /></button>
+              <span className="text-right">Tindakan</span>
             </div>
             {pagedBatches.map((b, idx) => <BatchRow key={b.id} batch={b} index={idx} canEdit={canAddBatch && item.aktif} onConfirmAdjust={handleBatchAdjust} onDispose={handleBatchDispose} />)}
             {batchTotalPages > 1 && <Pagination page={batchPage} totalPages={batchTotalPages} onChange={setBatchPage} totalCount={batches.length} itemLabel="kelompok" />}
@@ -556,7 +661,13 @@ export default function StockDetailPage() {
           </div>
           {filteredTransactions.length === 0 ? <EmptyState icon={History} title="Tiada sejarah transaksi" hint={transactions.length === 0 ? "Belum ada transaksi untuk item ini." : "Tiada rekod menepati penapis semasa."} /> : <>
             <div className="hidden lg:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "1.5fr 1.3fr 1.3fr 1fr 1.8fr 1.3fr 1.3fr", gap: 12, color: "var(--text-secondary)", background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-medium)", borderTop: "1px solid var(--border-light)" }}>
-              <span>Tarikh</span><span>Jenis</span><span>Kelompok</span><span>Perubahan</span><span>Keterangan</span><span>Kakitangan</span><span>Pesakit</span>
+              <button type="button" onClick={() => toggleTxSort("tarikh")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "tarikh" ? "#7c3aed" : "var(--text-secondary)" }}>Tarikh <SortIcon active={txSort?.key === "tarikh"} dir={txSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => toggleTxSort("jenis")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "jenis" ? "#7c3aed" : "var(--text-secondary)" }}>Jenis <SortIcon active={txSort?.key === "jenis"} dir={txSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => toggleTxSort("kelompok")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "kelompok" ? "#7c3aed" : "var(--text-secondary)" }}>Kelompok <SortIcon active={txSort?.key === "kelompok"} dir={txSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => toggleTxSort("perubahan")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "perubahan" ? "#7c3aed" : "var(--text-secondary)" }}>Perubahan <SortIcon active={txSort?.key === "perubahan"} dir={txSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => toggleTxSort("catatan")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "catatan" ? "#7c3aed" : "var(--text-secondary)" }}>Keterangan <SortIcon active={txSort?.key === "catatan"} dir={txSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => toggleTxSort("kakitangan")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "kakitangan" ? "#7c3aed" : "var(--text-secondary)" }}>Kakitangan <SortIcon active={txSort?.key === "kakitangan"} dir={txSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => toggleTxSort("pesakit")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "pesakit" ? "#7c3aed" : "var(--text-secondary)" }}>Pesakit <SortIcon active={txSort?.key === "pesakit"} dir={txSort?.dir ?? "asc"} /></button>
             </div>
             {pagedTransactions.map((tx, idx) => <TransactionRow key={tx.id} tx={tx} index={idx} />)}
             {txTotalPages > 1 && <Pagination page={txPage} totalPages={txTotalPages} onChange={setTxPage} totalCount={filteredTransactions.length} itemLabel="transaksi" />}

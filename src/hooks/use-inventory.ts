@@ -455,6 +455,7 @@ export function useItemTransactionHistory(itemId: string | undefined) {
           batch_id,
           catatan_bekalan,
           assignment:patient_item_assignments!assignment_id(
+            item_id,
             patient:patients!patient_id(nama),
             item:items!item_id(nama_item)
           ),
@@ -489,7 +490,7 @@ export function useItemTransactionHistory(itemId: string | undefined) {
       const combined: CombinedTransaction[] = [];
 
       ((supplyRecords ?? []) as any[]).forEach((sr) => {
-        if (sr.assignment?.item?.nama_item) {
+        if (sr.assignment?.item_id === itemId) {
           combined.push({
             id: sr.id,
             tarikh: sr.tarikh_dibekal,

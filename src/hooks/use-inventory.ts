@@ -474,8 +474,15 @@ export function useItemTransactionHistory(itemId: string | undefined) {
     queryKey: ["transaction-history", itemId],
     enabled: !!itemId,
     queryFn: async () => {
-      // Fetch supply records for this item
-      const { data: supplyRecords, error: srErr } = await supabase
+      // 1. Get assignment IDs for this item (both active and inactive)
+      const { data: itemAssignments } = await supabase
+        .from("patient_item_assignments")
+        .select("id")
+        .eq("item_id", itemId);
+      const assignmentIds = (itemAssignments ?? []).map((a: any) => a.id);
+
+      // 2. Fetch supply records for those assignments
+      let supplyQuery = supabase
         .from("supply_records")
         .select(`
           id,
@@ -492,13 +499,25 @@ export function useItemTransactionHistory(itemId: string | undefined) {
           batch:item_batches!batch_id(nombor_kelompok),
           staff:profiles!kakitangan_pembekal(nama)
         `)
-        .eq("patient_item_assignments.item_id", itemId)
         .order("tarikh_dibekal", { ascending: false })
         .limit(500);
+      if (assignmentIds.length > 0) {
+        supplyQuery = supplyQuery.in("assignment_id", assignmentIds);
+      } else {
+        supplyQuery = supplyQuery.eq("assignment_id", "00000000-0000-0000-0000-000000000000");
+      }
+      const { data: supplyRecords, error: srErr } = await supplyQuery;
       if (srErr) throw srErr;
 
-      // Fetch batch adjustments for this item
-      const { data: adjustments, error: adjErr } = await supabase
+      // 3. Get batch IDs for this item
+      const { data: itemBatches } = await supabase
+        .from("item_batches")
+        .select("id")
+        .eq("item_id", itemId);
+      const batchIds = (itemBatches ?? []).map((b: any) => b.id);
+
+      // 4. Fetch batch adjustments for those batches
+      let adjQuery = supabase
         .from("batch_adjustments")
         .select(`
           id,
@@ -513,9 +532,14 @@ export function useItemTransactionHistory(itemId: string | undefined) {
           ),
           staff:profiles!adjusted_by(nama)
         `)
-        .eq("item_batches.item_id", itemId)
         .order("created_at", { ascending: false })
         .limit(500);
+      if (batchIds.length > 0) {
+        adjQuery = adjQuery.in("batch_id", batchIds);
+      } else {
+        adjQuery = adjQuery.eq("batch_id", "00000000-0000-0000-0000-000000000000");
+      }
+      const { data: adjustments, error: adjErr } = await adjQuery;
       if (adjErr) throw adjErr;
 
       // Combine both into CombinedTransaction array

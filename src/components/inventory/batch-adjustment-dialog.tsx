@@ -331,6 +331,7 @@ export function BatchAdjustmentDialog({
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={updateBatch.isPending}
+            title="Batal pelarasan"
           >
             Batal
           </Button>
@@ -350,6 +351,7 @@ export function BatchAdjustmentDialog({
                   }
                 : undefined
             }
+            title="Sahkan dan teruskan pelarasan stok"
           >
             {updateBatch.isPending && (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />

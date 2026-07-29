@@ -110,7 +110,7 @@ export default function PatientListPage() {
           </div>
         </div>
         {canEdit && (
-          <Button onClick={() => setOpenAdd(true)} className="self-start sm:self-auto" style={{ background: "linear-gradient(135deg, #1877f2, #0d5bd4)", boxShadow: "0 4px 12px rgba(24,119,242,0.25)" }}>
+          <Button onClick={() => setOpenAdd(true)} className="self-start sm:self-auto" title="Daftar pesakit baharu" style={{ background: "linear-gradient(135deg, #1877f2, #0d5bd4)", boxShadow: "0 4px 12px rgba(24,119,242,0.25)" }}>
             <UserPlus className="w-4 h-4" /> Daftar Pesakit
           </Button>
         )}
@@ -152,11 +152,11 @@ export default function PatientListPage() {
             <div className="px-4 py-3 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-2" style={{ borderColor: "var(--border-light)" }}>
               <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Halaman {page + 1} daripada {totalPages} ({total.toLocaleString("ms-MY")} pesakit)</p>
               <div className="flex items-center gap-1">
-                <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))} className="h-7 px-2" style={{ opacity: page === 0 ? 0.4 : 1, cursor: page === 0 ? "default" : "pointer" }}><ChevronLeft className="w-3.5 h-3.5" /></Button>
+                <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))} title="Halaman sebelumnya" className="h-7 px-2" style={{ opacity: page === 0 ? 0.4 : 1, cursor: page === 0 ? "default" : "pointer" }}><ChevronLeft className="w-3.5 h-3.5" /></Button>
                 {pageButtons.map((b, i) => b === "..." ? <span key={`dots-${i}`} className="px-1.5 text-xs" style={{ color: "var(--text-muted)" }}>…</span> : (
-                  <button key={b} onClick={() => setPage(b - 1)} className="min-w-[28px] h-7 px-2 text-xs font-semibold rounded-lg transition-colors" style={b === page + 1 ? { background: "linear-gradient(135deg, #1877f2, #0d5bd4)", color: "white", fontWeight: 600, border: "1px solid transparent" } : { background: "var(--card)", color: "var(--text-primary)", border: "1px solid var(--border)", fontWeight: 400 }}>{b}</button>
+                  <button key={b} onClick={() => setPage(b - 1)} title={`Pergi ke halaman ${b}`} className="min-w-[28px] h-7 px-2 text-xs font-semibold rounded-lg transition-colors" style={b === page + 1 ? { background: "linear-gradient(135deg, #1877f2, #0d5bd4)", color: "white", fontWeight: 600, border: "1px solid transparent" } : { background: "var(--card)", color: "var(--text-primary)", border: "1px solid var(--border)", fontWeight: 400 }}>{b}</button>
                 ))}
-                <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} className="h-7 px-2" style={{ opacity: page >= totalPages - 1 ? 0.4 : 1, cursor: page >= totalPages - 1 ? "default" : "pointer" }}><ChevronRight className="w-3.5 h-3.5" /></Button>
+                <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} title="Halaman seterusnya" className="h-7 px-2" style={{ opacity: page >= totalPages - 1 ? 0.4 : 1, cursor: page >= totalPages - 1 ? "default" : "pointer" }}><ChevronRight className="w-3.5 h-3.5" /></Button>
               </div>
             </div>
           )}
@@ -172,7 +172,7 @@ interface SortableHeaderProps { columnKey: string; label: string; sort: SortStat
 function SortableHeader({ columnKey, label, sort, onSort, icon: Icon }: SortableHeaderProps) {
   const isActive = sort?.key === columnKey;
   return (
-    <button type="button" onClick={() => onSort(columnKey)} className="flex items-center gap-1.5 hover:text-foreground transition-colors text-left" style={{ color: isActive ? "#1877f2" : "var(--text-secondary)" }}>
+    <button type="button" onClick={() => onSort(columnKey)} title={`Isih mengikut ${label}`} className="flex items-center gap-1.5 hover:text-foreground transition-colors text-left" style={{ color: isActive ? "#1877f2" : "var(--text-secondary)" }}>
       <Icon className="w-3 h-3" /><span>{label}</span><SortIcon active={isActive} dir={sort?.dir ?? "asc"} />
     </button>
   );

@@ -142,15 +142,15 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
             </div>
             {canEdit && assignment.aktif && (
               <div className="flex items-center gap-1.5 flex-shrink-0">
-                <Button size="sm" onClick={(e) => { e.stopPropagation(); onSupply(); }} className="h-7 px-2"><Package className="w-3 h-3" /><span className="hidden sm:inline">Bekal</span></Button>
-                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onUpdateDose(); }} className="h-7 px-2"><Edit className="w-3 h-3" /><span className="hidden sm:inline">Kemaskini Dos</span></Button>
-                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onStop(); }} className="h-7 px-2" style={{ color: "#dc2626" }}><X className="w-3 h-3" /><span className="hidden sm:inline">Tamat</span></Button>
+                <Button size="sm" title="Bekal ubat kepada pesakit" onClick={(e) => { e.stopPropagation(); onSupply(); }} className="h-7 px-2"><Package className="w-3 h-3" /><span className="hidden sm:inline">Bekal</span></Button>
+                <Button size="sm" variant="outline" title="Kemaskini dos" onClick={(e) => { e.stopPropagation(); onUpdateDose(); }} className="h-7 px-2"><Edit className="w-3 h-3" /><span className="hidden sm:inline">Kemaskini Dos</span></Button>
+                <Button size="sm" variant="outline" title="Tamatkan tugasan item" onClick={(e) => { e.stopPropagation(); onStop(); }} className="h-7 px-2" style={{ color: "#dc2626" }}><X className="w-3 h-3" /><span className="hidden sm:inline">Tamat</span></Button>
               </div>
             )}
           </div>
           {assignment.catatan_penggunaan && <p className="text-xs mt-1 italic" style={{ color: "var(--text-secondary)" }}>{assignment.catatan_penggunaan}</p>}
           {assignment.sebab_tamat && <p className="text-xs mt-1 italic" style={{ color: "var(--text-muted)" }}>Sebab tamat: {assignment.sebab_tamat}</p>}
-          <button type="button" onClick={onToggle} className="mt-1.5 text-xs font-semibold flex items-center gap-1" style={{ color: "#1877f2" }}>
+          <button type="button" title="Tunjuk/sembunyi sejarah" onClick={onToggle} className="mt-1.5 text-xs font-semibold flex items-center gap-1" style={{ color: "#1877f2" }}>
             {expanded ? "Sembunyikan sejarah" : "Lihat sejarah"}
             <span style={{ transform: expanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>
               <ChevronDown className="w-3 h-3" />
@@ -186,11 +186,11 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                 </table>
               </div>
               {doseTotalPages > 1 && <div className="flex items-center justify-end gap-1 mt-2 pt-2 border-t border-[#f0f2f5]">
-                <button disabled={dosePage === 0} onClick={() => setDosePage((p) => Math.max(0, p - 1))} className="h-6 px-1.5 rounded-md flex items-center justify-center text-2xs font-semibold transition-colors" style={{ background: dosePage === 0 ? "transparent" : "var(--card)", color: dosePage === 0 ? "var(--text-muted)" : "var(--text-primary)", border: "1px solid var(--border)", opacity: dosePage === 0 ? 0.4 : 1, cursor: dosePage === 0 ? "default" : "pointer" }}><ChevronLeft className="w-3 h-3" /></button>
+                <button disabled={dosePage === 0} title="Sejarah dos sebelumnya" onClick={() => setDosePage((p) => Math.max(0, p - 1))} className="h-6 px-1.5 rounded-md flex items-center justify-center text-2xs font-semibold transition-colors" style={{ background: dosePage === 0 ? "transparent" : "var(--card)", color: dosePage === 0 ? "var(--text-muted)" : "var(--text-primary)", border: "1px solid var(--border)", opacity: dosePage === 0 ? 0.4 : 1, cursor: dosePage === 0 ? "default" : "pointer" }}><ChevronLeft className="w-3 h-3" /></button>
                 {Array.from({ length: doseTotalPages }, (_, i) => (
-                  <button key={i} onClick={() => setDosePage(i)} className="min-w-[22px] h-6 px-1 text-2xs font-semibold rounded-md transition-colors" style={i === dosePage ? { background: "linear-gradient(135deg, #1877f2, #0d5bd4)", color: "white", border: "1px solid transparent" } : { background: "var(--card)", color: "var(--text-primary)", border: "1px solid var(--border)", fontWeight: 400 }}>{i + 1}</button>
+                  <button key={i} title={`Halaman ${i + 1}`} onClick={() => setDosePage(i)} className="min-w-[22px] h-6 px-1 text-2xs font-semibold rounded-md transition-colors" style={i === dosePage ? { background: "linear-gradient(135deg, #1877f2, #0d5bd4)", color: "white", border: "1px solid transparent" } : { background: "var(--card)", color: "var(--text-primary)", border: "1px solid var(--border)", fontWeight: 400 }}>{i + 1}</button>
                 ))}
-                <button disabled={dosePage >= doseTotalPages - 1} onClick={() => setDosePage((p) => Math.min(doseTotalPages - 1, p + 1))} className="h-6 px-1.5 rounded-md flex items-center justify-center text-2xs font-semibold transition-colors" style={{ background: dosePage >= doseTotalPages - 1 ? "transparent" : "var(--card)", color: dosePage >= doseTotalPages - 1 ? "var(--text-muted)" : "var(--text-primary)", border: "1px solid var(--border)", opacity: dosePage >= doseTotalPages - 1 ? 0.4 : 1, cursor: dosePage >= doseTotalPages - 1 ? "default" : "pointer" }}><ChevronRight className="w-3 h-3" /></button>
+                <button disabled={dosePage >= doseTotalPages - 1} title="Sejarah dos seterusnya" onClick={() => setDosePage((p) => Math.min(doseTotalPages - 1, p + 1))} className="h-6 px-1.5 rounded-md flex items-center justify-center text-2xs font-semibold transition-colors" style={{ background: dosePage >= doseTotalPages - 1 ? "transparent" : "var(--card)", color: dosePage >= doseTotalPages - 1 ? "var(--text-muted)" : "var(--text-primary)", border: "1px solid var(--border)", opacity: dosePage >= doseTotalPages - 1 ? 0.4 : 1, cursor: dosePage >= doseTotalPages - 1 ? "default" : "pointer" }}><ChevronRight className="w-3 h-3" /></button>
               </div>}
             </>}
           </FoldableCard>
@@ -219,18 +219,18 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                         <td className="px-2 py-1.5" style={{ color: "var(--text-secondary)" }}>{s.tempoh_dibekal || "—"}</td>
                         <td className="px-2 py-1.5" style={{ color: "var(--text-secondary)" }}>{(s as SupplyRecordWithJoins).kakitangan_pembekal_profile?.nama ?? "—"}</td>
                         <td className="px-2 py-1.5 italic" style={{ color: "var(--text-muted)" }}>{s.catatan_bekalan || "—"}</td>
-                        {canEdit && <td className="px-2 py-1.5"><div className="flex items-center gap-1"><button onClick={(e) => { e.stopPropagation(); onEditSupply(s); }} className="hover:opacity-70" style={{ color: "#1877f2" }}><Edit className="w-3 h-3" /></button><button onClick={(e) => { e.stopPropagation(); onDeleteSupply(s.id); }} className="hover:opacity-70" style={{ color: "#dc2626" }}><Trash2 className="w-3 h-3" /></button></div></td>}
+                        {canEdit && <td className="px-2 py-1.5"><div className="flex items-center gap-1"><button title="Edit rekod bekalan" onClick={(e) => { e.stopPropagation(); onEditSupply(s); }} className="hover:opacity-70" style={{ color: "#1877f2" }}><Edit className="w-3 h-3" /></button><button title="Padam rekod bekalan" onClick={(e) => { e.stopPropagation(); onDeleteSupply(s.id); }} className="hover:opacity-70" style={{ color: "#dc2626" }}><Trash2 className="w-3 h-3" /></button></div></td>}
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
               {supplyTotalPages > 1 && <div className="flex items-center justify-end gap-1 mt-2 pt-2 border-t border-[#f0f2f5]">
-                <button disabled={supplyPage === 0} onClick={() => setSupplyPage((p) => Math.max(0, p - 1))} className="h-6 px-1.5 rounded-md flex items-center justify-center text-2xs font-semibold transition-colors" style={{ background: supplyPage === 0 ? "transparent" : "var(--card)", color: supplyPage === 0 ? "var(--text-muted)" : "var(--text-primary)", border: "1px solid var(--border)", opacity: supplyPage === 0 ? 0.4 : 1, cursor: supplyPage === 0 ? "default" : "pointer" }}><ChevronLeft className="w-3 h-3" /></button>
+                <button disabled={supplyPage === 0} title="Sejarah bekalan sebelumnya" onClick={() => setSupplyPage((p) => Math.max(0, p - 1))} className="h-6 px-1.5 rounded-md flex items-center justify-center text-2xs font-semibold transition-colors" style={{ background: supplyPage === 0 ? "transparent" : "var(--card)", color: supplyPage === 0 ? "var(--text-muted)" : "var(--text-primary)", border: "1px solid var(--border)", opacity: supplyPage === 0 ? 0.4 : 1, cursor: supplyPage === 0 ? "default" : "pointer" }}><ChevronLeft className="w-3 h-3" /></button>
                 {Array.from({ length: supplyTotalPages }, (_, i) => (
-                  <button key={i} onClick={() => setSupplyPage(i)} className="min-w-[22px] h-6 px-1 text-2xs font-semibold rounded-md transition-colors" style={i === supplyPage ? { background: "linear-gradient(135deg, #1877f2, #0d5bd4)", color: "white", border: "1px solid transparent" } : { background: "var(--card)", color: "var(--text-primary)", border: "1px solid var(--border)", fontWeight: 400 }}>{i + 1}</button>
+                  <button key={i} title={`Halaman ${i + 1}`} onClick={() => setSupplyPage(i)} className="min-w-[22px] h-6 px-1 text-2xs font-semibold rounded-md transition-colors" style={i === supplyPage ? { background: "linear-gradient(135deg, #1877f2, #0d5bd4)", color: "white", border: "1px solid transparent" } : { background: "var(--card)", color: "var(--text-primary)", border: "1px solid var(--border)", fontWeight: 400 }}>{i + 1}</button>
                 ))}
-                <button disabled={supplyPage >= supplyTotalPages - 1} onClick={() => setSupplyPage((p) => Math.min(supplyTotalPages - 1, p + 1))} className="h-6 px-1.5 rounded-md flex items-center justify-center text-2xs font-semibold transition-colors" style={{ background: supplyPage >= supplyTotalPages - 1 ? "transparent" : "var(--card)", color: supplyPage >= supplyTotalPages - 1 ? "var(--text-muted)" : "var(--text-primary)", border: "1px solid var(--border)", opacity: supplyPage >= supplyTotalPages - 1 ? 0.4 : 1, cursor: supplyPage >= supplyTotalPages - 1 ? "default" : "pointer" }}><ChevronRight className="w-3 h-3" /></button>
+                <button disabled={supplyPage >= supplyTotalPages - 1} title="Sejarah bekalan seterusnya" onClick={() => setSupplyPage((p) => Math.min(supplyTotalPages - 1, p + 1))} className="h-6 px-1.5 rounded-md flex items-center justify-center text-2xs font-semibold transition-colors" style={{ background: supplyPage >= supplyTotalPages - 1 ? "transparent" : "var(--card)", color: supplyPage >= supplyTotalPages - 1 ? "var(--text-muted)" : "var(--text-primary)", border: "1px solid var(--border)", opacity: supplyPage >= supplyTotalPages - 1 ? 0.4 : 1, cursor: supplyPage >= supplyTotalPages - 1 ? "default" : "pointer" }}><ChevronRight className="w-3 h-3" /></button>
               </div>}
             </>}
           </FoldableCard>

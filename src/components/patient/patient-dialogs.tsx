@@ -112,6 +112,7 @@ export function DeactivateDialog({
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isPending}
+            title="Batal nyahaktifkan"
           >
             Batal
           </Button>
@@ -119,6 +120,7 @@ export function DeactivateDialog({
             variant="destructive"
             onClick={onConfirm}
             disabled={isPending}
+            title="Sahkan nyahaktifkan pesakit"
           >
             {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             Nyahaktifkan
@@ -253,6 +255,7 @@ export function AddAssignmentDialog({
                     key={i.id}
                     onClick={() => !active && !kuotaPenuh && setSelectedItemId(i.id)}
                     disabled={active || kuotaPenuh}
+                    title={`Pilih ${i.nama_item}`}
                     className={cn(
                       "w-full text-left px-3 py-2 text-xs border-b last:border-b-0 transition-colors",
                       (active || kuotaPenuh) && "opacity-50 cursor-not-allowed",
@@ -362,6 +365,7 @@ export function AddAssignmentDialog({
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isPending}
+            title="Batal tambah item"
           >
             Batal
           </Button>
@@ -375,6 +379,7 @@ export function AddAssignmentDialog({
               });
             }}
             disabled={!canSubmit || isPending}
+            title="Tambah item untuk pesakit"
           >
             {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             Tambah
@@ -606,6 +611,7 @@ export function SupplyDialog({
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isPending}
+            title="Batal bekalan"
           >
             Batal
           </Button>
@@ -621,6 +627,7 @@ export function SupplyDialog({
               });
             }}
             disabled={!batchId || kuantiti <= 0 || kuantiti > maxQty || isPending}
+            title="Bekalkan ubat"
           >
             {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             Bekalkan
@@ -710,6 +717,7 @@ export function UpdateDoseDialog({
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isPending}
+            title="Batal kemaskini dos"
           >
             Batal
           </Button>
@@ -719,6 +727,7 @@ export function UpdateDoseDialog({
               onSubmit({ dos: dos.trim(), catatan: catatan.trim() });
             }}
             disabled={!dos.trim() || isPending}
+            title="Simpan dos baharu"
           >
             {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             Simpan

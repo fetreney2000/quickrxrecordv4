@@ -177,7 +177,7 @@ export default function PatientDetailPage() {
     return <div className="flex flex-col items-center justify-center min-h-[60vh] gap-2" style={{ color: "var(--text-secondary)" }}>
       <User className="w-10 h-10 opacity-40" />
       <p className="text-sm font-medium">Pesakit tidak dijumpai.</p>
-      <Button variant="outline" onClick={() => navigate("/pesakit")} className="mt-3">Kembali ke Senarai Pesakit</Button>
+      <Button variant="outline" onClick={() => navigate("/pesakit")} className="mt-3" title="Kembali ke senarai pesakit">Kembali ke Senarai Pesakit</Button>
     </div>;
   }
 
@@ -197,14 +197,14 @@ export default function PatientDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto">
-          <Button variant="outline" onClick={() => navigate("/pesakit")}><ArrowLeft className="w-3.5 h-3.5" /> Kembali</Button>
-          {canEdit && <Button variant="outline" onClick={() => setOpenMerge(true)}><Merge className="w-3.5 h-3.5" /> Gabung</Button>}
-          {canEdit && patient.aktif && <Button variant="destructive" onClick={() => setOpenDeactivate(true)}><ShieldAlert className="w-3.5 h-3.5" /> Nyahaktif</Button>}
+          <Button variant="outline" onClick={() => navigate("/pesakit")} title="Kembali ke senarai"><ArrowLeft className="w-3.5 h-3.5" /> Kembali</Button>
+          {canEdit && <Button variant="outline" onClick={() => setOpenMerge(true)} title="Gabung pesakit"><Merge className="w-3.5 h-3.5" /> Gabung</Button>}
+          {canEdit && patient.aktif && <Button variant="destructive" onClick={() => setOpenDeactivate(true)} title="Nyahaktifkan pesakit"><ShieldAlert className="w-3.5 h-3.5" /> Nyahaktif</Button>}
         </div>
       </div>
 
       <div><FoldableCard title={<span className="flex items-center gap-2"><User className="w-4 h-4" style={{ color: "#1877f2" }} /> Maklumat Pesakit</span>}
-        headerExtra={canEdit && !editMode && patient.aktif ? <Button size="sm" variant="outline" onClick={startEdit}><Edit className="w-3.5 h-3.5" /> Edit</Button> : editMode ? <div className="flex items-center gap-2"><Button size="sm" variant="outline" onClick={cancelEdit}>Batal</Button><Button size="sm" onClick={saveEdit} disabled={updatePatient.isPending}><Save className="w-3.5 h-3.5" /> Simpan</Button></div> : null}>
+        headerExtra={canEdit && !editMode && patient.aktif ? <Button size="sm" variant="outline" onClick={startEdit} title="Edit maklumat pesakit"><Edit className="w-3.5 h-3.5" /> Edit</Button> : editMode ? <div className="flex items-center gap-2"><Button size="sm" variant="outline" onClick={cancelEdit} title="Batal edit">Batal</Button><Button size="sm" onClick={saveEdit} disabled={updatePatient.isPending} title="Simpan perubahan"><Save className="w-3.5 h-3.5" /> Simpan</Button></div> : null}>
         {editMode ? <EditForm editData={editData} setEditData={setEditData} /> : <ViewInfo patient={patient} />}
       </FoldableCard></div>
 
@@ -216,10 +216,10 @@ export default function PatientDetailPage() {
       </div>
 
       <div><FoldableCard title={<span className="flex items-center gap-2"><Pill className="w-4 h-4" style={{ color: "#1877f2" }} /> Item Didaftarkan<Badge variant="green" className="text-2xs">{stats.active} aktif</Badge>{stats.inactive > 0 && <Badge variant="slate" className="text-2xs">{stats.inactive} tamat</Badge>}</span>}
-        headerExtra={canEdit && patient.aktif ? <Button size="sm" onClick={() => setOpenAddAssignment(true)} style={{ background: "linear-gradient(135deg, #1877f2, #0d5bd4)" }}><Plus className="w-3.5 h-3.5" /> Tambah Item</Button> : null}>
+        headerExtra={canEdit && patient.aktif ? <Button size="sm" onClick={() => setOpenAddAssignment(true)} style={{ background: "linear-gradient(135deg, #1877f2, #0d5bd4)" }} title="Tambah item baharu untuk pesakit"><Plus className="w-3.5 h-3.5" /> Tambah Item</Button> : null}>
         {assignments.length === 0 ? <div className="flex flex-col items-center justify-center py-12 gap-2" style={{ color: "var(--text-muted)" }}><Pill className="w-10 h-10 opacity-40" /><p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Tiada item didaftarkan</p>{canEdit && patient.aktif && <p className="text-xs">Klik "Tambah Item" untuk mula.</p>}</div> : <>
           <div className="divide-y divide-[#f0f2f5]">{pagedAssignments.map((a) => <AssignmentItem key={a.id} assignment={a} expanded={expandedAssignment === a.id} onToggle={() => setExpandedAssignment(expandedAssignment === a.id ? null : a.id)} onSupply={() => setOpenSupply(a.id)} onUpdateDose={() => setOpenUpdateDose(a.id)} onStop={() => setOpenStopAssign(a.id)} onEditSupply={(s) => setEditSupplyRecord(s)} onDeleteSupply={(id) => setDeleteSupplyId({ id, assignmentId: a.id })} canEdit={canEdit && patient.aktif} formsMap={formsMap} weeksSinceLastSupply={weeksSinceMap.get(a.id) ?? null} />)}</div>
-          {assignmentTotalPages > 1 && <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-[#f0f2f5]"><p className="text-xs" style={{ color: "var(--text-secondary)" }}>Halaman {assignmentPage + 1} daripada {assignmentTotalPages}</p><div className="flex items-center gap-1"><Button variant="outline" size="sm" disabled={assignmentPage === 0} onClick={() => setAssignmentPage((p) => Math.max(0, p - 1))} className="h-7 px-2" style={{ opacity: assignmentPage === 0 ? 0.4 : 1 }}><ChevronLeft className="w-3.5 h-3.5" /></Button><Button variant="outline" size="sm" disabled={assignmentPage >= assignmentTotalPages - 1} onClick={() => setAssignmentPage((p) => Math.min(assignmentTotalPages - 1, p + 1))} className="h-7 px-2" style={{ opacity: assignmentPage >= assignmentTotalPages - 1 ? 0.4 : 1 }}><ChevronRight className="w-3.5 h-3.5" /></Button></div></div>}
+          {assignmentTotalPages > 1 && <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-[#f0f2f5]"><p className="text-xs" style={{ color: "var(--text-secondary)" }}>Halaman {assignmentPage + 1} daripada {assignmentTotalPages}</p><div className="flex items-center gap-1"><Button variant="outline" size="sm" disabled={assignmentPage === 0} onClick={() => setAssignmentPage((p) => Math.max(0, p - 1))} className="h-7 px-2" style={{ opacity: assignmentPage === 0 ? 0.4 : 1 }} title="Halaman sebelumnya"><ChevronLeft className="w-3.5 h-3.5" /></Button><Button variant="outline" size="sm" disabled={assignmentPage >= assignmentTotalPages - 1} onClick={() => setAssignmentPage((p) => Math.min(assignmentTotalPages - 1, p + 1))} className="h-7 px-2" style={{ opacity: assignmentPage >= assignmentTotalPages - 1 ? 0.4 : 1 }} title="Halaman seterusnya"><ChevronRight className="w-3.5 h-3.5" /></Button></div></div>}
         </>}
       </FoldableCard></div>
 

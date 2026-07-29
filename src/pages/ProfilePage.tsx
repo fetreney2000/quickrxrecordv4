@@ -339,6 +339,7 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={startEdit}
+              title="Edit maklumat profil"
               aria-label="Edit Profil"
               style={{
                 display: "inline-flex",
@@ -368,6 +369,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={cancelEdit}
+                title="Batal edit profil"
                 aria-label="Batal edit"
                 style={{
                   display: "inline-flex",
@@ -395,6 +397,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={saveEdit}
+                title="Simpan perubahan profil"
                 aria-label="Simpan profil"
                 disabled={updateProfileMutation.isPending}
                 style={{
@@ -614,6 +617,7 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={toggleChangingPassword}
+              title="Tukar kata laluan"
               aria-label="Tukar Kata Laluan"
               style={{
                 display: "inline-flex",
@@ -686,6 +690,7 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={() => setShowCurrentPwd((p) => !p)}
+                    title="Tunjuk/sembunyi kata laluan semasa"
                     style={{
                       position: "absolute",
                       right: 10,
@@ -739,6 +744,7 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={() => setShowNewPwd((p) => !p)}
+                    title="Tunjuk/sembunyi kata laluan baharu"
                     style={{
                       position: "absolute",
                       right: 10,
@@ -830,6 +836,7 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPwd((p) => !p)}
+                    title="Tunjuk/sembunyi pengesahan kata laluan"
                     style={{
                       position: "absolute",
                       right: 10,
@@ -880,6 +887,7 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={toggleChangingPassword}
+                  title="Batal tukar kata laluan"
                   aria-label="Batal tukar kata laluan"
                   style={{
                     flex: 1,
@@ -909,6 +917,7 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={handleChangePassword}
+                  title="Sahkan tukar kata laluan"
                   aria-label="Sahkan tukar kata laluan"
                   disabled={changePasswordMutation.isPending}
                   style={{

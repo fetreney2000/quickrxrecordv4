@@ -249,6 +249,7 @@ export function AddBatchDialog({
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={addBatch.isPending}
+            title="Batal tambah kelompok"
           >
             Batal
           </Button>
@@ -259,6 +260,7 @@ export function AddBatchDialog({
             style={{
               background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
             }}
+            title="Tambah kelompok stok"
           >
             {addBatch.isPending && (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />

@@ -232,6 +232,7 @@ export function BatchRow({
                 className="w-6 h-6 flex items-center justify-center rounded-md"
                 style={{ background: "#16a34a", color: "white" }}
                 aria-label="Sahkan"
+                title="Sahkan kuantiti"
               >
                 <Check className="w-3 h-3" />
               </button>
@@ -240,6 +241,7 @@ export function BatchRow({
                 className="w-6 h-6 flex items-center justify-center rounded-md"
                 style={{ background: "var(--text-muted)", color: "white" }}
                 aria-label="Batal"
+                title="Batal edit kuantiti"
               >
                 <XIcon className="w-3 h-3" />
               </button>
@@ -276,6 +278,7 @@ export function BatchRow({
                 className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-black/[0.05] transition-colors"
                 style={{ color: "#7c3aed" }}
                 aria-label="Edit info kelompok"
+                title="Edit maklumat kelompok"
               >
                 <Pencil className="w-3.5 h-3.5" />
               </button>
@@ -284,6 +287,7 @@ export function BatchRow({
                 className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-black/[0.05] transition-colors"
                 style={{ color: "#7c3aed" }}
                 aria-label="Edit kuantiti"
+                title="Edit kuantiti"
               >
                 <Edit className="w-3.5 h-3.5" />
               </button>
@@ -292,6 +296,7 @@ export function BatchRow({
                 className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-red-50 transition-colors"
                 style={{ color: "#dc2626" }}
                 aria-label="Pelupusan"
+                title="Lupuskan kelompok"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -305,6 +310,7 @@ export function BatchRow({
                 className="w-6 h-6 flex items-center justify-center rounded-md"
                 style={{ background: infoDirty ? "#16a34a" : "var(--text-muted)", color: "white" }}
                 aria-label="Sahkan info"
+                title="Sahkan maklumat kelompok"
               >
                 <Check className="w-3 h-3" />
               </button>
@@ -313,6 +319,7 @@ export function BatchRow({
                 className="w-6 h-6 flex items-center justify-center rounded-md"
                 style={{ background: "var(--text-muted)", color: "white" }}
                 aria-label="Batal info"
+                title="Batal edit maklumat"
               >
                 <XIcon className="w-3 h-3" />
               </button>
@@ -400,6 +407,7 @@ export function BatchRow({
                   onClick={handleSubmit}
                   className="w-7 h-7 flex items-center justify-center rounded-md"
                   style={{ background: "#16a34a", color: "white" }}
+                  title="Sahkan kuantiti"
                 >
                   <Check className="w-3.5 h-3.5" />
                 </button>
@@ -407,6 +415,7 @@ export function BatchRow({
                   onClick={cancelEdit}
                   className="w-7 h-7 flex items-center justify-center rounded-md"
                   style={{ background: "var(--text-muted)", color: "white" }}
+                  title="Batal edit kuantiti"
                 >
                   <XIcon className="w-3.5 h-3.5" />
                 </button>
@@ -418,6 +427,7 @@ export function BatchRow({
                   disabled={!infoDirty}
                   className="w-7 h-7 flex items-center justify-center rounded-md"
                   style={{ background: infoDirty ? "#16a34a" : "var(--text-muted)", color: "white" }}
+                  title="Sahkan maklumat kelompok"
                 >
                   <Check className="w-3.5 h-3.5" />
                 </button>
@@ -425,6 +435,7 @@ export function BatchRow({
                   onClick={cancelEditInfo}
                   className="w-7 h-7 flex items-center justify-center rounded-md"
                   style={{ background: "var(--text-muted)", color: "white" }}
+                  title="Batal edit maklumat"
                 >
                   <XIcon className="w-3.5 h-3.5" />
                 </button>
@@ -440,6 +451,7 @@ export function BatchRow({
                       onClick={startEditInfo}
                       className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-black/[0.05] transition-colors"
                       style={{ color: "#7c3aed" }}
+                      title="Edit maklumat kelompok"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
@@ -447,6 +459,7 @@ export function BatchRow({
                       onClick={startEdit}
                       className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-black/[0.05] transition-colors"
                       style={{ color: "#7c3aed" }}
+                      title="Edit kuantiti"
                     >
                       <Edit className="w-3.5 h-3.5" />
                     </button>
@@ -454,6 +467,7 @@ export function BatchRow({
                       onClick={() => onDispose(batch)}
                       className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-red-50 transition-colors"
                       style={{ color: "#dc2626" }}
+                      title="Lupuskan kelompok"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>

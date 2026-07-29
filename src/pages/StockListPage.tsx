@@ -61,7 +61,7 @@ export default function StockListPage() {
           <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-white flex-shrink-0" style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)", boxShadow: "0 4px 12px rgba(124,58,237,0.3)" }}><Pill className="w-5 h-5" strokeWidth={2.5} /></div>
           <div className="min-w-0"><h1 className="text-[22px] font-bold leading-tight truncate" style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}>Senarai Inventori</h1><p className="text-[13px] font-medium mt-0.5" style={{ color: "var(--text-secondary)" }}>Urus item ubat dalam katalog</p></div>
         </div>
-        {canEdit && <Button onClick={() => setOpenAdd(true)} className="self-start sm:self-auto" style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)", boxShadow: "0 4px 12px rgba(124,58,237,0.25)" }}><Plus className="w-4 h-4" /> Tambah Item</Button>}
+        {canEdit && <Button onClick={() => setOpenAdd(true)} title="Tambah item ubat baharu" className="self-start sm:self-auto" style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)", boxShadow: "0 4px 12px rgba(124,58,237,0.25)" }}><Plus className="w-4 h-4" /> Tambah Item</Button>}
       </div>
       <div><Card><CardContent className="p-0 relative">
         <div className="p-4 sm:p-5 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#f0f2f5]">
@@ -95,11 +95,11 @@ export default function StockListPage() {
           <div className="px-4 py-3 border-t border-[#f0f2f5] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Halaman {page + 1} daripada {totalPages} ({total.toLocaleString("ms-MY")} item)</p>
             <div className="flex items-center gap-1">
-              <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))} className="h-7 px-2" style={{ opacity: page === 0 ? 0.4 : 1 }}><ChevronLeft className="w-3.5 h-3.5" /></Button>
+              <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))} title="Halaman sebelumnya" className="h-7 px-2" style={{ opacity: page === 0 ? 0.4 : 1 }}><ChevronLeft className="w-3.5 h-3.5" /></Button>
               {pageButtons.map((b, i) => b === "..." ? <span key={`dots-${i}`} className="px-1.5 text-xs" style={{ color: "var(--text-muted)" }}>…</span> : (
-                <button key={b} onClick={() => setPage(b - 1)} className="min-w-[28px] h-7 px-2 text-xs font-semibold rounded-lg transition-colors" style={b === page + 1 ? { background: "linear-gradient(135deg, #7c3aed, #6d28d9)", color: "white", fontWeight: 600, border: "1px solid transparent" } : { background: "var(--card)", color: "var(--text-primary)", border: "1px solid var(--border)", fontWeight: 400 }}>{b}</button>
+                <button key={b} onClick={() => setPage(b - 1)} title={`Pergi ke halaman ${b}`} className="min-w-[28px] h-7 px-2 text-xs font-semibold rounded-lg transition-colors" style={b === page + 1 ? { background: "linear-gradient(135deg, #7c3aed, #6d28d9)", color: "white", fontWeight: 600, border: "1px solid transparent" } : { background: "var(--card)", color: "var(--text-primary)", border: "1px solid var(--border)", fontWeight: 400 }}>{b}</button>
               ))}
-              <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} className="h-7 px-2" style={{ opacity: page >= totalPages - 1 ? 0.4 : 1 }}><ChevronRight className="w-3.5 h-3.5" /></Button>
+              <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} title="Halaman seterusnya" className="h-7 px-2" style={{ opacity: page >= totalPages - 1 ? 0.4 : 1 }}><ChevronRight className="w-3.5 h-3.5" /></Button>
             </div>
           </div>
         )}
@@ -114,5 +114,6 @@ interface SortableHeaderProps { columnKey: string; label: string; sort: SortStat
 
 function SortableHeader({ columnKey, label, sort, onSort, icon: Icon }: SortableHeaderProps) {
   const isActive = sort?.key === columnKey;
-  return <button type="button" onClick={() => onSort(columnKey)} className="flex items-center gap-1.5 hover:text-foreground transition-colors text-left" style={{ color: isActive ? "#7c3aed" : "var(--text-secondary)" }}><Icon className="w-3 h-3" /><span>{label}</span><SortIcon active={isActive} dir={sort?.dir ?? "asc"} /></button>;
+  const titles: Record<string, string> = { kod_item: "Isih mengikut Kod", nama_item: "Isih mengikut Nama Item", quota: "Isih mengikut Kuota" };
+  return <button type="button" onClick={() => onSort(columnKey)} title={titles[columnKey]} className="flex items-center gap-1.5 hover:text-foreground transition-colors text-left" style={{ color: isActive ? "#7c3aed" : "var(--text-secondary)" }}><Icon className="w-3 h-3" /><span>{label}</span><SortIcon active={isActive} dir={sort?.dir ?? "asc"} /></button>;
 }

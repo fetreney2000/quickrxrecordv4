@@ -339,6 +339,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={addItem.isPending}
+            title="Batal tambah item"
           >
             Batal
           </Button>
@@ -349,6 +350,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
             style={{
               background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
             }}
+            title="Simpan dan daftar item baharu"
           >
             {addItem.isPending && (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />

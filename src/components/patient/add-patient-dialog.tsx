@@ -305,6 +305,7 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
                   }}
                   className="mt-2 inline-flex items-center gap-1 text-xs font-semibold"
                   style={{ color: "#92400e" }}
+                  title="Lihat butiran pesakit sedia ada"
                 >
                   Lihat butiran pesakit
                   <ExternalLink className="w-3 h-3" />
@@ -320,6 +321,7 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={addPatient.isPending}
+            title="Batal pendaftaran"
           >
             Batal
           </Button>
@@ -327,6 +329,7 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
             type="button"
             disabled={!isValid || addPatient.isPending}
             onClick={handleSubmit}
+            title="Simpan dan daftar pesakit"
           >
             {addPatient.isPending && (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />

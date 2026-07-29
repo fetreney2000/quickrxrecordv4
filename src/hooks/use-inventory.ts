@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
+import { getNowISOKL } from "@/lib/utils";
 import type {
   Item,
   ItemBatch,
@@ -322,6 +323,35 @@ export function useBatchAdjust(itemId: string | undefined) {
     },
     onError: (err: any) => {
       toast.error(err?.message || "Gagal mengemaskini kuantiti.");
+    },
+  });
+}
+
+export function useUpdateBatch(itemId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: {
+      batchId: string;
+      nombor_kelompok: string;
+      tarikh_luput: string;
+    }) => {
+      const { error } = await supabase
+        .from("item_batches")
+        .update({
+          nombor_kelompok: data.nombor_kelompok.toUpperCase(),
+          tarikh_luput: data.tarikh_luput,
+          updated_at: getNowISOKL(),
+        })
+        .eq("id", data.batchId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Maklumat kelompok dikemaskini.");
+      queryClient.invalidateQueries({ queryKey: ["batches", itemId] });
+      queryClient.invalidateQueries({ queryKey: ["items"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Gagal mengemaskini kelompok.");
     },
   });
 }

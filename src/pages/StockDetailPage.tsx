@@ -50,6 +50,7 @@ import {
   useItem,
   useBatches,
   useAddBatch,
+  useUpdateBatch,
   useUpdateItem,
   useItemForms,
   useItemCategories,
@@ -167,6 +168,7 @@ export default function StockDetailPage() {
   const { data: staffList = [] } = useStaffList();
 
   const updateItem = useUpdateItem(id);
+  const updateBatch = useUpdateBatch(id);
 
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState<Partial<Item>>({});
@@ -377,6 +379,10 @@ export default function StockDetailPage() {
 
   const handleBatchDispose = (batch: ItemBatch) => {
     setAdjustDialog({ type: "dispose", batch });
+  };
+
+  const handleUpdateBatch = (batchId: string, nombor_kelompok: string, tarikh_luput: string) => {
+    updateBatch.mutate({ batchId, nombor_kelompok, tarikh_luput });
   };
 
   const togglePatientSort = useCallback((key: string) => {
@@ -637,7 +643,7 @@ export default function StockDetailPage() {
               <button type="button" onClick={() => toggleBatchSort("status")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: batchSort?.key === "status" ? "#7c3aed" : "var(--text-secondary)" }}>Status <SortIcon active={batchSort?.key === "status"} dir={batchSort?.dir ?? "asc"} /></button>
               <span className="text-right">Tindakan</span>
             </div>
-            {pagedBatches.map((b, idx) => <BatchRow key={b.id} batch={b} index={idx} canEdit={canAddBatch && item.aktif} onConfirmAdjust={handleBatchAdjust} onDispose={handleBatchDispose} />)}
+            {pagedBatches.map((b, idx) => <BatchRow key={b.id} batch={b} index={idx} canEdit={canAddBatch && item.aktif} onConfirmAdjust={handleBatchAdjust} onDispose={handleBatchDispose} onUpdateBatch={handleUpdateBatch} />)}
             {batchTotalPages > 1 && <Pagination page={batchPage} totalPages={batchTotalPages} onChange={setBatchPage} totalCount={batches.length} itemLabel="kelompok" />}
           </>}
         </FoldableCard>

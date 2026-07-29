@@ -202,19 +202,6 @@ export default function StockDetailPage() {
     return Math.max(0, item.kuota - activePatientCount);
   }, [item?.kuota, activePatientCount]);
 
-  const txStats = useMemo(() => {
-    const total = transactions.length;
-    let inQty = 0;
-    let outQty = 0;
-    const patientSet = new Set<string>();
-    transactions.forEach((t) => {
-      if (t.perubahan > 0) inQty += t.perubahan;
-      else outQty += Math.abs(t.perubahan);
-      if (t.pesakit) patientSet.add(t.pesakit);
-    });
-    return { total, inQty, outQty, patientCount: patientSet.size };
-  }, [transactions]);
-
   const filteredPatients = useMemo(() => {
     const term = patientSearch.trim().toLowerCase();
     const now = new Date();
@@ -263,6 +250,19 @@ export default function StockDetailPage() {
       return true;
     });
   }, [transactions, filterDateFrom, filterDateTo, filterPatient, filterStaff, filterTxType]);
+
+  const txStats = useMemo(() => {
+    const total = filteredTransactions.length;
+    let inQty = 0;
+    let outQty = 0;
+    const patientSet = new Set<string>();
+    filteredTransactions.forEach((t) => {
+      if (t.perubahan > 0) inQty += t.perubahan;
+      else outQty += Math.abs(t.perubahan);
+      if (t.pesakit) patientSet.add(t.pesakit);
+    });
+    return { total, inQty, outQty, patientCount: patientSet.size };
+  }, [filteredTransactions]);
 
   const sortedPatients = useMemo(() => {
     if (!patientSort) return filteredPatients;

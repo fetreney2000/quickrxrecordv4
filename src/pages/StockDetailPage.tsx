@@ -576,14 +576,14 @@ export default function StockDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto">
-          <Button variant="outline" onClick={() => navigate("/stok")}><ArrowLeft className="w-3.5 h-3.5" /> Kembali</Button>
+          <Button variant="outline" onClick={() => navigate("/stok")} title="Kembali ke senarai inventori"><ArrowLeft className="w-3.5 h-3.5" /> Kembali</Button>
         </div>
       </div>
 
       {/* 1. MAKLUMAT ITEM */}
       <div>
         <FoldableCard title={<span className="flex items-center gap-2"><Pill className="w-4 h-4" style={{ color: "#7c3aed" }} /> Maklumat Item</span>}
-          headerExtra={canEditItem && !editMode && item.aktif ? <Button size="sm" variant="outline" onClick={startEdit}><Edit className="w-3.5 h-3.5" /> Edit</Button> : editMode ? <div className="flex items-center gap-2"><Button size="sm" variant="outline" onClick={cancelEdit}>Batal</Button><Button size="sm" onClick={saveEdit} disabled={updateItem.isPending} style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}>{updateItem.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Simpan</Button></div> : null}
+          headerExtra={canEditItem && !editMode && item.aktif ? <Button size="sm" variant="outline" onClick={startEdit} title="Edit maklumat item"><Edit className="w-3.5 h-3.5" /> Edit</Button> : editMode ? <div className="flex items-center gap-2"><Button size="sm" variant="outline" onClick={cancelEdit} title="Batal edit">Batal</Button><Button size="sm" onClick={saveEdit} disabled={updateItem.isPending} title="Simpan perubahan" style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}>{updateItem.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Simpan</Button></div> : null}
         >
           <div className="pt-3">
             {editMode ? <ItemEditForm editData={editData} setEditData={setEditData} forms={forms} categories={categories} /> : <>
@@ -618,11 +618,11 @@ export default function StockDetailPage() {
           </div>
           {patients.length === 0 ? <EmptyState icon={Users} title="Tiada pesakit berdaftar" hint="Item ini belum didaftarkan kepada mana-mana pesakit." /> : filteredPatients.length === 0 ? <EmptyState icon={Search} title="Tiada pesakit dijumpai" hint="Cuba tukar penapis atau kata kunci carian." /> : <>
             <div className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "2.5fr 1.8fr 1.2fr 1.5fr 1.2fr", gap: 12, color: "var(--text-secondary)", background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-medium)", borderTop: "1px solid var(--border-light)" }}>
-              <button type="button" onClick={() => togglePatientSort("nama")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: patientSort?.key === "nama" ? "#7c3aed" : "var(--text-secondary)" }}>Nama <SortIcon active={patientSort?.key === "nama"} dir={patientSort?.dir ?? "asc"} /></button>
-              <button type="button" onClick={() => togglePatientSort("nokp")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: patientSort?.key === "nokp" ? "#7c3aed" : "var(--text-secondary)" }}>No. KP <SortIcon active={patientSort?.key === "nokp"} dir={patientSort?.dir ?? "asc"} /></button>
-              <button type="button" onClick={() => togglePatientSort("dos")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: patientSort?.key === "dos" ? "#7c3aed" : "var(--text-secondary)" }}>Dos <SortIcon active={patientSort?.key === "dos"} dir={patientSort?.dir ?? "asc"} /></button>
-              <button type="button" onClick={() => togglePatientSort("last_supply")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: patientSort?.key === "last_supply" ? "#7c3aed" : "var(--text-secondary)" }}>Bekalan Terakhir <SortIcon active={patientSort?.key === "last_supply"} dir={patientSort?.dir ?? "asc"} /></button>
-              <button type="button" onClick={() => togglePatientSort("status")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: patientSort?.key === "status" ? "#7c3aed" : "var(--text-secondary)" }}>Status <SortIcon active={patientSort?.key === "status"} dir={patientSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => togglePatientSort("nama")} title="Urut mengikut Nama" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: patientSort?.key === "nama" ? "#7c3aed" : "var(--text-secondary)" }}>Nama <SortIcon active={patientSort?.key === "nama"} dir={patientSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => togglePatientSort("nokp")} title="Urut mengikut No. KP" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: patientSort?.key === "nokp" ? "#7c3aed" : "var(--text-secondary)" }}>No. KP <SortIcon active={patientSort?.key === "nokp"} dir={patientSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => togglePatientSort("dos")} title="Urut mengikut Dos" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: patientSort?.key === "dos" ? "#7c3aed" : "var(--text-secondary)" }}>Dos <SortIcon active={patientSort?.key === "dos"} dir={patientSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => togglePatientSort("last_supply")} title="Urut mengikut Bekalan Terakhir" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: patientSort?.key === "last_supply" ? "#7c3aed" : "var(--text-secondary)" }}>Bekalan Terakhir <SortIcon active={patientSort?.key === "last_supply"} dir={patientSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => togglePatientSort("status")} title="Urut mengikut Status" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: patientSort?.key === "status" ? "#7c3aed" : "var(--text-secondary)" }}>Status <SortIcon active={patientSort?.key === "status"} dir={patientSort?.dir ?? "asc"} /></button>
             </div>
             {pagedPatients.map((p, idx) => <PatientUsingRow key={p.id} data={p as any} index={idx} itemName={displayTitle} itemId={id} />)}
             {patientTotalPages > 1 && <Pagination page={patientPage} totalPages={patientTotalPages} onChange={setPatientPage} totalCount={filteredPatients.length} itemLabel="pesakit" />}
@@ -633,14 +633,14 @@ export default function StockDetailPage() {
       {/* 3. SENARAI KELOMPOK */}
       <div>
         <FoldableCard title={<span className="flex items-center gap-2"><Package className="w-4 h-4" style={{ color: "#7c3aed" }} /> Senarai Kelompok <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-md" style={{ background: "rgba(124,58,237,0.10)", color: "#7c3aed" }}>{batches.length}</span></span>}
-          headerExtra={canAddBatch && item.aktif ? <Button size="sm" onClick={() => setOpenAddBatch(true)} style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}><Plus className="w-3.5 h-3.5" /> Tambah Stok</Button> : null}
+          headerExtra={canAddBatch && item.aktif ? <Button size="sm" onClick={() => setOpenAddBatch(true)} title="Tambah kelompok atau stok baharu" style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}><Plus className="w-3.5 h-3.5" /> Tambah Stok</Button> : null}
         >
           {batches.length === 0 ? <EmptyState icon={Package} title="Tiada kelompok" hint={canAddBatch ? "Klik \u201cTambah Stok\u201d untuk mendaftarkan kelompok baharu." : "Item ini belum mempunyai kelompok."} /> : <>
             <div className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "2fr 1.5fr 1.2fr 1.2fr 1fr", gap: 12, color: "var(--text-secondary)", background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-medium)", borderTop: "1px solid var(--border-light)" }}>
-              <button type="button" onClick={() => toggleBatchSort("nombor_kelompok")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: batchSort?.key === "nombor_kelompok" ? "#7c3aed" : "var(--text-secondary)" }}>Nombor Kelompok <SortIcon active={batchSort?.key === "nombor_kelompok"} dir={batchSort?.dir ?? "asc"} /></button>
-              <button type="button" onClick={() => toggleBatchSort("tarikh_luput")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: batchSort?.key === "tarikh_luput" ? "#7c3aed" : "var(--text-secondary)" }}>Tarikh Luput <SortIcon active={batchSort?.key === "tarikh_luput"} dir={batchSort?.dir ?? "asc"} /></button>
-              <button type="button" onClick={() => toggleBatchSort("kuantiti")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: batchSort?.key === "kuantiti" ? "#7c3aed" : "var(--text-secondary)" }}>Kuantiti <SortIcon active={batchSort?.key === "kuantiti"} dir={batchSort?.dir ?? "asc"} /></button>
-              <button type="button" onClick={() => toggleBatchSort("status")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: batchSort?.key === "status" ? "#7c3aed" : "var(--text-secondary)" }}>Status <SortIcon active={batchSort?.key === "status"} dir={batchSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => toggleBatchSort("nombor_kelompok")} title="Urut mengikut Nombor Kelompok" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: batchSort?.key === "nombor_kelompok" ? "#7c3aed" : "var(--text-secondary)" }}>Nombor Kelompok <SortIcon active={batchSort?.key === "nombor_kelompok"} dir={batchSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => toggleBatchSort("tarikh_luput")} title="Urut mengikut Tarikh Luput" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: batchSort?.key === "tarikh_luput" ? "#7c3aed" : "var(--text-secondary)" }}>Tarikh Luput <SortIcon active={batchSort?.key === "tarikh_luput"} dir={batchSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => toggleBatchSort("kuantiti")} title="Urut mengikut Kuantiti" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: batchSort?.key === "kuantiti" ? "#7c3aed" : "var(--text-secondary)" }}>Kuantiti <SortIcon active={batchSort?.key === "kuantiti"} dir={batchSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => toggleBatchSort("status")} title="Urut mengikut Status" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: batchSort?.key === "status" ? "#7c3aed" : "var(--text-secondary)" }}>Status <SortIcon active={batchSort?.key === "status"} dir={batchSort?.dir ?? "asc"} /></button>
               <span className="text-right">Tindakan</span>
             </div>
             {pagedBatches.map((b, idx) => <BatchRow key={b.id} batch={b} index={idx} canEdit={canAddBatch && item.aktif} onConfirmAdjust={handleBatchAdjust} onDispose={handleBatchDispose} onUpdateBatch={handleUpdateBatch} />)}
@@ -662,7 +662,7 @@ export default function StockDetailPage() {
             <div><Label style={labelStyle}>Jenis</Label><select value={filterTxType} onChange={(e) => { setFilterTxType(e.target.value as any); setTxPage(0); }} className="h-8 text-xs w-full px-2" style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, color: "var(--text-primary)", fontWeight: 500 }}><option value="all">Semua</option><option value="bekalan">Bekalan</option><option value="pelarasan">Pelarasan</option></select></div>
           </div>
           <div className="flex items-center justify-end pb-2">
-            <button type="button" onClick={() => { setFilterDateFrom(""); setFilterDateTo(""); setFilterPatient(""); setFilterStaff(""); setFilterTxType("all"); setTxPage(0); }} className="text-2xs font-semibold flex items-center gap-1 hover:opacity-80" style={{ color: "#7c3aed" }}><RotateCcw className="w-3 h-3" /> Reset Penapis</button>
+            <button type="button" onClick={() => { setFilterDateFrom(""); setFilterDateTo(""); setFilterPatient(""); setFilterStaff(""); setFilterTxType("all"); setTxPage(0); }} title="Set semula penapis" className="text-2xs font-semibold flex items-center gap-1 hover:opacity-80" style={{ color: "#7c3aed" }}><RotateCcw className="w-3 h-3" /> Reset Penapis</button>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
             <TxStatBadge icon={BarChart3} color="#65676b" label="Jumlah Transaksi" value={txStats.total.toString()} />
@@ -672,13 +672,13 @@ export default function StockDetailPage() {
           </div>
           {filteredTransactions.length === 0 ? <EmptyState icon={History} title="Tiada sejarah transaksi" hint={transactions.length === 0 ? "Belum ada transaksi untuk item ini." : "Tiada rekod menepati penapis semasa."} /> : <>
             <div className="hidden lg:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "1.5fr 1.3fr 1.3fr 1fr 1.8fr 1.3fr 1.3fr", gap: 12, color: "var(--text-secondary)", background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-medium)", borderTop: "1px solid var(--border-light)" }}>
-              <button type="button" onClick={() => toggleTxSort("tarikh")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "tarikh" ? "#7c3aed" : "var(--text-secondary)" }}>Tarikh <SortIcon active={txSort?.key === "tarikh"} dir={txSort?.dir ?? "asc"} /></button>
-              <button type="button" onClick={() => toggleTxSort("jenis")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "jenis" ? "#7c3aed" : "var(--text-secondary)" }}>Jenis <SortIcon active={txSort?.key === "jenis"} dir={txSort?.dir ?? "asc"} /></button>
-              <button type="button" onClick={() => toggleTxSort("kelompok")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "kelompok" ? "#7c3aed" : "var(--text-secondary)" }}>Kelompok <SortIcon active={txSort?.key === "kelompok"} dir={txSort?.dir ?? "asc"} /></button>
-              <button type="button" onClick={() => toggleTxSort("perubahan")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "perubahan" ? "#7c3aed" : "var(--text-secondary)" }}>Perubahan <SortIcon active={txSort?.key === "perubahan"} dir={txSort?.dir ?? "asc"} /></button>
-              <button type="button" onClick={() => toggleTxSort("catatan")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "catatan" ? "#7c3aed" : "var(--text-secondary)" }}>Keterangan <SortIcon active={txSort?.key === "catatan"} dir={txSort?.dir ?? "asc"} /></button>
-              <button type="button" onClick={() => toggleTxSort("kakitangan")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "kakitangan" ? "#7c3aed" : "var(--text-secondary)" }}>Kakitangan <SortIcon active={txSort?.key === "kakitangan"} dir={txSort?.dir ?? "asc"} /></button>
-              <button type="button" onClick={() => toggleTxSort("pesakit")} className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "pesakit" ? "#7c3aed" : "var(--text-secondary)" }}>Pesakit <SortIcon active={txSort?.key === "pesakit"} dir={txSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => toggleTxSort("tarikh")} title="Urut mengikut Tarikh" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "tarikh" ? "#7c3aed" : "var(--text-secondary)" }}>Tarikh <SortIcon active={txSort?.key === "tarikh"} dir={txSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => toggleTxSort("jenis")} title="Urut mengikut Jenis" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "jenis" ? "#7c3aed" : "var(--text-secondary)" }}>Jenis <SortIcon active={txSort?.key === "jenis"} dir={txSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => toggleTxSort("kelompok")} title="Urut mengikut Kelompok" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "kelompok" ? "#7c3aed" : "var(--text-secondary)" }}>Kelompok <SortIcon active={txSort?.key === "kelompok"} dir={txSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => toggleTxSort("perubahan")} title="Urut mengikut Perubahan" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "perubahan" ? "#7c3aed" : "var(--text-secondary)" }}>Perubahan <SortIcon active={txSort?.key === "perubahan"} dir={txSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => toggleTxSort("catatan")} title="Urut mengikut Keterangan" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "catatan" ? "#7c3aed" : "var(--text-secondary)" }}>Keterangan <SortIcon active={txSort?.key === "catatan"} dir={txSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => toggleTxSort("kakitangan")} title="Urut mengikut Kakitangan" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "kakitangan" ? "#7c3aed" : "var(--text-secondary)" }}>Kakitangan <SortIcon active={txSort?.key === "kakitangan"} dir={txSort?.dir ?? "asc"} /></button>
+              <button type="button" onClick={() => toggleTxSort("pesakit")} title="Urut mengikut Pesakit" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "pesakit" ? "#7c3aed" : "var(--text-secondary)" }}>Pesakit <SortIcon active={txSort?.key === "pesakit"} dir={txSort?.dir ?? "asc"} /></button>
             </div>
             {pagedTransactions.map((tx, idx) => <TransactionRow key={tx.id} tx={tx} index={idx} />)}
             {txTotalPages > 1 && <Pagination page={txPage} totalPages={txTotalPages} onChange={setTxPage} totalCount={filteredTransactions.length} itemLabel="transaksi" />}
@@ -766,6 +766,7 @@ function Pagination({ page, totalPages, onChange, totalCount, itemLabel }: { pag
           type="button"
           disabled={page === 0}
           onClick={() => onChange(Math.max(0, page - 1))}
+          title="Halaman sebelumnya"
           className="w-7 h-7 flex items-center justify-center rounded-lg text-xs font-medium transition-colors disabled:opacity-30"
           style={{
             background: page === 0 ? "transparent" : "rgba(0,0,0,0.04)",
@@ -785,6 +786,7 @@ function Pagination({ page, totalPages, onChange, totalCount, itemLabel }: { pag
               key={b}
               type="button"
               onClick={() => onChange((b as number) - 1)}
+              title={`Pergi ke halaman ${b}`}
               className="w-7 h-7 rounded-lg text-xs font-semibold transition-colors"
               style={
                 (b as number) === page + 1
@@ -800,6 +802,7 @@ function Pagination({ page, totalPages, onChange, totalCount, itemLabel }: { pag
           type="button"
           disabled={page >= totalPages - 1}
           onClick={() => onChange(Math.min(totalPages - 1, page + 1))}
+          title="Halaman seterusnya"
           className="w-7 h-7 flex items-center justify-center rounded-lg text-xs font-medium transition-colors disabled:opacity-30"
           style={{
             background: page >= totalPages - 1 ? "transparent" : "rgba(0,0,0,0.04)",

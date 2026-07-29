@@ -9,6 +9,7 @@ interface StockRowProps {
   item: Item & {
     item_batches: { kuantiti: number }[];
     item_forms: { id: string; nama: string } | null;
+    patient_item_assignments: { id: string }[];
   };
   index: number;
   onClick: () => void;
@@ -67,7 +68,7 @@ export function StockRow({ item, index, onClick }: StockRowProps) {
           </span>
         </div>
         <span className="text-[13px] font-medium tabular-nums" style={{ color: "var(--text-primary)" }}>
-          {item.kuota != null ? formatNumber(Math.max(0, item.kuota - stock)) : <em style={{ color: "var(--text-muted)" }}>-</em>}
+          {item.kuota != null ? formatNumber(Math.max(0, item.kuota - (item.patient_item_assignments?.length ?? 0))) : <em style={{ color: "var(--text-muted)" }}>-</em>}
         </span>
       </div>
 

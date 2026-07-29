@@ -4,6 +4,7 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { getStartOfTodayKL } from "@/lib/utils";
 
 interface DashboardStats {
   totalPatients: number;
@@ -18,10 +19,8 @@ export function useDashboardStats() {
   return useQuery<DashboardStats>({
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
-      const today = new Date();
-      const startOfToday = new Date(today);
-      startOfToday.setHours(0, 0, 0, 0);
-      const in30Days = new Date(today);
+      const startOfToday = getStartOfTodayKL();
+      const in30Days = new Date(startOfToday);
       in30Days.setDate(in30Days.getDate() + 30);
       in30Days.setHours(23, 59, 59, 999);
 

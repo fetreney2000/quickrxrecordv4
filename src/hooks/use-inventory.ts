@@ -86,7 +86,7 @@ export function useItems({
       let query = supabase
         .from("items")
         .select(
-          "*, item_batches(kuantiti)",
+          "*, item_batches(kuantiti), patient_item_assignments(id)",
           { count: "exact" }
         )
         .eq("aktif", true);

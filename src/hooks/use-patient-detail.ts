@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
+import { getKLDate, getNowISOKL, getTodayStrKL } from "@/lib/utils";
 import type {
   Patient,
   PatientItemAssignment,
@@ -200,7 +201,7 @@ export function useLatestSupplyDates(assignmentIds: string[]) {
 export function weeksSince(dateStr: string | undefined): number | null {
   if (!dateStr) return null;
   const d = new Date(dateStr);
-  const now = new Date();
+  const now = getKLDate();
   const diffMs = now.getTime() - d.getTime();
   return Math.floor(diffMs / (1000 * 60 * 60 * 24 * 7));
 }
@@ -213,7 +214,7 @@ export function useAvailableBatches(itemId: string | null) {
     queryKey: ["batches", itemId],
     enabled: !!itemId,
     queryFn: async () => {
-      const today = new Date().toISOString().split("T")[0];
+      const today = getTodayStrKL();
       const { data, error } = await supabase
         .from("item_batches")
         .select("*")
@@ -314,7 +315,7 @@ export function useUpdatePatient(patientId: string | undefined) {
         .from("patients")
         .update({
           ...data,
-          updated_at: new Date().toISOString(),
+          updated_at: getNowISOKL(),
         })
         .eq("id", patientId!);
       if (error) throw error;
@@ -341,7 +342,7 @@ export function useDeactivatePatient(patientId: string | undefined) {
         .from("patients")
         .update({
           aktif: false,
-          updated_at: new Date().toISOString(),
+          updated_at: getNowISOKL(),
         })
         .eq("id", patientId!);
       if (error) throw error;
@@ -368,7 +369,7 @@ export function useAddAssignment(patientId: string | undefined) {
       dos: string;
       catatan: string;
     }) => {
-      const today = new Date().toISOString().split("T")[0];
+      const today = getTodayStrKL();
       // 1. Insert assignment
       const { data: assignment, error: assignError } = await supabase
         .from("patient_item_assignments")
@@ -421,7 +422,7 @@ export function useStopAssignment(patientId: string | undefined) {
       assignmentId: string;
       sebab: string;
     }) => {
-      const today = new Date().toISOString().split("T")[0];
+      const today = getTodayStrKL();
       const { error } = await supabase
         .from("patient_item_assignments")
         .update({
@@ -459,7 +460,7 @@ export function useUpdateDose(patientId: string | undefined) {
       dos: string;
       catatan: string;
     }) => {
-      const today = new Date().toISOString().split("T")[0];
+      const today = getTodayStrKL();
       // 1. Update assignment
       const { error: updateError } = await supabase
         .from("patient_item_assignments")
@@ -673,7 +674,7 @@ export function useMergePatients() {
       primaryPatientId: string;
       duplicateIds: string[];
     }) => {
-      const today = new Date().toISOString().split("T")[0];
+      const today = getTodayStrKL();
 
       for (const dupId of duplicateIds) {
         // 1. Get duplicate assignments
@@ -737,7 +738,7 @@ export function useMergePatients() {
           .update({
             merged_into: primaryPatientId,
             aktif: false,
-            updated_at: new Date().toISOString(),
+            updated_at: getNowISOKL(),
           })
           .eq("id", dupId);
       }

@@ -9,7 +9,7 @@
  */
 import { useState, useEffect, useRef } from "react";
 import { Check, X as XIcon, Edit, Trash2, AlertTriangle, Loader2 } from "lucide-react";
-import { cn, formatDate, formatNumber } from "@/lib/utils";
+import { cn, formatDate, formatNumber, getKLDate } from "@/lib/utils";
 import type { ItemBatch } from "@/types";
 
 interface BatchRowProps {
@@ -27,7 +27,7 @@ function getStatus(batch: ItemBatch): {
   border: string;
   isExpired: boolean;
 } {
-  const now = new Date();
+  const now = getKLDate();
   const exp = new Date(batch.tarikh_luput);
   const daysToExpiry = Math.floor(
     (exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)

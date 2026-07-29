@@ -182,7 +182,7 @@ export function calculateAge(dob: string | Date | null | undefined): number | nu
   if (!dob) return null;
   const birth = new Date(dob);
   if (isNaN(birth.getTime())) return null;
-  const today = new Date();
+  const today = getKLDate();
   let age = today.getFullYear() - birth.getFullYear();
   const m = today.getMonth() - birth.getMonth();
   if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
@@ -196,7 +196,7 @@ export function formatAge(dob: string | Date | null | undefined): string {
   if (!dob) return "—";
   const birth = new Date(dob);
   if (isNaN(birth.getTime())) return "—";
-  const today = new Date();
+  const today = getKLDate();
   let years = today.getFullYear() - birth.getFullYear();
   let months = today.getMonth() - birth.getMonth();
   let days = today.getDate() - birth.getDate();
@@ -217,7 +217,7 @@ export function timeAgo(value: string | Date | null | undefined): string {
   if (!value) return "—";
   const d = value instanceof Date ? value : new Date(value);
   if (isNaN(d.getTime())) return "—";
-  const now = new Date();
+  const now = getKLDate();
   const seconds = Math.floor((now.getTime() - d.getTime()) / 1000);
   if (seconds < 60) return "Baru sahaja";
   const minutes = Math.floor(seconds / 60);
@@ -284,6 +284,21 @@ export function getStartOfTodayKL(): Date {
   const kl = new Date(now.toLocaleString("en-US", { timeZone: KL_TIMEZONE }));
   kl.setHours(0, 0, 0, 0);
   return kl;
+}
+
+/** Get today's date as YYYY-MM-DD string in KL timezone. */
+export function getTodayStrKL(): string {
+  const kl = getKLDate();
+  const yyyy = kl.getFullYear();
+  const mm = String(kl.getMonth() + 1).padStart(2, "0");
+  const dd = String(kl.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/** Get current timestamp as ISO string in KL timezone. */
+export function getNowISOKL(): string {
+  const kl = getKLDate();
+  return kl.toISOString();
 }
 
 /** Truncate text to a max length with ellipsis. */

@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
+import { getTodayStrKL } from "@/lib/utils";
 import type { Patient, Item, ItemBatch, SupplyDuration } from "@/types";
 
 // ============================================================================
@@ -139,7 +140,7 @@ export function useQuickDispenseBatches(itemId: string | null) {
     queryKey: ["pantas-batches", itemId],
     enabled: !!itemId,
     queryFn: async () => {
-      const today = new Date().toISOString().split("T")[0];
+      const today = getTodayStrKL();
       const { data, error } = await supabase
         .from("item_batches")
         .select("*")
@@ -344,7 +345,7 @@ export function useAddAssignmentInline(patientId: string | null) {
       dos: string;
       catatan?: string;
     }) => {
-      const today = new Date().toISOString().split("T")[0];
+      const today = getTodayStrKL();
       // 1. Insert assignment
       const { data: assignment, error: assignErr } = await supabase
         .from("patient_item_assignments")

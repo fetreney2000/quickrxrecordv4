@@ -11,7 +11,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
-import { formatDateTime, toTitleCase } from "@/lib/utils";
+import { formatDateTime, getNowISOKL, toTitleCase } from "@/lib/utils";
 import { toast } from "sonner";
 
 // UI Components
@@ -187,7 +187,7 @@ export default function ManagementPage() {
           nama_pengguna: data.nama_pengguna,
           jawatan: data.jawatan,
           peranan: data.peranan,
-          updated_at: new Date().toISOString(),
+          updated_at: getNowISOKL(),
         })
         .eq("id", id);
       if (error) throw error;
@@ -274,7 +274,7 @@ export default function ManagementPage() {
         .update({
           status,
           resolved_by: profile?.id,
-          resolved_at: new Date().toISOString(),
+          resolved_at: getNowISOKL(),
         })
         .eq("id", requestId);
       if (error) throw error;

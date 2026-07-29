@@ -5,7 +5,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { toTitleCase } from "@/lib/utils";
+import { getNowISOKL, toTitleCase } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -122,7 +122,7 @@ export default function LookupManager({ type }: LookupManagerProps) {
     mutationFn: async ({ id, nama }: { id: string; nama: string }) => {
       const { error } = await supabase
         .from(type)
-        .update({ nama, updated_at: new Date().toISOString() })
+        .update({ nama, updated_at: getNowISOKL() })
         .eq("id", id);
       if (error) throw error;
     },

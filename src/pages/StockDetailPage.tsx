@@ -39,6 +39,11 @@ import { useNavStore } from "@/lib/nav-store";
 import {
   formatDate,
   formatNumber,
+  fromDateInputValue,
+  getKLDate,
+  getTodayStrKL,
+  KL_LOCALE,
+  KL_TIMEZONE,
   toTitleCaseKeepAcronyms,
 } from "@/lib/utils";
 import {
@@ -204,7 +209,7 @@ export default function StockDetailPage() {
 
   const filteredPatients = useMemo(() => {
     const term = patientSearch.trim().toLowerCase();
-    const now = new Date();
+    const now = getKLDate();
     const cutoffMonths = (() => {
       switch (defaulterFilter) {
         case "3m": return 3;
@@ -236,13 +241,13 @@ export default function StockDetailPage() {
   const filteredTransactions = useMemo(() => {
     return transactions.filter((t) => {
       if (filterDateFrom) {
-        const from = new Date(filterDateFrom);
+        const from = new Date(fromDateInputValue(filterDateFrom));
         if (new Date(t.tarikh) < from) return false;
       }
       if (filterDateTo) {
-        const to = new Date(filterDateTo);
-        to.setHours(23, 59, 59);
-        if (new Date(t.tarikh) > to) return false;
+        const to = new Date(fromDateInputValue(filterDateTo));
+        to.setDate(to.getDate() + 1);
+        if (new Date(t.tarikh) >= to) return false;
       }
       if (filterPatient && t.pesakit !== filterPatient) return false;
       if (filterStaff && t.kakitangan !== filterStaff) return false;
@@ -418,7 +423,7 @@ export default function StockDetailPage() {
       ws.getRow(1).height = 28;
       ws.mergeCells("A2:G2");
       const dateCell = ws.getCell("A2");
-      dateCell.value = `Dijana pada ${new Date().toLocaleString("ms-MY")} · ${filteredTransactions.length} rekod`;
+      dateCell.value = `Dijana pada ${getKLDate().toLocaleString(KL_LOCALE, { timeZone: KL_TIMEZONE })} · ${filteredTransactions.length} rekod`;
       dateCell.font = { size: 10, italic: true, color: { argb: "FF65676B" } };
       dateCell.alignment = { horizontal: "left" };
       ws.getRow(2).height = 18;
@@ -456,7 +461,7 @@ export default function StockDetailPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `sejarah-transaksi-${item?.kod_item || "item"}-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      a.download = `sejarah-transaksi-${item?.kod_item || "item"}-${getTodayStrKL()}.xlsx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -486,7 +491,7 @@ export default function StockDetailPage() {
       doc.setTextColor(101, 103, 107);
       doc.setFontSize(9);
       doc.setFont("helvetica", "italic");
-      doc.text(`Dijana pada ${new Date().toLocaleString("ms-MY")} · ${filteredTransactions.length} rekod`, 14, 28);
+      doc.text(`Dijana pada ${getKLDate().toLocaleString(KL_LOCALE, { timeZone: KL_TIMEZONE })} · ${filteredTransactions.length} rekod`, 14, 28);
       const tableData = filteredTransactions.map((tx) => [formatDate(tx.tarikh), tx.jenis_label, tx.kelompok, tx.perubahan_label, tx.catatan || "", tx.kakitangan || "", tx.pesakit || ""]);
       autoTable(doc, {
         startY: 33,
@@ -513,7 +518,7 @@ export default function StockDetailPage() {
         doc.setTextColor(150, 150, 150);
         doc.text(`QuickRxRecord · Halaman ${i} / ${pageCount}`, doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 8, { align: "center" });
       }
-      doc.save(`sejarah-transaksi-${item?.kod_item || "item"}-${new Date().toISOString().slice(0, 10)}.pdf`);
+      doc.save(`sejarah-transaksi-${item?.kod_item || "item"}-${getTodayStrKL()}.pdf`);
       toast.success("Fail PDF dimuat turun.");
     } catch (err: any) {
       console.error(err);

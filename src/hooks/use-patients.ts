@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { useNavStore } from "@/lib/nav-store";
 import { useAuth } from "@/hooks/use-auth";
+import { getTodayStrKL } from "@/lib/utils";
 import type { Patient } from "@/types";
 
 export type SortDir = "asc" | "desc";
@@ -144,7 +145,7 @@ export function useAddPatient({
           alamat: form.alamat.trim() || null,
           catatan: form.catatan.trim() || null,
           aktif: true,
-          tarikh_daftar: new Date().toISOString().split("T")[0],
+          tarikh_daftar: getTodayStrKL(),
         })
         .select("id")
         .single();

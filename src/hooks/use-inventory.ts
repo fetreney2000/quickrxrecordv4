@@ -474,7 +474,7 @@ export function useItemTransactionHistory(itemId: string | undefined) {
     queryKey: ["transaction-history", itemId],
     enabled: !!itemId,
     queryFn: async () => {
-      // Fetch supply records
+      // Fetch supply records for this item
       const { data: supplyRecords, error: srErr } = await supabase
         .from("supply_records")
         .select(`
@@ -492,11 +492,12 @@ export function useItemTransactionHistory(itemId: string | undefined) {
           batch:item_batches!batch_id(nombor_kelompok),
           staff:profiles!kakitangan_pembekal(nama)
         `)
+        .eq("patient_item_assignments.item_id", itemId)
         .order("tarikh_dibekal", { ascending: false })
         .limit(500);
       if (srErr) throw srErr;
 
-      // Fetch batch adjustments
+      // Fetch batch adjustments for this item
       const { data: adjustments, error: adjErr } = await supabase
         .from("batch_adjustments")
         .select(`
@@ -512,6 +513,7 @@ export function useItemTransactionHistory(itemId: string | undefined) {
           ),
           staff:profiles!adjusted_by(nama)
         `)
+        .eq("item_batches.item_id", itemId)
         .order("created_at", { ascending: false })
         .limit(500);
       if (adjErr) throw adjErr;
@@ -520,38 +522,34 @@ export function useItemTransactionHistory(itemId: string | undefined) {
       const combined: CombinedTransaction[] = [];
 
       ((supplyRecords ?? []) as any[]).forEach((sr) => {
-        if (sr.assignment?.item_id === itemId) {
-          combined.push({
-            id: sr.id,
-            tarikh: sr.tarikh_dibekal,
-            jenis: "bekalan",
-            jenis_label: "Bekalan",
-            kelompok: sr.batch?.nombor_kelompok ?? null,
-            perubahan: -sr.kuantiti,
-            perubahan_label: `-${sr.kuantiti}`,
-            catatan: sr.catatan_bekalan ?? null,
-            kakitangan: sr.staff?.nama ?? null,
-            pesakit: sr.assignment?.patient?.nama ?? null,
-          });
-        }
+        combined.push({
+          id: sr.id,
+          tarikh: sr.tarikh_dibekal,
+          jenis: "bekalan",
+          jenis_label: "Bekalan",
+          kelompok: sr.batch?.nombor_kelompok ?? null,
+          perubahan: -sr.kuantiti,
+          perubahan_label: `-${sr.kuantiti}`,
+          catatan: sr.catatan_bekalan ?? null,
+          kakitangan: sr.staff?.nama ?? null,
+          pesakit: sr.assignment?.patient?.nama ?? null,
+        });
       });
 
       ((adjustments ?? []) as any[]).forEach((adj) => {
-        if (adj.batch?.item_id === itemId) {
-          const isUp = adj.change > 0;
-          combined.push({
-            id: `adj-${adj.id}`,
-            tarikh: adj.created_at,
-            jenis: "pelarasan",
-            jenis_label: isUp ? "Penambahan" : "Pelupusan",
-            kelompok: adj.batch?.nombor_kelompok ?? null,
-            perubahan: adj.change,
-            perubahan_label: isUp ? `+${adj.change}` : `${adj.change}`,
-            catatan: adj.reason ?? null,
-            kakitangan: adj.staff?.nama ?? null,
-            pesakit: null,
-          });
-        }
+        const isUp = adj.change > 0;
+        combined.push({
+          id: `adj-${adj.id}`,
+          tarikh: adj.created_at,
+          jenis: "pelarasan",
+          jenis_label: isUp ? "Penambahan" : "Pelupusan",
+          kelompok: adj.batch?.nombor_kelompok ?? null,
+          perubahan: adj.change,
+          perubahan_label: isUp ? `+${adj.change}` : `${adj.change}`,
+          catatan: adj.reason ?? null,
+          kakitangan: adj.staff?.nama ?? null,
+          pesakit: null,
+        });
       });
 
       // Sort by date descending

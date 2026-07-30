@@ -481,33 +481,33 @@ export function useItemTransactionHistory(itemId: string | undefined) {
         .eq("item_id", itemId);
       const assignmentIds = (itemAssignments ?? []).map((a: any) => a.id);
 
-      // 2. Fetch supply records for those assignments
-      let supplyQuery = supabase
-        .from("supply_records")
-        .select(`
-          id,
-          tarikh_dibekal,
-          dos,
-          kuantiti,
-          batch_id,
-          catatan_bekalan,
-          assignment:patient_item_assignments!assignment_id(
-            item_id,
-            patient:patients!patient_id(nama),
-            item:items!item_id(nama_item)
-          ),
-          batch:item_batches!batch_id(nombor_kelompok),
-          staff:profiles!kakitangan_pembekal(nama)
-        `)
-        .order("tarikh_dibekal", { ascending: false })
-        .limit(500);
-      if (assignmentIds.length > 0) {
-        supplyQuery = supplyQuery.in("assignment_id", assignmentIds);
-      } else {
-        supplyQuery = supplyQuery.eq("assignment_id", "00000000-0000-0000-0000-000000000000");
-      }
-      const { data: supplyRecords, error: srErr } = await supplyQuery;
-      if (srErr) throw srErr;
+      // 2. Fetch supply records for those assignments (batched to avoid URL limits)
+      const supplyRecords = assignmentIds.length > 0
+        ? await batchInQuery<any>(assignmentIds, async (batchIds) => {
+            const { data, error } = await supabase
+              .from("supply_records")
+              .select(`
+                id,
+                tarikh_dibekal,
+                dos,
+                kuantiti,
+                batch_id,
+                catatan_bekalan,
+                assignment:patient_item_assignments!assignment_id(
+                  item_id,
+                  patient:patients!patient_id(nama),
+                  item:items!item_id(nama_item)
+                ),
+                batch:item_batches!batch_id(nombor_kelompok),
+                staff:profiles!kakitangan_pembekal(nama)
+              `)
+              .in("assignment_id", batchIds)
+              .order("tarikh_dibekal", { ascending: false })
+              .limit(500);
+            if (error) throw error;
+            return data ?? [];
+          })
+        : [];
 
       // 3. Get batch IDs for this item
       const { data: itemBatches } = await supabase
@@ -516,31 +516,31 @@ export function useItemTransactionHistory(itemId: string | undefined) {
         .eq("item_id", itemId);
       const batchIds = (itemBatches ?? []).map((b: any) => b.id);
 
-      // 4. Fetch batch adjustments for those batches
-      let adjQuery = supabase
-        .from("batch_adjustments")
-        .select(`
-          id,
-          created_at,
-          previous_kuantiti,
-          new_kuantiti,
-          change,
-          reason,
-          batch:item_batches!batch_id(
-            nombor_kelompok,
-            item_id
-          ),
-          staff:profiles!adjusted_by(nama)
-        `)
-        .order("created_at", { ascending: false })
-        .limit(500);
-      if (batchIds.length > 0) {
-        adjQuery = adjQuery.in("batch_id", batchIds);
-      } else {
-        adjQuery = adjQuery.eq("batch_id", "00000000-0000-0000-0000-000000000000");
-      }
-      const { data: adjustments, error: adjErr } = await adjQuery;
-      if (adjErr) throw adjErr;
+      // 4. Fetch batch adjustments for those batches (batched to avoid URL limits)
+      const adjustments = batchIds.length > 0
+        ? await batchInQuery<any>(batchIds, async (batchIdsChunk) => {
+            const { data, error } = await supabase
+              .from("batch_adjustments")
+              .select(`
+                id,
+                created_at,
+                previous_kuantiti,
+                new_kuantiti,
+                change,
+                reason,
+                batch:item_batches!batch_id(
+                  nombor_kelompok,
+                  item_id
+                ),
+                staff:profiles!adjusted_by(nama)
+              `)
+              .in("batch_id", batchIdsChunk)
+              .order("created_at", { ascending: false })
+              .limit(500);
+            if (error) throw error;
+            return data ?? [];
+          })
+        : [];
 
       // Combine both into CombinedTransaction array
       const combined: CombinedTransaction[] = [];

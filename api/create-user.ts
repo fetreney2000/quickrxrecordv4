@@ -77,7 +77,7 @@ export async function POST(request: Request): Promise<Response> {
 
     if (insertError) {
       console.error("[api/create-user] insert error:", insertError);
-      return json(500, { error: "Gagal mencipta pengguna." });
+      return json(500, { error: `Gagal mencipta pengguna: ${insertError.message}` });
     }
 
     return json(201, { profile });

@@ -193,7 +193,7 @@ export function AddBatchDialog({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <Label htmlFor="luput" className="mb-1" style={labelStyle}>
                 Tarikh Luput <span style={{ color: "#dc2626" }}>*</span>

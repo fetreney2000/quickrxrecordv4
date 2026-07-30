@@ -230,7 +230,7 @@ export function EditSupplyDialog({
               style={{ ...inputBaseStyle, background: "var(--bg-secondary)", cursor: "not-allowed" }}
             />
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <Label style={labelStyle}>Tempoh</Label>
               <div className="flex gap-1.5">

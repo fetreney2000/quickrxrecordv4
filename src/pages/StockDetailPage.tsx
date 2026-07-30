@@ -680,11 +680,11 @@ export default function StockDetailPage() {
           headerExtra={<div className="flex items-center gap-1.5"><Button size="sm" variant="outline" onClick={handleExportExcel} disabled={filteredTransactions.length === 0} title="Eksport ke Excel"><FileSpreadsheet className="w-3.5 h-3.5" style={{ color: "#16a34a" }} /><span className="hidden sm:inline">Excel</span></Button><Button size="sm" variant="outline" onClick={handleExportPDF} disabled={filteredTransactions.length === 0} title="Eksport ke PDF"><FileText className="w-3.5 h-3.5" style={{ color: "#dc2626" }} /><span className="hidden sm:inline">PDF</span></Button></div>}
         >
           <div className="pt-3 pb-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
-            <div><Label style={labelStyle}>Dari</Label><Input type="date" value={filterDateFrom} onChange={(e) => { setFilterDateFrom(e.target.value); setTxPage(0); }} className="h-8 text-xs" style={inputBaseStyle} /></div>
-            <div><Label style={labelStyle}>Hingga</Label><Input type="date" value={filterDateTo} onChange={(e) => { setFilterDateTo(e.target.value); setTxPage(0); }} className="h-8 text-xs" style={inputBaseStyle} /></div>
-            <div><Label style={labelStyle}>Pesakit</Label><select value={filterPatient} onChange={(e) => { setFilterPatient(e.target.value); setTxPage(0); }} className="h-8 text-xs w-full px-2" style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, color: "var(--text-primary)", fontWeight: 500 }}><option value="">Semua</option>{patientsList.map((p) => <option key={p.id} value={p.nama}>{p.nama}</option>)}</select></div>
-            <div><Label style={labelStyle}>Kakitangan</Label><select value={filterStaff} onChange={(e) => { setFilterStaff(e.target.value); setTxPage(0); }} className="h-8 text-xs w-full px-2" style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, color: "var(--text-primary)", fontWeight: 500 }}><option value="">Semua</option>{staffList.map((s) => <option key={s.id} value={s.nama}>{s.nama}</option>)}</select></div>
-            <div><Label style={labelStyle}>Jenis</Label><select value={filterTxType} onChange={(e) => { setFilterTxType(e.target.value as any); setTxPage(0); }} className="h-8 text-xs w-full px-2" style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, color: "var(--text-primary)", fontWeight: 500 }}><option value="all">Semua</option><option value="bekalan">Bekalan</option><option value="pelarasan">Pelarasan</option></select></div>
+            <div><Label style={labelStyle}>Dari</Label><Input type="date" value={filterDateFrom} onChange={(e) => { setFilterDateFrom(e.target.value); setTxPage(0); }} className="h-10 text-xs" style={inputBaseStyle} /></div>
+            <div><Label style={labelStyle}>Hingga</Label><Input type="date" value={filterDateTo} onChange={(e) => { setFilterDateTo(e.target.value); setTxPage(0); }} className="h-10 text-xs" style={inputBaseStyle} /></div>
+            <div><Label style={labelStyle}>Pesakit</Label><select value={filterPatient} onChange={(e) => { setFilterPatient(e.target.value); setTxPage(0); }} className="h-10 text-xs w-full px-2" style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, color: "var(--text-primary)", fontWeight: 500 }}><option value="">Semua</option>{patientsList.map((p) => <option key={p.id} value={p.nama}>{p.nama}</option>)}</select></div>
+            <div><Label style={labelStyle}>Kakitangan</Label><select value={filterStaff} onChange={(e) => { setFilterStaff(e.target.value); setTxPage(0); }} className="h-10 text-xs w-full px-2" style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, color: "var(--text-primary)", fontWeight: 500 }}><option value="">Semua</option>{staffList.map((s) => <option key={s.id} value={s.nama}>{s.nama}</option>)}</select></div>
+            <div><Label style={labelStyle}>Jenis</Label><select value={filterTxType} onChange={(e) => { setFilterTxType(e.target.value as any); setTxPage(0); }} className="h-10 text-xs w-full px-2" style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, color: "var(--text-primary)", fontWeight: 500 }}><option value="all">Semua</option><option value="bekalan">Bekalan</option><option value="pelarasan">Pelarasan</option></select></div>
           </div>
           <div className="flex items-center justify-end pb-2">
             <button type="button" onClick={() => { setFilterDateFrom(""); setFilterDateTo(""); setFilterPatient(""); setFilterStaff(""); setFilterTxType("all"); setTxPage(0); }} title="Set semula penapis" className="text-2xs font-semibold flex items-center gap-1 hover:opacity-80" style={{ color: "#7c3aed" }}><RotateCcw className="w-3 h-3" /> Reset Penapis</button>
@@ -793,7 +793,7 @@ function Pagination({ page, totalPages, onChange, totalCount, itemLabel }: { pag
           disabled={page === 0}
           onClick={() => onChange(Math.max(0, page - 1))}
           title="Halaman sebelumnya"
-          className="w-7 h-7 flex items-center justify-center rounded-lg text-xs font-medium transition-colors disabled:opacity-30"
+          className="w-8 h-8 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg text-xs font-medium transition-colors disabled:opacity-30"
           style={{
             background: page === 0 ? "transparent" : "rgba(0,0,0,0.04)",
             color: "var(--text-secondary)",
@@ -806,14 +806,14 @@ function Pagination({ page, totalPages, onChange, totalCount, itemLabel }: { pag
         </button>
         {buttons.map((b, i) =>
           b === "..." ? (
-            <span key={`dots-${i}`} className="w-7 h-7 flex items-center justify-center text-xs" style={{ color: "var(--text-muted)" }}>…</span>
+            <span key={`dots-${i}`} className="w-8 h-8 sm:w-7 sm:h-7 flex items-center justify-center text-xs" style={{ color: "var(--text-muted)" }}>…</span>
           ) : (
             <button
               key={b}
               type="button"
               onClick={() => onChange((b as number) - 1)}
               title={`Pergi ke halaman ${b}`}
-              className="w-7 h-7 rounded-lg text-xs font-semibold transition-colors"
+              className="w-8 h-8 sm:w-7 sm:h-7 rounded-lg text-xs font-semibold transition-colors"
               style={
                 (b as number) === page + 1
                   ? { background: "linear-gradient(135deg, #7c3aed, #6d28d9)", color: "white", border: "none", cursor: "pointer" }
@@ -829,7 +829,7 @@ function Pagination({ page, totalPages, onChange, totalCount, itemLabel }: { pag
           disabled={page >= totalPages - 1}
           onClick={() => onChange(Math.min(totalPages - 1, page + 1))}
           title="Halaman seterusnya"
-          className="w-7 h-7 flex items-center justify-center rounded-lg text-xs font-medium transition-colors disabled:opacity-30"
+          className="w-8 h-8 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg text-xs font-medium transition-colors disabled:opacity-30"
           style={{
             background: page >= totalPages - 1 ? "transparent" : "rgba(0,0,0,0.04)",
             color: "var(--text-secondary)",

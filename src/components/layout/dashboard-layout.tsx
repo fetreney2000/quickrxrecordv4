@@ -115,32 +115,15 @@ export function DashboardLayout() {
       <Sidebar />
 
       <div
-        className="relative z-10 flex flex-col min-h-screen"
-        style={{
-          marginLeft: 0,
-        }}
+        className="relative z-10 flex flex-col min-h-screen md:ml-64"
       >
-        <div className="hidden md:block md:ml-64 flex-1 flex flex-col">
-          <Header />
-          <main
-            key={location.pathname}
-            className="flex-1 px-4 md:px-6 py-5 md:py-6 animate-fade-in"
-          >
-            <Outlet />
-          </main>
-        </div>
-
-        {/* Mobile layout */}
-        <div className="md:hidden flex-1 flex flex-col">
-          <Header />
-          <main
-            key={location.pathname}
-            className="flex-1 px-3 py-4 pb-20 animate-fade-in"
-            style={{ paddingBottom: 80 }}
-          >
-            <Outlet />
-          </main>
-        </div>
+        <Header />
+        <main
+          key={location.pathname}
+          className="flex-1 px-3 sm:px-4 md:px-6 py-4 md:py-6 pb-20 md:pb-6 animate-fade-in"
+        >
+          <Outlet />
+        </main>
       </div>
 
       <MobileNav />

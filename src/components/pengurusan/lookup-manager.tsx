@@ -229,7 +229,7 @@ export default function LookupManager({ type }: LookupManagerProps) {
             Tiada {config.label.toLowerCase()} didaftarkan.
           </div>
         ) : (
-          <table className="w-full">
+          <div className="overflow-x-auto"><table className="w-full">
             <thead>
               <tr>
                 <th
@@ -329,7 +329,7 @@ export default function LookupManager({ type }: LookupManagerProps) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </div>
 

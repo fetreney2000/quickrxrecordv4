@@ -428,13 +428,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Fields — Read or Edit mode */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 14,
-          }}
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {!editing ? (
             // ── Read mode ──────────────────────────────────────────────
             <>

@@ -19,7 +19,7 @@ export function TransactionRow({ tx, index, baki }: TransactionRowProps) {
     <>
       {/* Desktop row */}
       <div
-        className="hidden lg:grid px-4 py-2.5 items-center"
+        className="hidden lg:grid px-4 py-2.5 items-center transition-colors hover:bg-[rgba(0,0,0,0.02)]"
         style={{
           gridTemplateColumns: "1.5fr 1.3fr 1.3fr 1fr 1fr 1.8fr 1.3fr 1.3fr",
           gap: 12,

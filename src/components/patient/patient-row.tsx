@@ -27,19 +27,12 @@ export function PatientRow({ patient, index, onClick }: PatientRowProps) {
             onClick();
           }
         }}
-        className="hidden sm:grid px-4 py-2.5 items-center cursor-pointer transition-colors"
+        className="hidden sm:grid px-4 py-2.5 items-center cursor-pointer transition-colors hover:bg-[rgba(24,119,242,0.05)]"
         style={{
           gridTemplateColumns: "3fr 3fr 3fr 2fr 2fr",
           gap: 12,
           borderBottom: "1px solid var(--border-light)",
         }}
-        onMouseEnter={(e) =>
-          ((e.currentTarget as HTMLElement).style.background =
-            "var(--bg-accent-blue)")
-        }
-        onMouseLeave={(e) =>
-          ((e.currentTarget as HTMLElement).style.background = "transparent")
-        }
       >
         <div className="flex items-center gap-2.5 min-w-0">
           <div
@@ -105,15 +98,8 @@ export function PatientRow({ patient, index, onClick }: PatientRowProps) {
         className={cn(
           "sm:hidden",
           "flex items-center gap-3 px-4 py-3 cursor-pointer",
-          "border-b border-[#f0f2f5] transition-colors"
+          "border-b border-[#f0f2f5] transition-colors hover:bg-[rgba(24,119,242,0.05)]"
         )}
-        onMouseEnter={(e) =>
-          ((e.currentTarget as HTMLElement).style.background =
-            "var(--bg-accent-blue)")
-        }
-        onMouseLeave={(e) =>
-          ((e.currentTarget as HTMLElement).style.background = "transparent")
-        }
       >
         <div
           className="w-9 h-9 rounded-[10px] flex items-center justify-center text-white text-sm font-bold flex-shrink-0"

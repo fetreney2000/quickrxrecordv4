@@ -203,7 +203,7 @@ export function Sidebar() {
         </div>
 
         {/* Nav items */}
-        <nav className="relative flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin">
+        <nav role="navigation" aria-label="Navigasi utama" className="relative flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin">
           {visibleItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
@@ -212,6 +212,7 @@ export function Sidebar() {
                 key={item.href}
                 to={item.href}
                 end={item.href === "/"}
+                aria-current={active ? "page" : undefined}
                 className={cn(
                   "group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium relative transition-all duration-200",
                   active

@@ -48,7 +48,7 @@ function SortableHeader({ label, sortKey, currentSort, onSort }: { label: string
   const isActive = currentSort?.key === sortKey;
   const dir = isActive ? currentSort!.dir : null;
   return (
-    <th onClick={() => onSort(sortKey)} className="text-left text-2xs font-semibold uppercase tracking-wider px-2 py-1.5 cursor-pointer select-none hover:bg-muted/50 transition-colors" style={{ color: "var(--text-secondary)" }}>
+    <th aria-sort={isActive ? (dir === "asc" ? "ascending" : "descending") : undefined} onClick={() => onSort(sortKey)} className="text-left text-xs font-semibold uppercase tracking-wider px-2 py-1.5 cursor-pointer select-none hover:bg-muted/50 transition-colors" style={{ color: "var(--text-secondary)" }}>
       <span className="flex items-center gap-1">
         {label}
         {isActive ? (dir === "asc" ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ChevronDown className="w-3 h-3 opacity-30" />}
@@ -166,7 +166,7 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
           <FoldableCard title={<span className="flex items-center gap-2"><Calendar className="w-3.5 h-3.5" style={{ color: "#1877f2" }} /> Sejarah Dos{doseHistory.length > 0 && <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-md" style={{ background: "var(--bg-accent-blue)", color: "#1877f2" }}>{doseHistory.length}</span>}</span>} defaultOpen={true}>
             {doseLoading ? <div className="flex items-center gap-2 py-3"><Loader2 className="w-3 h-3 animate-spin" style={{ color: "#1877f2" }} /><span className="text-2xs" style={{ color: "var(--text-secondary)" }}>Memuatkan...</span></div> : doseHistory.length === 0 ? <p className="text-2xs py-2" style={{ color: "var(--text-muted)" }}>Tiada sejarah dos.</p> : <>
               <div className="overflow-x-auto mt-1">
-                <table className="w-full text-2xs">
+                <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b" style={{ borderColor: "var(--border-light)" }}>
                       <SortableHeader label="Tarikh" sortKey="tarikh" currentSort={doseSort} onSort={(k) => { setDosePage(0); toggleSort("dose", k); }} />
@@ -200,7 +200,7 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
           <FoldableCard title={<span className="flex items-center gap-2"><Package className="w-3.5 h-3.5" style={{ color: "#1877f2" }} /> Sejarah Bekalan{supplyHistory.length > 0 && <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-md" style={{ background: "var(--bg-accent-blue)", color: "#1877f2" }}>{supplyHistory.length}</span>}</span>} defaultOpen={true}>
             {supplyLoading ? <div className="flex items-center gap-2 py-3"><Loader2 className="w-3 h-3 animate-spin" style={{ color: "#1877f2" }} /><span className="text-2xs" style={{ color: "var(--text-secondary)" }}>Memuatkan...</span></div> : supplyHistory.length === 0 ? <p className="text-2xs py-2" style={{ color: "var(--text-muted)" }}>Tiada sejarah bekalan.</p> : <>
               <div className="overflow-x-auto mt-1">
-                <table className="w-full text-2xs">
+                <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b" style={{ borderColor: "var(--border-light)" }}>
                       <SortableHeader label="Tarikh" sortKey="tarikh_dibekal" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
@@ -209,7 +209,7 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                       <SortableHeader label="Kuantiti" sortKey="kuantiti" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       <SortableHeader label="Pembekal" sortKey="kakitangan_pembekal" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       <SortableHeader label="Catatan" sortKey="catatan_bekalan" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
-                      {canEdit && <th className="text-left text-2xs font-semibold uppercase tracking-wider px-2 py-1.5" style={{ color: "var(--text-secondary)" }}>Tindakan</th>}
+                      {canEdit && <th className="text-left text-xs font-semibold uppercase tracking-wider px-2 py-1.5" style={{ color: "var(--text-secondary)" }}>Tindakan</th>}
                     </tr>
                   </thead>
                   <tbody>

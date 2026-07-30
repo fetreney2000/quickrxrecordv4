@@ -51,9 +51,11 @@ export default function PatientListPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(50);
   const [sort, setSort] = useState<SortState | null>(null);
   const [openAdd, setOpenAdd] = useState(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
@@ -64,7 +66,20 @@ export default function PatientListPage() {
     return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
   }, [search]);
 
-  const { data, isLoading, isFetching } = usePatients({ search: debouncedSearch, page, sort });
+  useEffect(() => { setPage(0); }, [pageSize]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "/" && document.activeElement !== searchInputRef.current) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
+
+  const { data, isLoading, isFetching } = usePatients({ search: debouncedSearch, page, pageSize, sort });
   const patients = data?.patients ?? [];
   const total = data?.total ?? 0;
   const totalPages = data?.totalPages ?? 1;
@@ -121,9 +136,9 @@ export default function PatientListPage() {
 			
           <div className="p-4 sm:p-5 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b" style={{ borderColor: "var(--border-light)" }}>
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <div className="relative flex-1 min-w-0" style={{ maxWidth: 400 }}>
+              <div className="relative flex-1 min-w-0" style={{ maxWidth: 500 }}>
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: searchFocused ? "#1877f2" : "var(--text-muted)" }} />
-                <Input type="search" value={search} onChange={(e) => setSearch(e.target.value)} onFocus={() => setSearchFocused(true)} onBlur={() => setSearchFocused(false)} placeholder="Cari nama, No. KP, atau No. Hospital..." className="h-9 pl-10 text-[13px] font-medium" style={{ background: "var(--bg-accent-blue)", border: searchFocused ? "1px solid rgba(24,119,242,0.3)" : "1px solid transparent", borderRadius: 10, boxShadow: searchFocused ? "0 0 0 4px rgba(24,119,242,0.08)" : "none" }} />
+                <Input ref={searchInputRef} type="search" value={search} onChange={(e) => setSearch(e.target.value)} onFocus={() => setSearchFocused(true)} onBlur={() => setSearchFocused(false)} placeholder="Cari nama, No. KP, atau No. Hospital..." className="h-9 pl-10 text-[13px] font-medium" style={{ background: "var(--bg-accent-blue)", border: searchFocused ? "1px solid rgba(24,119,242,0.3)" : "1px solid transparent", borderRadius: 10, boxShadow: searchFocused ? "0 0 0 4px rgba(24,119,242,0.08)" : "none" }} />
               </div>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[12px] font-semibold flex-shrink-0" style={{ background: "var(--bg-accent-blue)", color: "var(--text-secondary)", border: "1px solid var(--bg-accent-blue)" }}>
                 <span style={{ color: "#1877f2" }}>{total.toLocaleString("ms-MY")}</span><span>pesakit</span>
@@ -150,7 +165,17 @@ export default function PatientListPage() {
           </div>
           {!isLoading && totalPages > 1 && (
             <div className="px-4 py-3 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-2" style={{ borderColor: "var(--border-light)" }}>
-              <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Halaman {page + 1} daripada {totalPages} ({total.toLocaleString("ms-MY")} pesakit)</p>
+              <div className="flex items-center gap-3">
+                <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Halaman {page + 1} daripada {totalPages} ({total.toLocaleString("ms-MY")} pesakit)</p>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>Paparan:</span>
+                  <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} className="h-7 text-xs px-2 rounded-lg" style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)" }}>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+              </div>
               <div className="flex items-center gap-1">
                 <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))} title="Halaman sebelumnya" className="h-7 px-2" style={{ opacity: page === 0 ? 0.4 : 1, cursor: page === 0 ? "default" : "pointer" }}><ChevronLeft className="w-3.5 h-3.5" /></Button>
                 {pageButtons.map((b, i) => b === "..." ? <span key={`dots-${i}`} className="px-1.5 text-xs" style={{ color: "var(--text-muted)" }}>…</span> : (

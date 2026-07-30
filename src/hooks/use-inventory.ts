@@ -76,13 +76,15 @@ export function useItems({
   search,
   page,
   sort,
+  pageSize = INVENTORY_PAGE_SIZE,
 }: {
   search: string;
   page: number;
   sort: SortState | null;
+  pageSize?: number;
 }) {
   return useQuery({
-    queryKey: ["items", search, page, sort],
+    queryKey: ["items", search, page, sort, pageSize],
     queryFn: async () => {
       let query = supabase
         .from("items")
@@ -117,8 +119,8 @@ export function useItems({
       }
 
       // Pagination
-      const from = page * INVENTORY_PAGE_SIZE;
-      query = query.range(from, from + INVENTORY_PAGE_SIZE - 1);
+      const from = page * pageSize;
+      query = query.range(from, from + pageSize - 1);
 
       const { data, error, count } = await query;
       if (error) throw error;
@@ -126,7 +128,7 @@ export function useItems({
       return {
         items: (data ?? []) as any[],
         total: count ?? 0,
-        totalPages: Math.max(1, Math.ceil((count ?? 0) / INVENTORY_PAGE_SIZE)),
+        totalPages: Math.max(1, Math.ceil((count ?? 0) / pageSize)),
       };
     },
     staleTime: 30_000,

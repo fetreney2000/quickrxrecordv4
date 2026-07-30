@@ -491,3 +491,9 @@
     transform: translate(8px, -12px);
   }
 }
+
+@media print {
+  nav, .sidebar, .mobile-nav, .no-print { display: none !important; }
+  body { background: white !important; }
+  .print-only { display: block !important; }
+}

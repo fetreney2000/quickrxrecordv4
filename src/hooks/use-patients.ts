@@ -35,13 +35,15 @@ export function usePatients({
   search,
   page,
   sort,
+  pageSize = PATIENT_PAGE_SIZE,
 }: {
   search: string;
   page: number;
   sort: SortState | null;
+  pageSize?: number;
 }) {
   return useQuery<PatientsData>({
-    queryKey: ["patients", search, page, sort],
+    queryKey: ["patients", search, page, sort, pageSize],
     queryFn: async () => {
       let query = supabase
         .from("patients")
@@ -64,8 +66,8 @@ export function usePatients({
       query = query.order(sortKey, { ascending: sortDir === "asc" });
 
       // Pagination
-      const from = page * PATIENT_PAGE_SIZE;
-      const to = from + PATIENT_PAGE_SIZE - 1;
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
       query = query.range(from, to);
 
       const { data, count, error } = await query;
@@ -91,7 +93,7 @@ export function usePatients({
           bilangan_item: countMap.get(p.id) ?? 0,
         })),
         total: count ?? 0,
-        totalPages: Math.max(1, Math.ceil((count ?? 0) / PATIENT_PAGE_SIZE)),
+        totalPages: Math.max(1, Math.ceil((count ?? 0) / pageSize)),
       };
     },
     placeholderData: (previousData) => previousData,

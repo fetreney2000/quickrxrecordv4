@@ -323,6 +323,19 @@ export default function StockDetailPage() {
   const patientTotalPages = Math.max(1, Math.ceil(sortedPatients.length / PATIENT_PAGE_SIZE));
   const txTotalPages = Math.max(1, Math.ceil(sortedTransactions.length / TX_PAGE_SIZE));
 
+  const bakiMap = useMemo(() => {
+    const map = new Map<string, number>();
+    const asc = [...sortedTransactions].sort((a, b) =>
+      new Date(a.tarikh).getTime() - new Date(b.tarikh).getTime()
+    );
+    let balance = 0;
+    for (const tx of asc) {
+      balance += tx.perubahan;
+      map.set(tx.id, balance);
+    }
+    return map;
+  }, [sortedTransactions]);
+
   const startEdit = () => {
     if (!item) return;
     setEditData({
@@ -420,20 +433,20 @@ export default function StockDetailPage() {
       wb.creator = "QuickRxRecord";
       wb.created = new Date();
       const ws = wb.addWorksheet("Sejarah Transaksi");
-      ws.mergeCells("A1:G1");
+      ws.mergeCells("A1:H1");
       const titleCell = ws.getCell("A1");
-      titleCell.value = `Sejarah Transaksi — ${item?.nama_item || ""}`;
+      titleCell.value = `Sejarah Transaksi — ${displayTitle || ""}`;
       titleCell.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
       titleCell.alignment = { horizontal: "center", vertical: "middle" };
       titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1877F2" } };
       ws.getRow(1).height = 28;
-      ws.mergeCells("A2:G2");
+      ws.mergeCells("A2:H2");
       const dateCell = ws.getCell("A2");
       dateCell.value = `Dijana pada ${getKLDate().toLocaleString(KL_LOCALE, { timeZone: KL_TIMEZONE })} · ${filteredTransactions.length} rekod`;
       dateCell.font = { size: 10, italic: true, color: { argb: "FF65676B" } };
       dateCell.alignment = { horizontal: "left" };
       ws.getRow(2).height = 18;
-      const headers = ["Tarikh", "Jenis", "Kelompok", "Perubahan", "Keterangan", "Kakitangan", "Pesakit"];
+      const headers = ["Tarikh", "Jenis", "Kelompok", "Perubahan", "Baki Stok", "Keterangan", "Kakitangan", "Pesakit"];
       ws.addRow(headers);
       const headerRow = ws.getRow(3);
       headerRow.eachCell((cell) => {
@@ -444,7 +457,8 @@ export default function StockDetailPage() {
       });
       headerRow.height = 22;
       filteredTransactions.forEach((tx, i) => {
-        const row = ws.addRow([formatDate(tx.tarikh), tx.jenis_label, tx.kelompok, tx.perubahan_label, tx.catatan || "", tx.kakitangan || "", tx.pesakit || ""]);
+        const baki = bakiMap.get(tx.id) ?? 0;
+        const row = ws.addRow([formatDate(tx.tarikh), tx.jenis_label, tx.kelompok, tx.perubahan_label, baki, tx.catatan || "", tx.kakitangan || "", tx.pesakit || ""]);
         if (i % 2 === 0) {
           row.eachCell((cell) => { cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF9FAFB" } }; });
         }
@@ -452,6 +466,7 @@ export default function StockDetailPage() {
         changeCell.font = { color: tx.perubahan > 0 ? { argb: "FF16A34A" } : tx.perubahan < 0 ? { argb: "FFE41E3F" } : { argb: "FF6B7280" }, bold: true };
         changeCell.alignment = { horizontal: "center" };
         row.getCell(2).alignment = { horizontal: "center" };
+        row.getCell(5).alignment = { horizontal: "center" };
       });
       const cols = (ws as any).columns as any[] | undefined;
       cols?.forEach((col) => {
@@ -467,7 +482,7 @@ export default function StockDetailPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `sejarah-transaksi-${item?.kod_item || "item"}-${getTodayStrKL()}.xlsx`;
+      a.download = `sejarah-transaksi-${displayTitle.replace(/\s+/g, "-")}-${getTodayStrKL()}.xlsx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -493,20 +508,29 @@ export default function StockDetailPage() {
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
-      doc.text(`Sejarah Transaksi - ${item?.nama_item || ""}`, 14, 15);
+      doc.text(`Sejarah Transaksi - ${displayTitle || ""}`, 14, 15);
       doc.setTextColor(101, 103, 107);
       doc.setFontSize(9);
       doc.setFont("helvetica", "italic");
       doc.text(`Dijana pada ${getKLDate().toLocaleString(KL_LOCALE, { timeZone: KL_TIMEZONE })} · ${filteredTransactions.length} rekod`, 14, 28);
-      const tableData = filteredTransactions.map((tx) => [formatDate(tx.tarikh), tx.jenis_label, tx.kelompok, tx.perubahan_label, tx.catatan || "", tx.kakitangan || "", tx.pesakit || ""]);
+      const tableData = filteredTransactions.map((tx) => {
+        const baki = bakiMap.get(tx.id) ?? 0;
+        return [formatDate(tx.tarikh), tx.jenis_label, tx.kelompok, tx.perubahan_label, String(baki), tx.catatan || "", tx.kakitangan || "", tx.pesakit || ""];
+      });
       autoTable(doc, {
         startY: 33,
-        head: [["Tarikh", "Jenis", "Kelompok", "Perubahan", "Keterangan", "Kakitangan", "Pesakit"]],
+        head: [["Tarikh", "Jenis", "Kelompok", "Perubahan", "Baki Stok", "Keterangan", "Kakitangan", "Pesakit"]],
         body: tableData,
         headStyles: { fillColor: [55, 65, 81], textColor: 255, fontSize: 9, fontStyle: "bold" },
         bodyStyles: { fontSize: 8 },
         alternateRowStyles: { fillColor: [249, 250, 251] },
         didParseCell: (data) => {
+          if (data.column.index === 3 && data.section === "body") {
+            data.cell.styles.halign = "center";
+          }
+          if (data.column.index === 4 && data.section === "body") {
+            data.cell.styles.halign = "center";
+          }
           if (data.column.index === 3 && data.section === "body") {
             const tx = filteredTransactions[data.row.index];
             if (tx) {
@@ -524,7 +548,7 @@ export default function StockDetailPage() {
         doc.setTextColor(150, 150, 150);
         doc.text(`QuickRxRecord · Halaman ${i} / ${pageCount}`, doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 8, { align: "center" });
       }
-      doc.save(`sejarah-transaksi-${item?.kod_item || "item"}-${getTodayStrKL()}.pdf`);
+      doc.save(`sejarah-transaksi-${displayTitle.replace(/\s+/g, "-")}-${getTodayStrKL()}.pdf`);
       toast.success("Fail PDF dimuat turun.");
     } catch (err: any) {
       console.error(err);
@@ -554,7 +578,8 @@ export default function StockDetailPage() {
     );
   }
 
-  const displayTitle = [item.nama_item, item.kekuatan].filter(Boolean).join(" ");
+  const formName = item.id_bentuk ? forms.find((f) => f.id === item.id_bentuk)?.nama : null;
+  const displayTitle = [item.nama_item, item.kekuatan, formName].filter(Boolean).join(" ");
 
   return (
     <div className="space-y-4">
@@ -671,16 +696,17 @@ export default function StockDetailPage() {
             <TxStatBadge icon={Users} color="#1877f2" label="Pesakit Menerima" value={txStats.patientCount.toString()} />
           </div>
           {filteredTransactions.length === 0 ? <EmptyState icon={History} title="Tiada sejarah transaksi" hint={transactions.length === 0 ? "Belum ada transaksi untuk item ini." : "Tiada rekod menepati penapis semasa."} /> : <>
-            <div className="hidden lg:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "1.5fr 1.3fr 1.3fr 1fr 1.8fr 1.3fr 1.3fr", gap: 12, color: "var(--text-secondary)", background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-medium)", borderTop: "1px solid var(--border-light)" }}>
+            <div className="hidden lg:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "1.5fr 1.3fr 1.3fr 1fr 1fr 1.8fr 1.3fr 1.3fr", gap: 12, color: "var(--text-secondary)", background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-medium)", borderTop: "1px solid var(--border-light)" }}>
               <button type="button" onClick={() => toggleTxSort("tarikh")} title="Urut mengikut Tarikh" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "tarikh" ? "#7c3aed" : "var(--text-secondary)" }}>Tarikh <SortIcon active={txSort?.key === "tarikh"} dir={txSort?.dir ?? "asc"} /></button>
               <button type="button" onClick={() => toggleTxSort("jenis")} title="Urut mengikut Jenis" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "jenis" ? "#7c3aed" : "var(--text-secondary)" }}>Jenis <SortIcon active={txSort?.key === "jenis"} dir={txSort?.dir ?? "asc"} /></button>
               <button type="button" onClick={() => toggleTxSort("kelompok")} title="Urut mengikut Kelompok" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "kelompok" ? "#7c3aed" : "var(--text-secondary)" }}>Kelompok <SortIcon active={txSort?.key === "kelompok"} dir={txSort?.dir ?? "asc"} /></button>
               <button type="button" onClick={() => toggleTxSort("perubahan")} title="Urut mengikut Perubahan" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "perubahan" ? "#7c3aed" : "var(--text-secondary)" }}>Perubahan <SortIcon active={txSort?.key === "perubahan"} dir={txSort?.dir ?? "asc"} /></button>
+              <span className="font-semibold" style={{ color: "var(--text-secondary)" }}>Baki Stok</span>
               <button type="button" onClick={() => toggleTxSort("catatan")} title="Urut mengikut Keterangan" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "catatan" ? "#7c3aed" : "var(--text-secondary)" }}>Keterangan <SortIcon active={txSort?.key === "catatan"} dir={txSort?.dir ?? "asc"} /></button>
               <button type="button" onClick={() => toggleTxSort("kakitangan")} title="Urut mengikut Kakitangan" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "kakitangan" ? "#7c3aed" : "var(--text-secondary)" }}>Kakitangan <SortIcon active={txSort?.key === "kakitangan"} dir={txSort?.dir ?? "asc"} /></button>
               <button type="button" onClick={() => toggleTxSort("pesakit")} title="Urut mengikut Pesakit" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "pesakit" ? "#7c3aed" : "var(--text-secondary)" }}>Pesakit <SortIcon active={txSort?.key === "pesakit"} dir={txSort?.dir ?? "asc"} /></button>
             </div>
-            {pagedTransactions.map((tx, idx) => <TransactionRow key={tx.id} tx={tx} index={idx} />)}
+            {pagedTransactions.map((tx, idx) => <TransactionRow key={tx.id} tx={tx} index={idx} baki={bakiMap.get(tx.id) ?? 0} />)}
             {txTotalPages > 1 && <Pagination page={txPage} totalPages={txTotalPages} onChange={setTxPage} totalCount={filteredTransactions.length} itemLabel="transaksi" />}
           </>}
         </FoldableCard>

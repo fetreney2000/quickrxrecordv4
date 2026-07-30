@@ -8,9 +8,10 @@ import type { CombinedTransaction } from "@/hooks/use-inventory";
 interface TransactionRowProps {
   tx: CombinedTransaction;
   index: number;
+  baki: number;
 }
 
-export function TransactionRow({ tx, index }: TransactionRowProps) {
+export function TransactionRow({ tx, index, baki }: TransactionRowProps) {
   const isUp = tx.perubahan > 0;
   const isDown = tx.perubahan < 0;
 
@@ -20,7 +21,7 @@ export function TransactionRow({ tx, index }: TransactionRowProps) {
       <div
         className="hidden lg:grid px-4 py-2.5 items-center"
         style={{
-          gridTemplateColumns: "1.5fr 1.3fr 1.3fr 1fr 1.8fr 1.3fr 1.3fr",
+          gridTemplateColumns: "1.5fr 1.3fr 1.3fr 1fr 1fr 1.8fr 1.3fr 1.3fr",
           gap: 12,
           borderBottom: "1px solid var(--border-light)",
         }}
@@ -51,6 +52,9 @@ export function TransactionRow({ tx, index }: TransactionRowProps) {
             {tx.perubahan_label}
           </span>
         </div>
+        <span className="text-[13px] font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>
+          {baki}
+        </span>
         <span className="text-[13px]" style={{ color: "var(--text-secondary)" }}>
           {tx.catatan || <em style={{ color: "var(--text-muted)" }}>-</em>}
         </span>

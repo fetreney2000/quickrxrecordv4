@@ -6,6 +6,7 @@
  */
 import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
+import crypto from "node:crypto";
 
 function getEnv(key: string): string {
   const val = process.env[key];
@@ -65,6 +66,7 @@ export async function POST(request: Request): Promise<Response> {
     const { data: profile, error: insertError } = await supabase
       .from("profiles")
       .insert({
+        id: crypto.randomUUID(),
         nama,
         nama_pengguna,
         kata_laluan_hash,

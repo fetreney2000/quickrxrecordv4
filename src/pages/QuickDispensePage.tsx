@@ -245,7 +245,7 @@ export default function QuickDispensePage() {
   };
 
   return (
-    <div className="space-y-4" style={{ padding: "0 4px" }}>
+    <div className="space-y-4" style={{ padding: "0 8px" }}>
       <Breadcrumb items={[{ label: "Dispen Pantas" }]} />
 
       <div className="flex items-center gap-3">
@@ -517,7 +517,7 @@ export default function QuickDispensePage() {
                           </div>
                           <div className="text-right flex-shrink-0 ml-2">
                             {it.kuota_penuh ? (
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(220,38,38,0.10)", color: "#dc2626" }}>Kuota Penuh</span>
+                              <span className="text-2xs font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(220,38,38,0.10)", color: "#dc2626" }}>Kuota Penuh</span>
                             ) : it.baki_kuota != null ? (
                               <div className="text-[10px] leading-tight" style={{ color: "var(--text-secondary)" }}>
                                 <div className="font-medium">Baki: {it.baki_kuota}</div>

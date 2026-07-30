@@ -630,9 +630,9 @@ export default function StockDetailPage() {
           <div className="pt-3 pb-2 flex flex-col sm:flex-row gap-2 sm:items-center">
             <div className="relative flex-1 min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
-              <Input value={patientSearch} onChange={(e) => { setPatientSearch(e.target.value); setPatientPage(0); }} placeholder="Cari nama atau No. KP..." className="h-8 pl-9 text-xs" style={{ background: "rgba(124,58,237,0.04)", border: "1px solid transparent", borderRadius: 10, color: "var(--text-primary)" }} />
+              <Input value={patientSearch} onChange={(e) => { setPatientSearch(e.target.value); setPatientPage(0); }} placeholder="Cari nama atau No. KP..." className="h-10 pl-9 text-xs" style={{ background: "rgba(124,58,237,0.04)", border: "1px solid transparent", borderRadius: 10, color: "var(--text-primary)" }} />
             </div>
-            <select value={defaulterFilter} onChange={(e) => { setDefaulterFilter(e.target.value); setPatientPage(0); }} className="h-8 text-xs px-2 rounded-xl" style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)", fontWeight: 500 }}>
+            <select value={defaulterFilter} onChange={(e) => { setDefaulterFilter(e.target.value); setPatientPage(0); }} className="h-10 text-xs px-3 rounded-xl" style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)", fontWeight: 500 }}>
               <option value="all">Semua Pesakit</option>
               <option value="3m">Tercicir 3 bulan</option>
               <option value="6m">Tercicir 6 bulan</option>

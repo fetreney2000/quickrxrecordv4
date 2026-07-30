@@ -551,17 +551,17 @@ export default function ManagementPage() {
                       >
                         {req.status === "pending" ? (
                           <History
-                            className="h-5 w-5"
+                            className="h-6 w-6"
                             style={{ color: "#d97706" }}
                           />
                         ) : req.status === "approved" ? (
                           <UserCheck
-                            className="h-5 w-5"
+                            className="h-6 w-6"
                             style={{ color: "#42b72a" }}
                           />
                         ) : (
                           <UserX
-                            className="h-5 w-5"
+                            className="h-6 w-6"
                             style={{ color: "#e41e3f" }}
                           />
                         )}
@@ -1075,7 +1075,7 @@ function UserRow({
                                 nama: e.target.value,
                               })
                             }
-                            className="h-8 text-sm"
+                            className="h-10 text-sm"
                           />
                         </div>
                         <div className="space-y-1">
@@ -1088,7 +1088,7 @@ function UserRow({
                                 nama_pengguna: e.target.value,
                               })
                             }
-                            className="h-8 text-sm"
+                            className="h-10 text-sm"
                           />
                         </div>
                         <div className="space-y-1">
@@ -1101,7 +1101,7 @@ function UserRow({
                                 jawatan: e.target.value,
                               })
                             }
-                            className="h-8 text-sm"
+                            className="h-10 text-sm"
                           />
                         </div>
                         <div className="space-y-1">
@@ -1114,7 +1114,7 @@ function UserRow({
                                 peranan: e.target.value as Profile["peranan"],
                               })
                             }
-                            className="flex h-8 w-full rounded-lg border border-input bg-background px-2 py-1 text-sm"
+                             className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm"
                           >
                             <option value="Pentadbir">Pentadbir</option>
                             <option value="Penjaga Stor">Penjaga Stor</option>

@@ -669,7 +669,7 @@ function InventoryTab({
                   ].map((h) => (
                     <th
                       key={h}
-                      className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.05em]"
+                      className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-[0.05em]"
                       style={{
                         color: "var(--text-secondary)",
                         borderBottom: "2px solid var(--border-medium)",
@@ -742,7 +742,7 @@ function InventoryTab({
                       >
                         {isLowStock ? (
                           <span
-                            className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                            className="inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold"
                             style={{
                               background: "rgba(239,68,68,0.1)",
                               color: "#e41e3f",
@@ -871,7 +871,7 @@ function TransactionsTab({
                   ].map((h) => (
                     <th
                       key={h}
-                      className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.05em]"
+                      className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-[0.05em]"
                       style={{
                         color: "var(--text-secondary)",
                         borderBottom: "2px solid var(--border-medium)",

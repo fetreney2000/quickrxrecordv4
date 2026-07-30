@@ -17,6 +17,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { ExpiryBadge, ExpirySummaryBadges } from "@/components/dashboard/expiry-badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   useDashboardStats,
   useExpiryDashboard,
@@ -119,7 +120,17 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-5">
-        {statCards.map((card) => (
+        {statsLoading && !stats ? Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="rounded-xl p-4" style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.06)" }}>
+            <div className="flex items-center gap-3">
+              <Skeleton className="w-9 h-9 rounded-lg" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-5 w-12" />
+              </div>
+            </div>
+          </div>
+        )) : statCards.map((card) => (
           <StatCard key={card.key} title={card.title} subtitle={card.subtitle} icon={card.icon} gradient={card.gradient} value={stats ? card.getValue(stats as DashboardStats) : 0} delay={card.delay} href={card.href} />
         ))}
       </div>
@@ -158,9 +169,9 @@ export default function DashboardPage() {
                   {!expiryLoading && expiryBatches && expiryBatches.length === 0 && (
                     <tr><td colSpan={6} className="text-center py-8 text-sm" style={{ color: "var(--text-secondary)" }}>Tiada kelompok ubat ditemui.</td></tr>
                   )}
-                  {expiryLoading && (
-                    <tr><td colSpan={6} className="text-center py-8 text-sm" style={{ color: "var(--text-secondary)" }}>Memuatkan...</td></tr>
-                  )}
+                  {expiryLoading && Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={i}><td colSpan={6} className="px-3 py-3"><Skeleton className="h-4 w-full" /></td></tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -168,7 +179,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {statsLoading && !stats && <div className="text-center text-sm" style={{ color: "var(--text-secondary)" }}>Memuatkan statistik...</div>}
+      {statsLoading && !stats && <div className="text-center py-4"><Skeleton className="h-4 w-48 mx-auto" /></div>}
     </div>
   );
 }

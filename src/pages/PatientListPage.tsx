@@ -31,6 +31,7 @@ import { SortIcon } from "@/components/patient/sort-icon";
 import { AddPatientDialog } from "@/components/patient/add-patient-dialog";
 import { PatientRow } from "@/components/patient/patient-row";
 import type { Patient } from "@/types";
+import { Skeleton, SkeletonRow } from "@/components/ui/skeleton";
 
 function User(props: { className?: string }) {
   return (
@@ -147,7 +148,7 @@ export default function PatientListPage() {
             </div>
           </div>
           <div className="relative">
-            {isLoading && <div className="flex flex-col items-center justify-center py-12 gap-2" style={{ color: "var(--text-secondary)" }}><Loader2 className="w-6 h-6 animate-spin" style={{ color: "#1877f2" }} /><p className="text-sm">Memuatkan pesakit...</p></div>}
+            {isLoading && <div>{Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} cols={5} />)}</div>}
             {!isLoading && patients.length === 0 && debouncedSearch && <div className="flex flex-col items-center justify-center py-12 gap-2" style={{ color: "var(--text-muted)" }}><Inbox className="w-10 h-10 opacity-40" /><p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Tiada pesakit dijumpai.</p><p className="text-xs">Cuba tukar kata kunci carian anda.</p></div>}
             {!isLoading && patients.length === 0 && !debouncedSearch && <div className="flex flex-col items-center justify-center py-12 gap-2" style={{ color: "var(--text-muted)" }}><Users className="w-10 h-10 opacity-40" /><p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Tiada pesakit berdaftar.</p>{canEdit && <p className="text-xs">Klik "Daftar Pesakit" untuk mendaftarkan pesakit baru.</p>}</div>}
             {!isLoading && patients.length > 0 && (

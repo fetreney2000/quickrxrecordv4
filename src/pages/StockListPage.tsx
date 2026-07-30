@@ -16,6 +16,7 @@ import { SortIcon } from "@/components/patient/sort-icon";
 import { AddItemDialog } from "@/components/inventory/add-item-dialog";
 import { StockRow } from "@/components/inventory/stock-row";
 import type { Item } from "@/types";
+import { Skeleton, SkeletonRow } from "@/components/ui/skeleton";
 
 function TagIcon(props: { className?: string }) {
   return <svg {...props} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>;
@@ -88,7 +89,7 @@ export default function StockListPage() {
           </div>
         </div>
         <div className="relative">
-          {isLoading && <div className="flex flex-col items-center justify-center py-12 gap-2" style={{ color: "var(--text-secondary)" }}><Loader2 className="w-6 h-6 animate-spin" style={{ color: "#7c3aed" }} /><p className="text-sm">Memuatkan item...</p></div>}
+          {isLoading && <div>{Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} cols={5} />)}</div>}
           {!isLoading && items.length === 0 && debouncedSearch && <div className="flex flex-col items-center justify-center py-12 gap-2" style={{ color: "var(--text-muted)" }}><Inbox className="w-10 h-10 opacity-40" /><p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Tiada item dijumpai.</p><p className="text-xs">Cuba tukar kata kunci carian anda.</p></div>}
           {!isLoading && items.length === 0 && !debouncedSearch && <div className="flex flex-col items-center justify-center py-12 gap-2" style={{ color: "var(--text-muted)" }}><Pill className="w-10 h-10 opacity-40" /><p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Tiada item dalam inventori.</p>{canEdit && <p className="text-xs">Klik "Tambah Item" untuk mendaftarkan item baru.</p>}</div>}
           {!isLoading && items.length > 0 && (

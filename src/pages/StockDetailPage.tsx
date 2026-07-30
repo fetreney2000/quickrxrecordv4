@@ -33,6 +33,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FoldableCard } from "@/components/ui/foldable-card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavStore } from "@/lib/nav-store";
@@ -558,9 +559,33 @@ export default function StockDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-2" style={{ color: "var(--text-secondary)" }}>
-        <Loader2 className="w-7 h-7 animate-spin" style={{ color: "#7c3aed" }} />
-        <p className="text-sm">Memuatkan item...</p>
+      <div className="space-y-4 p-4">
+        <Skeleton className="h-4 w-48" />
+        <div className="flex items-center gap-3">
+          <Skeleton className="w-12 h-12 rounded-2xl" />
+          <div className="space-y-2 flex-1">
+            <Skeleton className="h-6 w-64" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+        </div>
+        <div className="rounded-xl p-4" style={{ background: "var(--card)" }}>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-5 w-12" />
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-8" />
+            ))}
+          </div>
+        </div>
+        <Skeleton className="h-8 w-full rounded-xl" />
+        <Skeleton className="h-8 w-full rounded-xl" />
+        <Skeleton className="h-8 w-full rounded-xl" />
       </div>
     );
   }

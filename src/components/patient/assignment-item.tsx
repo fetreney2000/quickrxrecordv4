@@ -2,6 +2,7 @@
  * AssignmentItem — Item tugasan yang boleh dikembangkan.
  */
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Pill,
   Package,
@@ -60,6 +61,7 @@ const DOSE_PAGE_SIZE = 20;
 const SUPPLY_PAGE_SIZE = 20;
 
 export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpdateDose, onStop, onEditSupply, onDeleteSupply, canEdit, formsMap, weeksSinceLastSupply }: AssignmentItemProps) {
+  const navigate = useNavigate();
   const [doseSort, setDoseSort] = useState<{ key: string; dir: SortDir } | null>(null);
   const [supplySort, setSupplySort] = useState<{ key: string; dir: SortDir } | null>(null);
   const [dosePage, setDosePage] = useState(0);
@@ -120,7 +122,7 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 flex-wrap">
             <div className="min-w-0">
-              <p className="text-sm font-bold truncate" style={{ color: "var(--text-primary)" }}>
+              <p className="text-sm font-bold truncate" style={{ color: "var(--text-primary)", cursor: "pointer" }} onClick={(e) => { e.stopPropagation(); if (item?.id) navigate(`/stok/${item.id}`); }}>
                 {item?.nama_item ?? "Item Tidak Dikenali"}
                 {item?.kekuatan ? <span className="text-xs font-medium ml-1" style={{ color: "var(--text-secondary)" }}>· {item.kekuatan}</span> : null}
                 {formName ? <span className="text-xs font-medium ml-1" style={{ color: "var(--text-secondary)" }}>· {formName}</span> : null}
@@ -202,10 +204,10 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                   <thead>
                     <tr className="border-b" style={{ borderColor: "var(--border-light)" }}>
                       <SortableHeader label="Tarikh" sortKey="tarikh_dibekal" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
-                      <SortableHeader label="Kuantiti" sortKey="kuantiti" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       <SortableHeader label="Dos" sortKey="dos" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       <SortableHeader label="Tempoh" sortKey="tempoh_dibekal" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
-                      <SortableHeader label="Kakitangan" sortKey="kakitangan_pembekal" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
+                      <SortableHeader label="Kuantiti" sortKey="kuantiti" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
+                      <SortableHeader label="Pembekal" sortKey="kakitangan_pembekal" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       <SortableHeader label="Catatan" sortKey="catatan_bekalan" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       {canEdit && <th className="text-left text-2xs font-semibold uppercase tracking-wider px-2 py-1.5" style={{ color: "var(--text-secondary)" }}>Tindakan</th>}
                     </tr>
@@ -214,9 +216,9 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                     {pagedSupply.map((s) => (
                       <tr key={s.id} className="border-b last:border-b-0" style={{ borderColor: "var(--border-light)" }}>
                         <td className="px-2 py-1.5" style={{ color: "var(--text-primary)" }}>{formatDate(s.tarikh_dibekal)}</td>
-                        <td className="px-2 py-1.5" style={{ color: "var(--text-primary)" }}>{s.kuantiti}</td>
                         <td className="px-2 py-1.5 font-semibold" style={{ color: "#1877f2" }}>{s.dos}</td>
                         <td className="px-2 py-1.5" style={{ color: "var(--text-secondary)" }}>{s.tempoh_dibekal || "—"}</td>
+                        <td className="px-2 py-1.5" style={{ color: "var(--text-primary)" }}>{s.kuantiti}</td>
                         <td className="px-2 py-1.5" style={{ color: "var(--text-secondary)" }}>{(s as SupplyRecordWithJoins).kakitangan_pembekal_profile?.nama ?? "—"}</td>
                         <td className="px-2 py-1.5 italic" style={{ color: "var(--text-muted)" }}>{s.catatan_bekalan || "—"}</td>
                         {canEdit && <td className="px-2 py-1.5"><div className="flex items-center gap-1"><button title="Edit rekod bekalan" onClick={(e) => { e.stopPropagation(); onEditSupply(s); }} className="hover:opacity-70" style={{ color: "#1877f2" }}><Edit className="w-3 h-3" /></button><button title="Padam rekod bekalan" onClick={(e) => { e.stopPropagation(); onDeleteSupply(s.id); }} className="hover:opacity-70" style={{ color: "#dc2626" }}><Trash2 className="w-3 h-3" /></button></div></td>}

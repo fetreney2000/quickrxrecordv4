@@ -82,9 +82,6 @@ export function DeactivateDialog({
             </div>
             <div>
               <DialogTitle>Nyahaktifkan Pesakit</DialogTitle>
-              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
-                Tindakan ini boleh diterbalikkan
-              </p>
             </div>
           </div>
         </DialogHeader>
@@ -102,8 +99,8 @@ export function DeactivateDialog({
             />
             <p className="text-xs" style={{ color: "#92400e" }}>
               Pesakit <strong>{patientName}</strong> tidak akan dapat menerima
-              bekalan ubat baharu. Semua rekod sedia ada kekal dalam sistem
-              dan anda boleh mengaktifkannya semula pada bila-bila masa.
+              bekalan ubat baharu. Semua rekod sedia ada kekal dalam sistem.
+              Pesakit yang dinyahaktifkan tidak boleh diaktifkan semula.
             </p>
           </div>
         </div>
@@ -141,6 +138,7 @@ export function AddAssignmentDialog({
   activeItemIds,
   onSubmit,
   isPending,
+  formsMap,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -148,6 +146,7 @@ export function AddAssignmentDialog({
   activeItemIds: Set<string>;
   onSubmit: (data: { item_id: string; dos: string; catatan: string }) => void;
   isPending: boolean;
+  formsMap: Map<string, string>;
 }) {
   const [search, setSearch] = useState("");
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -273,6 +272,7 @@ export function AddAssignmentDialog({
                         <p style={{ color: "var(--text-secondary)" }}>
                           {i.kod_item}
                           {i.kekuatan ? ` · ${i.kekuatan}` : ""}
+                          {i.id_bentuk && formsMap.has(i.id_bentuk) ? ` · ${formsMap.get(i.id_bentuk)}` : ""}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
@@ -680,9 +680,6 @@ export function UpdateDoseDialog({
             </div>
             <div>
               <DialogTitle>Kemaskini Dos</DialogTitle>
-              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
-                Tukar dos dan tambah sejarah
-              </p>
             </div>
           </div>
         </DialogHeader>

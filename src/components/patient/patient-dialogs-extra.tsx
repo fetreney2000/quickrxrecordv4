@@ -75,10 +75,7 @@ export function StopAssignmentDialog({
               <X className="w-5 h-5" />
             </div>
             <div>
-              <DialogTitle>Tamatkan Item</DialogTitle>
-              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
-                Tindakan ini boleh diterbalikkan
-              </p>
+              <DialogTitle>Tamatkan Penggunaan Item</DialogTitle>
             </div>
           </div>
         </DialogHeader>
@@ -207,7 +204,7 @@ export function EditSupplyDialog({
             <div>
               <DialogTitle>Edit Rekod Bekalan</DialogTitle>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
-                Kemaskini dos, kuantiti, dan catatan
+                Kemaskini kuantiti, tempoh bekalan dan catatan
               </p>
             </div>
           </div>

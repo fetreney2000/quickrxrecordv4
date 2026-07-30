@@ -162,7 +162,7 @@ export default function ManagementPage() {
       setNewUser({
         nama: "",
         nama_pengguna: "",
-        kata_laluan: "",
+        kata_laluan: "password123",
         jawatan: "",
         peranan: "Kakitangan Farmasi",
       });
@@ -430,7 +430,6 @@ export default function ManagementPage() {
             {/* Search */}
             <div className="p-4 border-b" style={{ borderColor: "var(--border-light)" }}>
               <Input
-                placeholder="Cari pengguna..."
                 value={userSearch}
                 onChange={(e) => setUserSearch(e.target.value)}
                 className="max-w-sm"
@@ -669,7 +668,6 @@ export default function ManagementPage() {
                 Nama <span style={{ color: "#e41e3f" }}>*</span>
               </Label>
               <Input
-                placeholder="Nama penuh"
                 value={newUser.nama}
                 onChange={(e) =>
                   setNewUser({ ...newUser, nama: e.target.value })
@@ -687,7 +685,6 @@ export default function ManagementPage() {
                 Nama Pengguna <span style={{ color: "#e41e3f" }}>*</span>
               </Label>
               <Input
-                placeholder="Nama pengguna untuk log masuk"
                 value={newUser.nama_pengguna}
                 onChange={(e) =>
                   setNewUser({ ...newUser, nama_pengguna: e.target.value })
@@ -700,7 +697,6 @@ export default function ManagementPage() {
               </Label>
               <Input
                 type="password"
-                placeholder="Kata laluan"
                 value={newUser.kata_laluan}
                 onChange={(e) =>
                   setNewUser({ ...newUser, kata_laluan: e.target.value })
@@ -710,7 +706,6 @@ export default function ManagementPage() {
             <div className="space-y-2">
               <Label>Jawatan</Label>
               <Input
-                placeholder="Jawatan (cth: Juruteknik Farmasi)"
                 value={newUser.jawatan}
                 onChange={(e) =>
                   setNewUser({ ...newUser, jawatan: e.target.value })

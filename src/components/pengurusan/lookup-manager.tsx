@@ -342,7 +342,7 @@ export default function LookupManager({ type }: LookupManagerProps) {
           <div className="space-y-3 py-2">
             <Input
               ref={addInputRef}
-              placeholder={`Nama ${config.label}`}
+              placeholder=""
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => {

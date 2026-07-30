@@ -331,7 +331,7 @@ export default function StockDetailPage() {
     let balance = 0;
     for (const tx of asc) {
       balance += tx.perubahan;
-      map.set(tx.id, balance);
+      map.set(tx.id, Math.max(0, balance));
     }
     return map;
   }, [sortedTransactions]);

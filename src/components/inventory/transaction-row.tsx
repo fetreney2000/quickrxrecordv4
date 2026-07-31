@@ -70,7 +70,7 @@ export function TransactionRow({ tx, index, baki }: TransactionRowProps) {
       <div
         className="hidden sm:grid lg:hidden px-4 py-2.5 items-center"
         style={{
-          gridTemplateColumns: "1.5fr 1fr 1fr 1fr",
+          gridTemplateColumns: "1.5fr 1fr 1fr 1fr 1fr",
           gap: 12,
           borderBottom: "1px solid var(--border-light)",
         }}
@@ -95,6 +95,9 @@ export function TransactionRow({ tx, index, baki }: TransactionRowProps) {
             {tx.perubahan_label}
           </span>
         </div>
+        <span className="text-[13px] font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>
+          {baki}
+        </span>
         <span className="text-[13px]" style={{ color: "var(--text-secondary)" }}>
           {tx.jenis_label}
         </span>
@@ -136,6 +139,10 @@ export function TransactionRow({ tx, index, baki }: TransactionRowProps) {
             <span>·</span>
             <span className="font-semibold" style={{ color: isUp ? "#16a34a" : isDown ? "#e41e3f" : "#6b7280" }}>
               {tx.perubahan_label}
+            </span>
+            <span>·</span>
+            <span className="font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>
+              Baki: {baki}
             </span>
           </div>
           {tx.catatan && (

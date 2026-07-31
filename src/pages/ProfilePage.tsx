@@ -253,7 +253,7 @@ export default function ProfilePage() {
 
   // ── Render ──────────────────────────────────────────────────────────────
   return (
-    <div style={{ maxWidth: 960, margin: "0 auto" }}>
+    <div>
       <Breadcrumb items={[{ label: "Profil Pengguna" }]} />
 
       {/* Header */}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Loader2, User, Plus, Moon, Sun } from "lucide-react";
+import { Search, Loader2, User, Plus, Moon, Sun, LogOut } from "lucide-react";
 import { AddPatientDialog } from "@/components/patient/add-patient-dialog";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
@@ -17,7 +17,7 @@ interface SearchResult {
 }
 
 export function Header() {
-  const { can } = useAuth();
+  const { can, signOut } = useAuth();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -240,8 +240,22 @@ export function Header() {
             className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors hover:bg-muted"
             style={{ color: "var(--text-secondary)" }}
             aria-label={theme === "dark" ? "Tukar ke mod terang" : "Tukar ke mod gelap"}
+            title={theme === "dark" ? "Tukar ke mod terang" : "Tukar ke mod gelap"}
           >
             {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              await signOut();
+              navigate("/login", { replace: true });
+            }}
+            className="md:hidden w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors hover:bg-red-50"
+            style={{ color: "#dc2626" }}
+            aria-label="Log keluar"
+            title="Log keluar"
+          >
+            <LogOut className="w-4 h-4" />
           </button>
         </div>
       <AddPatientDialog open={showAddPatient} onOpenChange={setShowAddPatient} />

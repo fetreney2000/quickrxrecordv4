@@ -623,6 +623,7 @@ export function useItemTransactionHistory(itemId: string | undefined) {
         .from("inventory_transactions")
         .select("id, created_at, batch_id, jenis, kuantiti, catatan, batch:item_batches!batch_id(nombor_kelompok)")
         .eq("item_id", itemId)
+        .neq("rujukan_type", "supply")
         .order("created_at", { ascending: false })
         .limit(500);
       if (transactionError) throw transactionError;

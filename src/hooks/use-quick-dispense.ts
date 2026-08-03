@@ -384,6 +384,7 @@ export function useAddAssignmentInline(patientId: string | null) {
       }
       queryClient.invalidateQueries({ queryKey: ["frequent-items"] });
       queryClient.invalidateQueries({ queryKey: ["items-active"] });
+      queryClient.invalidateQueries({ queryKey: ["latest-dose-history-dos"] });
     },
     onError: (err: any) => {
       toast.error(err?.message || "Gagal mendaftarkan item.");

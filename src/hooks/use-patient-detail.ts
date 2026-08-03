@@ -429,6 +429,7 @@ export function useAddAssignment(patientId: string | undefined) {
       toast.success("Item berjaya ditambah.");
       queryClient.invalidateQueries({ queryKey: ["assignments", patientId] });
       queryClient.invalidateQueries({ queryKey: ["items-with-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["latest-dose-history-dos"] });
     },
     onError: (err: any) => {
       toast.error(err?.message || "Gagal menambah item.");
@@ -510,6 +511,7 @@ export function useUpdateDose(patientId: string | undefined) {
       toast.success("Dos dikemaskini.");
       queryClient.invalidateQueries({ queryKey: ["assignments", patientId] });
       queryClient.invalidateQueries({ queryKey: ["dose-history", vars.assignmentId] });
+      queryClient.invalidateQueries({ queryKey: ["latest-dose-history-dos"] });
     },
     onError: (err: any) => {
       toast.error(err?.message || "Gagal mengemaskini dos.");
@@ -772,6 +774,7 @@ export function useMergePatients() {
     onSuccess: () => {
       toast.success("Pesakit berjaya digabungkan.");
       queryClient.invalidateQueries({ queryKey: ["patients"] });
+      queryClient.invalidateQueries({ queryKey: ["latest-dose-history-dos"] });
     },
     onError: (err: any) => {
       toast.error(err?.message || "Gagal menggabungkan pesakit.");

@@ -33,7 +33,7 @@ import {
   useItemsActive,
   useAddAssignmentInline,
 } from "@/hooks/use-quick-dispense";
-import { useLatestSupplyDos } from "@/hooks/use-patient-detail";
+import { useLatestDoseHistoryDos } from "@/hooks/use-patient-detail";
 import type { Patient } from "@/types";
 
 const inputStyle: React.CSSProperties = {
@@ -92,15 +92,15 @@ export default function QuickDispensePage() {
     () => (assignedItems as any[]).map((a: any) => a.assignment_id),
     [assignedItems]
   );
-  const { data: latestDosMap } = useLatestSupplyDos(assignmentIds);
+  const { data: latestDosMap } = useLatestDoseHistoryDos(assignmentIds);
 
   const effectiveDos = useCallback(
     (item: any) => {
-      const fromAssignment = item?.dos;
-      const fromSupply = item?.assignment_id
+      const fromHistory = item?.assignment_id
         ? latestDosMap?.get(item.assignment_id)
         : null;
-      return fromAssignment || fromSupply || "";
+      const fromAssignment = item?.dos;
+      return fromHistory || fromAssignment || "";
     },
     [latestDosMap]
   );

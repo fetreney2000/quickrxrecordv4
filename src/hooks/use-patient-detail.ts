@@ -199,18 +199,19 @@ export function useLatestSupplyDates(assignmentIds: string[]) {
 }
 
 // ============================================================================
-// 4c. Latest supply dos per assignment (fallback when assignment.dos is null)
+// 4c. Latest dos per assignment from dose_history (source of truth for current dose)
 // ============================================================================
-export function useLatestSupplyDos(assignmentIds: string[]) {
+export function useLatestDoseHistoryDos(assignmentIds: string[]) {
   return useQuery({
-    queryKey: ["latest-supply-dos", assignmentIds],
+    queryKey: ["latest-dose-history-dos", assignmentIds],
     enabled: assignmentIds.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("supply_records")
+        .from("dose_history")
         .select("assignment_id, dos")
+        .eq("aktif", true)
         .in("assignment_id", assignmentIds)
-        .order("tarikh_dibekal", { ascending: false });
+        .order("created_at", { ascending: false });
       if (error) throw error;
       const map = new Map<string, string>();
       for (const row of (data ?? []) as any[]) {

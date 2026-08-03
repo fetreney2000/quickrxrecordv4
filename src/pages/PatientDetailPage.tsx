@@ -51,7 +51,7 @@ import {
   useUpdateSupplyRecord,
   useItemsWithStats,
   useLatestSupplyDates,
-  useLatestSupplyDos,
+  useLatestDoseHistoryDos,
   weeksSince,
   type AssignmentWithItem,
 } from "@/hooks/use-patient-detail";
@@ -103,7 +103,7 @@ export default function PatientDetailPage() {
   const { data: itemForms = [] } = useItemForms();
   const assignmentIds = useMemo(() => assignments.map((a) => a.id), [assignments]);
   const { data: latestSupplyDates } = useLatestSupplyDates(assignmentIds);
-  const { data: latestDosMap } = useLatestSupplyDos(assignmentIds);
+  const { data: latestDosMap } = useLatestDoseHistoryDos(assignmentIds);
   const weeksSinceMap = useMemo(() => {
     const map = new Map<string, number | null>();
     for (const a of assignments) {
@@ -149,7 +149,7 @@ export default function PatientDetailPage() {
   const supplyAssignment = useMemo(() => {
     const a = assignments.find((x) => x.id === openSupply) ?? null;
     if (!a) return null;
-    const effective = a.dos || latestDosMap?.get(a.id) || null;
+    const effective = latestDosMap?.get(a.id) || a.dos || null;
     return effective !== a.dos ? { ...a, dos: effective } : a;
   }, [assignments, openSupply, latestDosMap]);
   const updateDoseAssignment = useMemo(() => assignments.find((a) => a.id === openUpdateDose) ?? null, [assignments, openUpdateDose]);

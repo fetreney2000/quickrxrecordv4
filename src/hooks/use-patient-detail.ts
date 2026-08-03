@@ -198,6 +198,31 @@ export function useLatestSupplyDates(assignmentIds: string[]) {
   });
 }
 
+// ============================================================================
+// 4c. Latest supply dos per assignment (fallback when assignment.dos is null)
+// ============================================================================
+export function useLatestSupplyDos(assignmentIds: string[]) {
+  return useQuery({
+    queryKey: ["latest-supply-dos", assignmentIds],
+    enabled: assignmentIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("supply_records")
+        .select("assignment_id, dos")
+        .in("assignment_id", assignmentIds)
+        .order("tarikh_dibekal", { ascending: false });
+      if (error) throw error;
+      const map = new Map<string, string>();
+      for (const row of (data ?? []) as any[]) {
+        if (row.dos && !map.has(row.assignment_id)) {
+          map.set(row.assignment_id, row.dos);
+        }
+      }
+      return map;
+    },
+  });
+}
+
 export function weeksSince(dateStr: string | undefined): number | null {
   if (!dateStr) return null;
   const d = new Date(dateStr);

@@ -2,7 +2,7 @@
  * QuickDispensePage — Halaman Dispen Pantas.
  * 3 langkah linear: Cari pesakit → Pilih item → Bekal.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Zap,
   Search,
@@ -33,6 +33,7 @@ import {
   useItemsActive,
   useAddAssignmentInline,
 } from "@/hooks/use-quick-dispense";
+import { useLatestSupplyDos } from "@/hooks/use-patient-detail";
 import type { Patient } from "@/types";
 
 const inputStyle: React.CSSProperties = {
@@ -87,6 +88,22 @@ export default function QuickDispensePage() {
     () => new Set(assignedItems.map((a: any) => a.item_id)),
     [assignedItems]
   );
+  const assignmentIds = useMemo(
+    () => (assignedItems as any[]).map((a: any) => a.assignment_id),
+    [assignedItems]
+  );
+  const { data: latestDosMap } = useLatestSupplyDos(assignmentIds);
+
+  const effectiveDos = useCallback(
+    (item: any) => {
+      const fromAssignment = item?.dos;
+      const fromSupply = item?.assignment_id
+        ? latestDosMap?.get(item.assignment_id)
+        : null;
+      return fromAssignment || fromSupply || "";
+    },
+    [latestDosMap]
+  );
   const { data: frequentItems = [] } = useFrequentItems(assignedItemIds);
   const { data: availableBatches = [] } = useQuickDispenseBatches(
     selectedItem?.item_id ?? null
@@ -118,8 +135,8 @@ export default function QuickDispensePage() {
   }, [availableBatches]);
 
   useEffect(() => {
-    setDose(selectedItem?.dos ?? "");
-  }, [selectedItem?.assignment_id]);
+    setDose(effectiveDos(selectedItem));
+  }, [selectedItem, effectiveDos]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -385,12 +402,15 @@ export default function QuickDispensePage() {
               <div className="mb-3">
                 <p className="text-2xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-secondary)" }}>Item Kerap</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {frequentItems.map((it: any) => (
-                    <button key={it.id} title={"Pilih " + it.nama_item} onClick={() => setSelectedItem({ assignment_id: "", item_id: it.id, dos: null, item: { id: it.id, kod_item: it.kod_item, nama_item: it.nama_item, kekuatan: it.kekuatan } })}
-                      className="text-[12px] font-medium px-2.5 py-1 rounded-full" style={{ background: "var(--bg-accent-blue)", color: "#1877f2", border: "1px solid rgba(24,119,242,0.2)" }}>
-                      {it.nama_item}
-                    </button>
-                  ))}
+                  {frequentItems.map((it: any) => {
+                    const assignment = (assignedItems as any[]).find((a: any) => a.item_id === it.id);
+                    return (
+                      <button key={it.id} title={"Pilih " + it.nama_item} onClick={() => assignment && setSelectedItem(assignment)}
+                        className="text-[12px] font-medium px-2.5 py-1 rounded-full" style={{ background: "var(--bg-accent-blue)", color: "#1877f2", border: "1px solid rgba(24,119,242,0.2)" }}>
+                        {it.nama_item}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -402,7 +422,7 @@ export default function QuickDispensePage() {
                 filteredItems.map((a: any) => (
                   <button key={a.assignment_id} title={"Pilih " + (a.item?.nama_item ?? "")} onClick={() => setSelectedItem(a)} className="w-full text-left px-3 py-2 text-xs border-b last:border-b-0 hover:bg-blue-50/50" style={{ borderColor: "var(--border-light)" }}>
                     <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{a.item?.nama_item}</p>
-                    <p style={{ color: "var(--text-secondary)" }}>{a.item?.kod_item} · Dos: {a.dos}</p>
+                    <p style={{ color: "var(--text-secondary)" }}>{a.item?.kod_item} · Dos: {effectiveDos(a)}</p>
                   </button>
                 ))
               )}

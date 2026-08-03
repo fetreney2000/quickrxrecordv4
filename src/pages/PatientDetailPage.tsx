@@ -51,6 +51,7 @@ import {
   useUpdateSupplyRecord,
   useItemsWithStats,
   useLatestSupplyDates,
+  useLatestSupplyDos,
   weeksSince,
   type AssignmentWithItem,
 } from "@/hooks/use-patient-detail";
@@ -102,6 +103,7 @@ export default function PatientDetailPage() {
   const { data: itemForms = [] } = useItemForms();
   const assignmentIds = useMemo(() => assignments.map((a) => a.id), [assignments]);
   const { data: latestSupplyDates } = useLatestSupplyDates(assignmentIds);
+  const { data: latestDosMap } = useLatestSupplyDos(assignmentIds);
   const weeksSinceMap = useMemo(() => {
     const map = new Map<string, number | null>();
     for (const a of assignments) {
@@ -144,7 +146,12 @@ export default function PatientDetailPage() {
   const sortedAssignments = useMemo(() => [...assignments].sort((a, b) => { if (a.aktif !== b.aktif) return a.aktif ? -1 : 1; return new Date(b.tarikh_mula_guna).getTime() - new Date(a.tarikh_mula_guna).getTime(); }), [assignments]);
   const pagedAssignments = useMemo(() => { const from = assignmentPage * ASSIGNMENT_PAGE_SIZE; return sortedAssignments.slice(from, from + ASSIGNMENT_PAGE_SIZE); }, [sortedAssignments, assignmentPage]);
   const assignmentTotalPages = Math.max(1, Math.ceil(sortedAssignments.length / ASSIGNMENT_PAGE_SIZE));
-  const supplyAssignment = useMemo(() => assignments.find((a) => a.id === openSupply) ?? null, [assignments, openSupply]);
+  const supplyAssignment = useMemo(() => {
+    const a = assignments.find((x) => x.id === openSupply) ?? null;
+    if (!a) return null;
+    const effective = a.dos || latestDosMap?.get(a.id) || null;
+    return effective !== a.dos ? { ...a, dos: effective } : a;
+  }, [assignments, openSupply, latestDosMap]);
   const updateDoseAssignment = useMemo(() => assignments.find((a) => a.id === openUpdateDose) ?? null, [assignments, openUpdateDose]);
 
   const startEdit = () => { if (!patient) return; setEditData({ nama: patient.nama, nombor_kad_pengenalan: patient.nombor_kad_pengenalan, nombor_pendaftaran_hospital: patient.nombor_pendaftaran_hospital, dokumen_lain: patient.dokumen_lain, nombor_telefon: patient.nombor_telefon, alamat: patient.alamat, catatan: patient.catatan }); setEditMode(true); };

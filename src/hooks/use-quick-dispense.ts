@@ -145,6 +145,7 @@ export function useQuickDispenseBatches(itemId: string | null) {
         .from("item_batches")
         .select("*")
         .eq("item_id", itemId!)
+        .eq("dilupuskan", false)
         .gt("kuantiti", 0)
         .gte("tarikh_luput", today)
         .order("tarikh_luput", { ascending: true });
@@ -216,10 +217,11 @@ export function useQuickSupply(patientId: string | null) {
       // 2. Fallback: direct supabase
       const { data: batch, error: bErr } = await supabase
         .from("item_batches")
-        .select("kuantiti")
+        .select("kuantiti, dilupuskan")
         .eq("id", data.batchId)
         .single();
       if (bErr) throw bErr;
+      if (batch?.dilupuskan) throw new Error("Kelompok ini telah dilupuskan.");
       if (!batch || batch.kuantiti < data.kuantiti) {
         throw new Error("Stok tidak mencukupi.");
       }

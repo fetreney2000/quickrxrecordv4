@@ -84,7 +84,9 @@ export function BatchRow({
   const [draftLuput, setDraftLuput] = useState(toDateInputValue(batch.tarikh_luput));
   const inputRef = useRef<HTMLInputElement>(null);
   const infoInputRef = useRef<HTMLInputElement>(null);
-  const status = getStatus(batch);
+  const status = batch.dilupuskan
+    ? { label: "Dilupuskan", bg: "rgba(220,38,38,0.10)", fg: "#dc2626", border: "rgba(220,38,38,0.25)", isExpired: true }
+    : getStatus(batch);
 
   useEffect(() => {
     if (editing && inputRef.current) {
@@ -251,7 +253,7 @@ export function BatchRow({
               className="inline-flex items-center gap-1 text-[13px] font-semibold"
               style={{ color: "var(--text-primary)" }}
             >
-              {formatNumber(batch.kuantiti)} unit
+               {formatNumber(batch.kuantiti)}
               {batch.kuantiti === 0 && (
                 <AlertTriangle className="w-3 h-3" style={{ color: "#d97706" }} />
               )}

@@ -36,22 +36,33 @@ export function useUpdateBatchQuantity(itemId: string | undefined) {
       newKuantiti: number;
       reason?: string;
     }) => {
+      if (data.reason === "Pelupusan Stok") {
+        const { error } = await supabase.rpc("process_batch_disposal", {
+          p_batch_id: data.batchId,
+          p_adjusted_by: profile?.id ?? null,
+          p_reason: data.reason,
+        });
+        if (error) throw error;
+        return;
+      }
       const { data: existing, error: getErr } = await supabase
         .from("item_batches")
-        .select("kuantiti")
+        .select("kuantiti, dilupuskan")
         .eq("id", data.batchId)
         .single();
       if (getErr) throw getErr;
       if (!existing) throw new Error("Kelompok tidak dijumpai.");
+      if (existing.dilupuskan) throw new Error("Kelompok ini telah dilupuskan dan tidak boleh diubah.");
 
       const { error: updErr } = await supabase
         .from("item_batches")
         .update({ kuantiti: data.newKuantiti })
-        .eq("id", data.batchId);
+        .eq("id", data.batchId)
+        .eq("dilupuskan", false);
       if (updErr) throw updErr;
 
       const change = data.newKuantiti - existing.kuantiti;
-      await supabase.from("batch_adjustments").insert({
+      const { error: adjustmentError } = await supabase.from("batch_adjustments").insert({
         batch_id: data.batchId,
         previous_kuantiti: existing.kuantiti,
         new_kuantiti: data.newKuantiti,
@@ -59,6 +70,7 @@ export function useUpdateBatchQuantity(itemId: string | undefined) {
         reason: data.reason,
         adjusted_by: profile?.id ?? null,
       });
+      if (adjustmentError) throw adjustmentError;
     },
     onSuccess: () => {
       toast.success("Kuantiti kelompok dikemaskini.");
@@ -544,6 +556,14 @@ export function useItemTransactionHistory(itemId: string | undefined) {
           })
         : [];
 
+      const { data: inventoryTransactions, error: transactionError } = await supabase
+        .from("inventory_transactions")
+        .select("id, created_at, batch_id, jenis, kuantiti, catatan, batch:item_batches!batch_id(nombor_kelompok)")
+        .eq("item_id", itemId)
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (transactionError) throw transactionError;
+
       // Combine both into CombinedTransaction array
       const combined: CombinedTransaction[] = [];
 
@@ -574,6 +594,21 @@ export function useItemTransactionHistory(itemId: string | undefined) {
           perubahan_label: isUp ? `+${adj.change}` : `${adj.change}`,
           catatan: adj.reason ?? null,
           kakitangan: adj.staff?.nama ?? null,
+          pesakit: null,
+        });
+      });
+
+      ((inventoryTransactions ?? []) as any[]).forEach((tx) => {
+        combined.push({
+          id: `inv-${tx.id}`,
+          tarikh: tx.created_at,
+          jenis: "pelarasan",
+          jenis_label: tx.jenis === "masuk" ? "Penambahan" : "Pelupusan",
+          kelompok: tx.batch?.nombor_kelompok ?? null,
+          perubahan: tx.jenis === "masuk" ? tx.kuantiti : -tx.kuantiti,
+          perubahan_label: tx.jenis === "masuk" ? `+${tx.kuantiti}` : `-${tx.kuantiti}`,
+          catatan: tx.catatan ?? null,
+          kakitangan: null,
           pesakit: null,
         });
       });

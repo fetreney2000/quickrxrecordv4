@@ -65,6 +65,8 @@ export interface ItemBatch {
   nombor_kelompok: string;
   tarikh_luput: string;
   kuantiti: number;
+  dilupuskan?: boolean;
+  dilupuskan_at?: string | null;
   created_at: string;
   updated_at: string;
 }

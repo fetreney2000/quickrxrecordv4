@@ -42,7 +42,43 @@ export function useUpdateBatchQuantity(itemId: string | undefined) {
           p_adjusted_by: profile?.id ?? null,
           p_reason: data.reason,
         });
-        if (error) throw error;
+        if (!error) return;
+        if (!error.message?.includes("Could not find the function")) throw error;
+
+        const { data: batch, error: batchError } = await supabase
+          .from("item_batches")
+          .select("item_id, kuantiti, dilupuskan")
+          .eq("id", data.batchId)
+          .single();
+        if (batchError) throw batchError;
+        if (batch.dilupuskan) throw new Error("Kelompok telah dilupuskan.");
+        const { error: updateError } = await supabase
+          .from("item_batches")
+          .update({ kuantiti: 0, dilupuskan: true, dilupuskan_at: new Date().toISOString() })
+          .eq("id", data.batchId)
+          .eq("dilupuskan", false);
+        if (updateError) throw updateError;
+        const { error: adjustmentError } = await supabase.from("batch_adjustments").insert({
+          batch_id: data.batchId,
+          previous_kuantiti: batch.kuantiti,
+          new_kuantiti: 0,
+          change: -batch.kuantiti,
+          reason: data.reason,
+          adjusted_by: profile?.id ?? null,
+        });
+        if (adjustmentError) throw adjustmentError;
+        if (batch.kuantiti > 0) {
+          const { error: transactionError } = await supabase.from("inventory_transactions").insert({
+            item_id: batch.item_id,
+            batch_id: data.batchId,
+            jenis: "keluar",
+            kuantiti: batch.kuantiti,
+            rujukan_id: data.batchId,
+            rujukan_type: "batch_disposal",
+            catatan: data.reason,
+          });
+          if (transactionError) throw transactionError;
+        }
         return;
       }
       const { data: existing, error: getErr } = await supabase
@@ -282,15 +318,42 @@ export function useAddBatch(itemId: string | undefined) {
       tarikh_luput: string;
       kuantiti: number;
     }) => {
-      const { error } = await supabase.from("item_batches").insert({
+      const { data: existing, error: findError } = await supabase
+        .from("item_batches")
+        .select("id, item_id, kuantiti, dilupuskan")
+        .eq("item_id", itemId!)
+        .ilike("nombor_kelompok", batchData.nombor_kelompok)
+        .maybeSingle();
+      if (findError) throw findError;
+      if (existing?.dilupuskan) throw new Error("Kelompok ini telah dilupuskan dan tidak boleh digunakan semula.");
+
+      let batchId = existing?.id;
+      if (existing) {
+        const { error } = await supabase.from("item_batches")
+          .update({ kuantiti: existing.kuantiti + batchData.kuantiti, tarikh_luput: batchData.tarikh_luput })
+          .eq("id", existing.id).eq("dilupuskan", false);
+        if (error) throw error;
+      } else {
+        const { data: inserted, error } = await supabase.from("item_batches")
+          .insert({ item_id: itemId!, ...batchData }).select("id").single();
+        if (error) throw error;
+        batchId = inserted.id;
+      }
+      const { error: transactionError } = await supabase.from("inventory_transactions").insert({
         item_id: itemId!,
-        ...batchData,
+        batch_id: batchId,
+        jenis: "masuk",
+        kuantiti: batchData.kuantiti,
+        rujukan_id: batchId,
+        rujukan_type: "batch_addition",
+        catatan: existing ? "Tambah stok ke kelompok sedia ada" : "Kelompok baharu",
       });
-      if (error) throw error;
+      if (transactionError) throw transactionError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["batches", itemId] });
       queryClient.invalidateQueries({ queryKey: ["items"] });
+      queryClient.invalidateQueries({ queryKey: ["transaction-history", itemId] });
     },
   });
 }

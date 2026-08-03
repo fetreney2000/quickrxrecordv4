@@ -54,3 +54,5 @@ END;
 $$;
 
 GRANT ALL ON FUNCTION process_batch_disposal(UUID, UUID, TEXT) TO anon, authenticated;
+
+NOTIFY pgrst, 'reload schema';

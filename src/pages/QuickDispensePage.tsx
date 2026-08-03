@@ -108,6 +108,10 @@ export default function QuickDispensePage() {
   const { data: availableBatches = [] } = useQuickDispenseBatches(
     selectedItem?.item_id ?? null
   );
+  const selectableBatches = useMemo(
+    () => availableBatches.filter((batch) => batch.kuantiti > 0 && batch.dilupuskan !== true),
+    [availableBatches]
+  );
   const { data: supplyDurations = [] } = useSupplyDurationsList();
   const supplyMut = useQuickSupply(selectedPatient?.id ?? null);
   const setBreadcrumbTrail = useNavStore((s) => s.setBreadcrumbTrail);
@@ -123,16 +127,16 @@ export default function QuickDispensePage() {
   }, []);
 
   useEffect(() => {
-    if (availableBatches.length > 0) {
+    if (selectableBatches.length > 0) {
       setSelectedBatchId((cur) =>
-        cur && availableBatches.some((b) => b.id === cur)
+        cur && selectableBatches.some((b) => b.id === cur)
           ? cur
-          : availableBatches[0].id
+          : selectableBatches[0].id
       );
     } else {
       setSelectedBatchId(null);
     }
-  }, [availableBatches]);
+  }, [selectableBatches]);
 
   useEffect(() => {
     setDose(effectiveDos(selectedItem));
@@ -233,7 +237,7 @@ export default function QuickDispensePage() {
     !!selectedItem &&
     quantity.trim() !== "" &&
     parseInt(quantity) > 0 &&
-    selectedBatchId !== null &&
+     selectableBatches.some((batch) => batch.id === selectedBatchId) &&
     dose.trim() !== "";
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -453,11 +457,11 @@ export default function QuickDispensePage() {
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <Label style={labelStyle}>Pilih Kelompok (FEFO)</Label>
-                {availableBatches.length === 0 ? (
+                {selectableBatches.length === 0 ? (
                   <div className="text-xs p-2 rounded-lg" style={{ background: "rgba(220,38,38,0.08)", color: "#991b1b" }}>Tiada kelompok tersedia.</div>
                 ) : (
                   <div className="space-y-1 max-h-40 overflow-y-auto">
-                    {availableBatches.map((b: any) => (
+                    {selectableBatches.map((b: any) => (
                       <label key={b.id} className="flex items-center gap-2 px-3 py-2 text-xs border rounded-lg cursor-pointer"
                         style={{ borderColor: selectedBatchId === b.id ? "#f59e0b" : "var(--border-medium)", background: selectedBatchId === b.id ? "rgba(245,158,11,0.06)" : "var(--card)" }}>
                         <input type="radio" name="batch" checked={selectedBatchId === b.id} onChange={() => setSelectedBatchId(b.id)} style={{ accentColor: "#f59e0b" }} />

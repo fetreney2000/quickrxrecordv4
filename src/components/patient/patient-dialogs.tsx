@@ -421,6 +421,9 @@ export function SupplyDialog({
   const { data: batches = [], isLoading: batchesLoading } = useAvailableBatches(
     open ? assignment.item_id : null
   );
+  const selectableBatches = batches.filter(
+    (batch) => batch.kuantiti > 0 && batch.dilupuskan !== true
+  );
   const { data: durations = [] } = useSupplyDurations();
 
   // Combine tempoh value + unit
@@ -430,8 +433,11 @@ export function SupplyDialog({
 
   // Auto-select first batch (FEFO) and default duration
   useEffect(() => {
-    if (open && batches.length > 0 && !batchId) {
-      setBatchId(batches[0].id);
+    if (open && selectableBatches.length > 0 && !batchId) {
+      setBatchId(selectableBatches[0].id);
+    }
+    if (batchId && !selectableBatches.some((batch) => batch.id === batchId)) {
+      setBatchId(selectableBatches[0]?.id ?? null);
     }
     if (open && durations.length > 0 && !tempohUnit) {
       setTempohUnit(durations[0]?.nama ?? "");
@@ -444,9 +450,9 @@ export function SupplyDialog({
       setCatatan("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, batches.length, durations.length]);
+  }, [open, selectableBatches, durations.length, batchId]);
 
-  const selectedBatch = batches.find((b) => b.id === batchId);
+  const selectedBatch = selectableBatches.find((b) => b.id === batchId);
   const maxQty = selectedBatch?.kuantiti ?? 0;
 
   return (
@@ -475,12 +481,12 @@ export function SupplyDialog({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (!batchId || kuantiti <= 0 || kuantiti > maxQty) return;
+            if (!selectedBatch || kuantiti <= 0 || kuantiti > maxQty) return;
             onSubmit({
               dos: assignment.dos ?? "",
               kuantiti,
               tempoh: tempoh.trim(),
-              batchId,
+               batchId: batchId!,
               catatan: catatan.trim(),
             });
           }}
@@ -544,7 +550,7 @@ export function SupplyDialog({
               <div className="flex items-center gap-2 text-xs" style={{ color: "var(--text-secondary)" }}>
                 <Loader2 className="w-3 h-3 animate-spin" /> Memuatkan kelompok...
               </div>
-            ) : batches.length === 0 ? (
+            ) : selectableBatches.length === 0 ? (
               <div
                 className="text-xs p-2 rounded-lg"
                 style={{
@@ -559,7 +565,7 @@ export function SupplyDialog({
                 className="border rounded-xl overflow-y-auto"
                 style={{ borderColor: "var(--border-medium)", maxHeight: 160 }}
               >
-                {batches.map((b) => (
+                {selectableBatches.map((b) => (
                   <label
                     key={b.id}
                     className={cn(
@@ -617,16 +623,16 @@ export function SupplyDialog({
           </Button>
           <Button
             onClick={() => {
-              if (!batchId || kuantiti <= 0 || kuantiti > maxQty) return;
+               if (!selectedBatch || kuantiti <= 0 || kuantiti > maxQty) return;
               onSubmit({
                 dos: assignment.dos ?? "",
                 kuantiti,
                 tempoh: tempoh.trim(),
-                batchId,
+                 batchId: batchId!,
                 catatan: catatan.trim(),
               });
             }}
-            disabled={!batchId || kuantiti <= 0 || kuantiti > maxQty || isPending}
+            disabled={!selectedBatch || kuantiti <= 0 || kuantiti > maxQty || isPending}
             title="Bekalkan ubat"
           >
             {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}

@@ -96,6 +96,23 @@ export function fromDateInputValue(value: string): string {
   return iso.toISOString();
 }
 
+/** Add calendar days to a YYYY-MM-DD value without using the browser timezone. */
+export function addDaysToDateInput(value: string, days: number): string {
+  const date = new Date(`${value}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+/** Return the UTC instant representing midnight for a Kuala Lumpur date. */
+export function getKLDayStartISO(dateInput?: string): string {
+  return fromDateInputValue(dateInput || getTodayStrKL());
+}
+
+/** Return the UTC instant at the start of the next Kuala Lumpur calendar day. */
+export function getKLDayEndISO(dateInput?: string): string {
+  return getKLDayStartISO(addDaysToDateInput(dateInput || getTodayStrKL(), 1));
+}
+
 /** Title-case a name while keeping common acronyms uppercase. */
 export function toTitleCase(input: string | null | undefined): string {
   if (!input) return "";
@@ -180,12 +197,12 @@ export function myKadToDob(raw: string | null | undefined): string | null {
 /** Calculate age in years from a date of birth string. */
 export function calculateAge(dob: string | Date | null | undefined): number | null {
   if (!dob) return null;
-  const birth = new Date(dob);
-  if (isNaN(birth.getTime())) return null;
-  const today = getKLDate();
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+  const birthParts = getKLDateParts(dob);
+  const todayParts = getKLDateParts(getTodayStrKL());
+  if (!birthParts || !todayParts) return null;
+  let age = todayParts.year - birthParts.year;
+  const m = todayParts.month - birthParts.month;
+  if (m < 0 || (m === 0 && todayParts.day < birthParts.day)) {
     age--;
   }
   return age;
@@ -194,16 +211,15 @@ export function calculateAge(dob: string | Date | null | undefined): number | nu
 /** Format age in year, month, day format. */
 export function formatAge(dob: string | Date | null | undefined): string {
   if (!dob) return "—";
-  const birth = new Date(dob);
-  if (isNaN(birth.getTime())) return "—";
-  const today = getKLDate();
-  let years = today.getFullYear() - birth.getFullYear();
-  let months = today.getMonth() - birth.getMonth();
-  let days = today.getDate() - birth.getDate();
+  const birthParts = getKLDateParts(dob);
+  const todayParts = getKLDateParts(getTodayStrKL());
+  if (!birthParts || !todayParts) return "—";
+  let years = todayParts.year - birthParts.year;
+  let months = todayParts.month - birthParts.month;
+  let days = todayParts.day - birthParts.day;
   if (days < 0) {
     months--;
-    const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
-    days += prevMonth.getDate();
+    days += new Date(Date.UTC(todayParts.year, todayParts.month - 1, 0)).getUTCDate();
   }
   if (months < 0) {
     years--;
@@ -212,13 +228,21 @@ export function formatAge(dob: string | Date | null | undefined): string {
   return `${years} Tahun, ${months} Bulan, ${days} Hari`;
 }
 
+function getKLDateParts(value: string | Date): { year: number; month: number; day: number } | null {
+  const input = typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)
+    ? value.slice(0, 10)
+    : toDateInputValue(value);
+  const [year, month, day] = input.split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return { year, month, day };
+}
+
 /** Return a relative time string in Bahasa Melayu (e.g. "5 minit yang lalu"). */
 export function timeAgo(value: string | Date | null | undefined): string {
   if (!value) return "—";
   const d = value instanceof Date ? value : new Date(value);
   if (isNaN(d.getTime())) return "—";
-  const now = getKLDate();
-  const seconds = Math.floor((now.getTime() - d.getTime()) / 1000);
+  const seconds = Math.floor((Date.now() - d.getTime()) / 1000);
   if (seconds < 60) return "Baru sahaja";
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes} minit yang lalu`;
@@ -280,25 +304,24 @@ export function formatCurrency(value: number | null | undefined): string {
 
 /** Get the start of today in KL timezone as ISO. */
 export function getStartOfTodayKL(): Date {
-  const now = new Date();
-  const kl = new Date(now.toLocaleString("en-US", { timeZone: KL_TIMEZONE }));
-  kl.setHours(0, 0, 0, 0);
-  return kl;
+  return new Date(getKLDayStartISO());
 }
 
 /** Get today's date as YYYY-MM-DD string in KL timezone. */
 export function getTodayStrKL(): string {
-  const kl = getKLDate();
-  const yyyy = kl.getFullYear();
-  const mm = String(kl.getMonth() + 1).padStart(2, "0");
-  const dd = String(kl.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: KL_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
 }
 
-/** Get current timestamp as ISO string in KL timezone. */
+/** Get the current instant as ISO; database timestamps are displayed in KL time. */
 export function getNowISOKL(): string {
-  const kl = getKLDate();
-  return kl.toISOString();
+  return new Date().toISOString();
 }
 
 /** Truncate text to a max length with ellipsis. */

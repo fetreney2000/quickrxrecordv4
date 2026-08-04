@@ -4,7 +4,7 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { getStartOfTodayKL } from "@/lib/utils";
+import { addDaysToDateInput, getKLDayEndISO, getKLDayStartISO, getTodayStrKL, toDateInputValue } from "@/lib/utils";
 
 interface DashboardStats {
   totalPatients: number;
@@ -19,10 +19,10 @@ export function useDashboardStats() {
   return useQuery<DashboardStats>({
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
-      const startOfToday = getStartOfTodayKL();
-      const in30Days = new Date(startOfToday);
-      in30Days.setDate(in30Days.getDate() + 30);
-      in30Days.setHours(23, 59, 59, 999);
+      const today = getTodayStrKL();
+      const startOfTodayISO = getKLDayStartISO(today);
+      const startOfTomorrowISO = getKLDayEndISO(today);
+      const in30Days = addDaysToDateInput(today, 30);
 
       // Empat kueri selari
       const [patientsRes, itemsRes, supplyRes, expiringRes] =
@@ -39,12 +39,14 @@ export function useDashboardStats() {
           supabase
             .from("supply_records")
             .select("id", { count: "exact", head: true })
-            .gte("tarikh_dibekal", startOfToday.toISOString()),
+            .gte("tarikh_dibekal", startOfTodayISO)
+            .lt("tarikh_dibekal", startOfTomorrowISO),
           supabase
             .from("item_batches")
             .select("id", { count: "exact", head: true })
             .gt("kuantiti", 0)
-            .lte("tarikh_luput", in30Days.toISOString().split("T")[0]),
+            .gte("tarikh_luput", today)
+            .lte("tarikh_luput", in30Days),
         ]);
 
       // Kueri kelima (berjujukan): item dengan kelompok untuk kiraan stok
@@ -55,15 +57,13 @@ export function useDashboardStats() {
 
       if (stockError) throw stockError;
 
-      const usageStart = new Date(startOfToday);
-      usageStart.setDate(usageStart.getDate() - 84);
-      const usageEnd = new Date(startOfToday);
-      usageEnd.setDate(usageEnd.getDate() + 1);
+      const usageStart = addDaysToDateInput(today, -84);
+      const usageEnd = addDaysToDateInput(today, 1);
       const { data: recentUsage, error: usageError } = await supabase
         .from("supply_records")
         .select("kuantiti, assignment:patient_item_assignments!inner(item_id)")
-        .gte("tarikh_dibekal", usageStart.toISOString())
-        .lt("tarikh_dibekal", usageEnd.toISOString());
+        .gte("tarikh_dibekal", getKLDayStartISO(usageStart))
+        .lt("tarikh_dibekal", getKLDayStartISO(usageEnd));
       if (usageError) throw usageError;
 
       const usageByItem = new Map<string, number>();
@@ -131,12 +131,10 @@ export function getExpiryStatus(
   tarikhLuput: string,
   today: Date = new Date()
 ): { status: ExpiryStatus; daysLeft: number } {
-  const expiry = new Date(tarikhLuput);
-  expiry.setHours(0, 0, 0, 0);
-  today.setHours(0, 0, 0, 0);
-  const msPerDay = 24 * 60 * 60 * 1000;
   const daysLeft = Math.floor(
-    (expiry.getTime() - today.getTime()) / msPerDay
+    (new Date(getKLDayStartISO(tarikhLuput)).getTime() -
+      new Date(getKLDayStartISO(toDateInputValue(today))).getTime()) /
+      (24 * 60 * 60 * 1000)
   );
 
   if (daysLeft < 30) return { status: "critical", daysLeft };

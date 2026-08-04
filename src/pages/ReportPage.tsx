@@ -26,7 +26,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { supabase } from "@/lib/supabase";
-import { formatDate, getTodayStrKL } from "@/lib/utils";
+import { addDaysToDateInput, formatDate, getKLDayEndISO, getKLDayStartISO, getTodayStrKL } from "@/lib/utils";
 import { toast } from "sonner";
 import type { ItemBatch } from "@/types";
 
@@ -65,12 +65,6 @@ interface LowStockRecord {
   kekuatan: string | null;
   requiredFourWeeks: number;
   currentBalance: number;
-}
-
-function addDays(dateString: string, days: number) {
-  const date = new Date(`${dateString}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + days);
-  return date.toISOString().slice(0, 10);
 }
 
 function daysBetween(start: string, end: string) {
@@ -330,7 +324,7 @@ type TabKey = "inventory" | "transactions" | "expiry" | "low-stock";
 export default function ReportPage() {
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabKey>("inventory");
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getTodayStrKL();
   const showTodayTransactions = searchParams.get("tab") === "transactions" && searchParams.get("date") === "today";
   const showExpiry = searchParams.get("tab") === "expiry";
   const showLowStock = searchParams.get("tab") === "low-stock";
@@ -377,8 +371,8 @@ export default function ReportPage() {
           "*, assignment:patient_item_assignments(patient:patients(nama), item:items(nama_item, kekuatan)), batch:item_batches(nombor_kelompok), staff:profiles!kakitangan_pembekal(nama)"
         )
        .order("created_at", { ascending: false })
-       .gte("tarikh_dibekal", dateFrom ? `${dateFrom}T00:00:00.000Z` : "1900-01-01T00:00:00.000Z")
-       .lt("tarikh_dibekal", dateTo ? `${dateTo}T23:59:59.999Z` : "9999-12-31T23:59:59.999Z")
+        .gte("tarikh_dibekal", dateFrom ? getKLDayStartISO(dateFrom) : "1900-01-01T00:00:00.000Z")
+        .lt("tarikh_dibekal", dateTo ? getKLDayEndISO(dateTo) : "9999-12-31T23:59:59.999Z")
         .limit(500);
       if (error) throw error;
       return data as TransactionRecord[];
@@ -389,7 +383,7 @@ export default function ReportPage() {
     queryKey: ["report-expiry", expiryDays],
     queryFn: async () => {
       const expiryStart = getTodayStrKL();
-      const expiryEnd = addDays(expiryStart, expiryDays);
+      const expiryEnd = addDaysToDateInput(expiryStart, expiryDays);
       const { data: batches, error: batchError } = await supabase
         .from("item_batches")
         .select("*")
@@ -419,8 +413,8 @@ export default function ReportPage() {
     queryKey: ["report-low-stock"],
     queryFn: async () => {
       const today = getTodayStrKL();
-      const usageStart = addDays(today, -84);
-      const usageEnd = addDays(today, 1);
+      const usageStart = addDaysToDateInput(today, -84);
+      const usageEnd = addDaysToDateInput(today, 1);
       const [itemsResult, usageResult] = await Promise.all([
         supabase
           .from("items")
@@ -429,8 +423,8 @@ export default function ReportPage() {
         supabase
           .from("supply_records")
           .select("kuantiti, assignment:patient_item_assignments!inner(item_id)")
-          .gte("tarikh_dibekal", `${usageStart}T00:00:00.000Z`)
-          .lt("tarikh_dibekal", `${usageEnd}T00:00:00.000Z`),
+          .gte("tarikh_dibekal", getKLDayStartISO(usageStart))
+          .lt("tarikh_dibekal", getKLDayStartISO(usageEnd)),
       ]);
       if (itemsResult.error) throw itemsResult.error;
       if (usageResult.error) throw usageResult.error;

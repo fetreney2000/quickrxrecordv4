@@ -3,7 +3,7 @@
  */
 import { useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
-import { formatDate, formatMyKad, getKLDate } from "@/lib/utils";
+import { formatDate, formatMyKad, getTodayStrKL, toDateInputValue } from "@/lib/utils";
 
 export interface PatientUsingData {
   id: string;
@@ -31,12 +31,12 @@ interface PatientUsingRowProps {
 
 function monthsAgo(isoDate: string | null | undefined): number | null {
   if (!isoDate) return null;
-  const d = new Date(isoDate);
+  const d = new Date(`${toDateInputValue(isoDate)}T00:00:00Z`);
   if (isNaN(d.getTime())) return null;
-  const now = getKLDate();
+  const now = new Date(`${getTodayStrKL()}T00:00:00Z`);
   const months =
-    (now.getFullYear() - d.getFullYear()) * 12 +
-    (now.getMonth() - d.getMonth());
+    (now.getUTCFullYear() - d.getUTCFullYear()) * 12 +
+    (now.getUTCMonth() - d.getUTCMonth());
   if (months < 0) return 0;
   return months;
 }

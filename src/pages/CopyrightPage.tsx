@@ -7,10 +7,11 @@ import { ArrowLeft, User, Phone, Mail } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { Shield } from "lucide-react";
+import { getTodayStrKL } from "@/lib/utils";
 
 export default function CopyrightPage() {
   const navigate = useNavigate();
-  const currentYear = new Date().getFullYear();
+  const currentYear = Number(getTodayStrKL().slice(0, 4));
 
   useEffect(() => {
     document.title = "Hak Cipta — QuickRxRecord";

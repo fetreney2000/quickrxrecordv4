@@ -218,7 +218,7 @@ export default function ManagementPage() {
     mutationFn: async ({ id, aktif }: { id: string; aktif: boolean }) => {
       const { error } = await supabase
         .from("profiles")
-        .update({ aktif, updated_at: new Date().toISOString() })
+        .update({ aktif, updated_at: getNowISOKL() })
         .eq("id", id);
       if (error) throw error;
     },

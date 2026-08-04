@@ -40,11 +40,12 @@ import { useNavStore } from "@/lib/nav-store";
 import {
   formatDate,
   formatNumber,
-  fromDateInputValue,
-  getKLDate,
+  getKLDayEndISO,
+  getKLDayStartISO,
   getTodayStrKL,
   KL_LOCALE,
   KL_TIMEZONE,
+  toDateInputValue,
   toTitleCaseKeepAcronyms,
 } from "@/lib/utils";
 import {
@@ -212,7 +213,7 @@ export default function StockDetailPage() {
 
   const filteredPatients = useMemo(() => {
     const term = patientSearch.trim().toLowerCase();
-    const now = getKLDate();
+    const now = new Date(`${getTodayStrKL()}T00:00:00Z`);
     const cutoffMonths = (() => {
       switch (defaulterFilter) {
         case "3m": return 3;
@@ -231,10 +232,10 @@ export default function StockDetailPage() {
       }
       if (defaulterFilter !== "all") {
         if (!p.last_supply) return cutoffMonths > 0;
-        const lastDate = new Date(p.last_supply.tarikh);
+        const lastDate = new Date(`${toDateInputValue(p.last_supply.tarikh)}T00:00:00Z`);
         const monthsAgo =
-          (now.getFullYear() - lastDate.getFullYear()) * 12 +
-          (now.getMonth() - lastDate.getMonth());
+          (now.getUTCFullYear() - lastDate.getUTCFullYear()) * 12 +
+          (now.getUTCMonth() - lastDate.getUTCMonth());
         if (monthsAgo < cutoffMonths) return false;
       }
       return true;
@@ -244,13 +245,10 @@ export default function StockDetailPage() {
   const filteredTransactions = useMemo(() => {
     return transactions.filter((t) => {
       if (filterDateFrom) {
-        const from = new Date(fromDateInputValue(filterDateFrom));
-        if (new Date(t.tarikh) < from) return false;
+        if (new Date(t.tarikh) < new Date(getKLDayStartISO(filterDateFrom))) return false;
       }
       if (filterDateTo) {
-        const to = new Date(fromDateInputValue(filterDateTo));
-        to.setDate(to.getDate() + 1);
-        if (new Date(t.tarikh) >= to) return false;
+        if (new Date(t.tarikh) >= new Date(getKLDayEndISO(filterDateTo))) return false;
       }
       if (filterPatient && t.pesakit !== filterPatient) return false;
       if (filterStaff && t.kakitangan !== filterStaff) return false;
@@ -443,7 +441,7 @@ export default function StockDetailPage() {
       ws.getRow(1).height = 28;
       ws.mergeCells("A2:H2");
       const dateCell = ws.getCell("A2");
-      dateCell.value = `Dijana pada ${getKLDate().toLocaleString(KL_LOCALE, { timeZone: KL_TIMEZONE })} · ${filteredTransactions.length} rekod`;
+       dateCell.value = `Dijana pada ${new Date().toLocaleString(KL_LOCALE, { timeZone: KL_TIMEZONE })} · ${filteredTransactions.length} rekod`;
       dateCell.font = { size: 10, italic: true, color: { argb: "FF65676B" } };
       dateCell.alignment = { horizontal: "left" };
       ws.getRow(2).height = 18;
@@ -513,7 +511,7 @@ export default function StockDetailPage() {
       doc.setTextColor(101, 103, 107);
       doc.setFontSize(9);
       doc.setFont("helvetica", "italic");
-      doc.text(`Dijana pada ${getKLDate().toLocaleString(KL_LOCALE, { timeZone: KL_TIMEZONE })} · ${filteredTransactions.length} rekod`, 14, 28);
+       doc.text(`Dijana pada ${new Date().toLocaleString(KL_LOCALE, { timeZone: KL_TIMEZONE })} · ${filteredTransactions.length} rekod`, 14, 28);
       const tableData = filteredTransactions.map((tx) => {
         const baki = bakiMap.get(tx.id) ?? 0;
         return [formatDate(tx.tarikh), tx.jenis_label, tx.kelompok, tx.perubahan_label, String(baki), tx.catatan || "", tx.kakitangan || "", tx.pesakit || ""];

@@ -54,7 +54,7 @@ export function useUpdateBatchQuantity(itemId: string | undefined) {
         if (batch.dilupuskan) throw new Error("Kelompok telah dilupuskan.");
         const { error: updateError } = await supabase
           .from("item_batches")
-          .update({ kuantiti: 0, dilupuskan: true, dilupuskan_at: new Date().toISOString() })
+          .update({ kuantiti: 0, dilupuskan: true, dilupuskan_at: getNowISOKL() })
           .eq("id", data.batchId)
           .eq("dilupuskan", false);
         if (updateError) throw updateError;

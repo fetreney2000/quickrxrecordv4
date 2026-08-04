@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
-import { getKLDate, getNowISOKL, getTodayStrKL } from "@/lib/utils";
+import { getKLDayStartISO, getNowISOKL, getTodayStrKL, toDateInputValue } from "@/lib/utils";
 import type {
   Patient,
   PatientItemAssignment,
@@ -226,9 +226,7 @@ export function useLatestDoseHistoryDos(assignmentIds: string[]) {
 
 export function weeksSince(dateStr: string | undefined): number | null {
   if (!dateStr) return null;
-  const d = new Date(dateStr);
-  const now = getKLDate();
-  const diffMs = now.getTime() - d.getTime();
+  const diffMs = new Date(getKLDayStartISO(getTodayStrKL())).getTime() - new Date(getKLDayStartISO(toDateInputValue(dateStr))).getTime();
   return Math.floor(diffMs / (1000 * 60 * 60 * 24 * 7));
 }
 

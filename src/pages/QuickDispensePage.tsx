@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavStore } from "@/lib/nav-store";
-import { getInitials, formatMyKad } from "@/lib/utils";
+import { formatItemDisplay, getInitials, formatMyKad } from "@/lib/utils";
 import { toast } from "sonner";
 import { AddPatientDialog } from "@/components/patient/add-patient-dialog";
 import {
@@ -163,7 +163,7 @@ export default function QuickDispensePage() {
     const term = itemSearch.toLowerCase();
     return (assignedItems as any[]).filter(
       (a) =>
-        a.item?.nama_item.toLowerCase().includes(term) ||
+        formatItemDisplay(a.item).toLowerCase().includes(term) ||
         a.item?.kod_item.toLowerCase().includes(term)
     );
   }, [assignedItems, itemSearch]);
@@ -181,7 +181,7 @@ export default function QuickDispensePage() {
     const term = registerItemSearch.toLowerCase();
     return items.filter(
       (it) =>
-        it.nama_item.toLowerCase().includes(term) ||
+        formatItemDisplay(it).toLowerCase().includes(term) ||
         it.kod_item.toLowerCase().includes(term)
     );
   }, [allActiveItems, assignedItemIdsSet, registerItemSearch]);
@@ -201,7 +201,7 @@ export default function QuickDispensePage() {
       },
       {
         onSuccess: (assignment: any) => {
-          toast.success(`${registerSelectedItem.nama_item} telah didaftarkan.`);
+          toast.success(`${formatItemDisplay(registerSelectedItem)} telah didaftarkan.`);
           setShowRegisterDialog(false);
           setRegisterItemSearch("");
           setRegisterSelectedItem(null);
@@ -215,6 +215,8 @@ export default function QuickDispensePage() {
               kod_item: registerSelectedItem.kod_item,
               nama_item: registerSelectedItem.nama_item,
               kekuatan: registerSelectedItem.kekuatan,
+              id_bentuk: registerSelectedItem.id_bentuk,
+              bentuk: registerSelectedItem.bentuk,
             },
           });
         },
@@ -409,9 +411,9 @@ export default function QuickDispensePage() {
                   {frequentItems.map((it: any) => {
                     const assignment = (assignedItems as any[]).find((a: any) => a.item_id === it.id);
                     return (
-                      <button key={it.id} title={"Pilih " + it.nama_item} onClick={() => assignment && setSelectedItem(assignment)}
+                      <button key={it.id} title={"Pilih " + formatItemDisplay(it.item)} onClick={() => assignment && setSelectedItem(assignment)}
                         className="text-[12px] font-medium px-2.5 py-1 rounded-full" style={{ background: "var(--bg-accent-blue)", color: "#1877f2", border: "1px solid rgba(24,119,242,0.2)" }}>
-                        {it.nama_item}
+                        {formatItemDisplay(it.item)}
                       </button>
                     );
                   })}
@@ -424,8 +426,8 @@ export default function QuickDispensePage() {
                 <div className="text-center text-xs py-6" style={{ color: "var(--text-muted)" }}>Tiada padanan.</div>
               ) : (
                 filteredItems.map((a: any) => (
-                  <button key={a.assignment_id} title={"Pilih " + (a.item?.nama_item ?? "")} onClick={() => setSelectedItem(a)} className="w-full text-left px-3 py-2 text-xs border-b last:border-b-0 hover:bg-blue-50/50" style={{ borderColor: "var(--border-light)" }}>
-                    <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{a.item?.nama_item}</p>
+                  <button key={a.assignment_id} title={"Pilih " + formatItemDisplay(a.item)} onClick={() => setSelectedItem(a)} className="w-full text-left px-3 py-2 text-xs border-b last:border-b-0 hover:bg-blue-50/50" style={{ borderColor: "var(--border-light)" }}>
+                    <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{formatItemDisplay(a.item)}</p>
                     <p style={{ color: "var(--text-secondary)" }}>{a.item?.kod_item} · Dos: {effectiveDos(a)}</p>
                   </button>
                 ))
@@ -445,7 +447,7 @@ export default function QuickDispensePage() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2 min-w-0">
                 <Pill className="w-4 h-4 text-blue-500" />
-                <p className="text-[14px] font-bold truncate" style={{ color: "var(--text-primary)" }}>{selectedItem.item?.nama_item}</p>
+                <p className="text-[14px] font-bold truncate" style={{ color: "var(--text-primary)" }}>{formatItemDisplay(selectedItem.item)}</p>
               </div>
               <Button size="sm" variant="ghost" onClick={() => setSelectedItem(null)} className="h-7" title="Tukar item"><X className="w-3.5 h-3.5" /> Tukar</Button>
             </div>
@@ -510,7 +512,7 @@ export default function QuickDispensePage() {
                 </div>
                 <div>
                   <p className="text-[14px] font-bold" style={{ color: "var(--text-primary)" }}>{registerSelectedItem ? "Sahkan Pendaftaran" : "Daftar Item Baharu"}</p>
-                  <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>{registerSelectedItem ? `Daftarkan ${registerSelectedItem.nama_item} kepada ${selectedPatient?.nama}` : `Pilih item untuk didaftarkan kepada ${selectedPatient?.nama}`}</p>
+                  <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>{registerSelectedItem ? `Daftarkan ${formatItemDisplay(registerSelectedItem)} kepada ${selectedPatient?.nama}` : `Pilih item untuk didaftarkan kepada ${selectedPatient?.nama}`}</p>
                 </div>
               </div>
               <button type="button" title="Tutup dialog" onClick={() => { setShowRegisterDialog(false); setRegisterItemSearch(""); setRegisterSelectedItem(null); setRegisterDos(""); }} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-100">
@@ -530,13 +532,13 @@ export default function QuickDispensePage() {
                   ) : (
                     <div className="space-y-1">
                       {filteredRegisterItems.map((it: any) => (
-                        <button key={it.id} type="button" title={"Pilih " + it.nama_item} disabled={it.kuota_penuh} onClick={() => handleSelectRegisterItem(it)}
+                        <button key={it.id} type="button" title={"Pilih " + formatItemDisplay(it)} disabled={it.kuota_penuh} onClick={() => handleSelectRegisterItem(it)}
                           className="w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center justify-between transition-colors"
                           style={{ opacity: it.kuota_penuh ? 0.45 : 1, cursor: it.kuota_penuh ? "not-allowed" : "pointer", background: "transparent" }}
                           onMouseEnter={(e) => { if (!it.kuota_penuh) e.currentTarget.style.background = "rgba(16,185,129,0.06)"; }}
                           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
                           <div>
-                            <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{it.nama_item}</p>
+                            <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{formatItemDisplay(it)}</p>
                             <p style={{ color: "var(--text-secondary)" }}>{it.kod_item}{it.kekuatan ? ` · ${it.kekuatan}` : ""}</p>
                           </div>
                           <div className="text-right flex-shrink-0 ml-2">
@@ -563,7 +565,7 @@ export default function QuickDispensePage() {
                 <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.15)" }}>
                   <Pill className="w-4 h-4 flex-shrink-0" style={{ color: "#059669" }} />
                   <div>
-                    <p className="text-[13px] font-bold" style={{ color: "var(--text-primary)" }}>{registerSelectedItem.nama_item}</p>
+                    <p className="text-[13px] font-bold" style={{ color: "var(--text-primary)" }}>{formatItemDisplay(registerSelectedItem)}</p>
                     <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>{registerSelectedItem.kod_item}{registerSelectedItem.kekuatan ? ` · ${registerSelectedItem.kekuatan}` : ""}</p>
                   </div>
                 </div>

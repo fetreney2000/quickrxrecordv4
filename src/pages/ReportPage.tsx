@@ -26,7 +26,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { supabase } from "@/lib/supabase";
-import { addDaysToDateInput, formatDate, getKLDayEndISO, getKLDayStartISO, getTodayStrKL } from "@/lib/utils";
+import { addDaysToDateInput, formatDate, formatItemDisplay, getKLDayEndISO, getKLDayStartISO, getTodayStrKL } from "@/lib/utils";
 import { toast } from "sonner";
 import type { ItemBatch } from "@/types";
 
@@ -39,6 +39,7 @@ interface InventoryItem {
   kekuatan: string | null;
   kuota: number | null;
   item_batches: ItemBatch[];
+  bentuk?: string | null;
 }
 
 interface TransactionRecord {
@@ -48,14 +49,14 @@ interface TransactionRecord {
   kuantiti: number;
   assignment: {
     patient: { nama: string } | null;
-    item: { nama_item: string; kekuatan: string } | null;
+    item: { id?: string; nama_item: string; kekuatan: string | null; id_bentuk?: string | null; bentuk?: string | null } | null;
   } | null;
   batch: { nombor_kelompok: string } | null;
   staff: { nama: string } | null;
 }
 
 interface ExpiringBatchRecord extends ItemBatch {
-  item: { kod_item: string; nama_item: string; kekuatan: string | null } | null;
+  item: { kod_item: string; nama_item: string; kekuatan: string | null; id_bentuk?: string | null; bentuk?: string | null } | null;
 }
 
 interface LowStockRecord {
@@ -63,6 +64,7 @@ interface LowStockRecord {
   kod_item: string;
   nama_item: string;
   kekuatan: string | null;
+  bentuk?: string | null;
   requiredFourWeeks: number;
   currentBalance: number;
 }
@@ -358,6 +360,14 @@ export default function ReportPage() {
         .eq("aktif", true)
         .order("nama_item");
       if (error) throw error;
+      const formIds = [...new Set((data ?? []).map((item: any) => item.id_bentuk).filter(Boolean))];
+      const formMap = new Map<string, string>();
+      if (formIds.length > 0) {
+        const { data: forms, error: formsError } = await supabase.from("item_forms").select("id, nama").in("id", formIds);
+        if (formsError) throw formsError;
+        (forms ?? []).forEach((form) => formMap.set(form.id, form.nama));
+      }
+      (data ?? []).forEach((item: any) => { item.bentuk = formMap.get(item.id_bentuk) ?? null; });
       return data as InventoryItem[];
     },
   });
@@ -368,13 +378,24 @@ export default function ReportPage() {
       const { data, error } = await supabase
         .from("supply_records")
         .select(
-          "*, assignment:patient_item_assignments(patient:patients(nama), item:items(nama_item, kekuatan)), batch:item_batches(nombor_kelompok), staff:profiles!kakitangan_pembekal(nama)"
+          "*, assignment:patient_item_assignments(patient:patients(nama), item:items(id, nama_item, kekuatan, id_bentuk)), batch:item_batches(nombor_kelompok), staff:profiles!kakitangan_pembekal(nama)"
         )
        .order("created_at", { ascending: false })
         .gte("tarikh_dibekal", dateFrom ? getKLDayStartISO(dateFrom) : "1900-01-01T00:00:00.000Z")
         .lt("tarikh_dibekal", dateTo ? getKLDayEndISO(dateTo) : "9999-12-31T23:59:59.999Z")
         .limit(500);
       if (error) throw error;
+      const formIds = [...new Set((data ?? []).map((record: any) => record.assignment?.item?.id_bentuk).filter(Boolean))];
+      const formMap = new Map<string, string>();
+      if (formIds.length > 0) {
+        const { data: forms, error: formsError } = await supabase.from("item_forms").select("id, nama").in("id", formIds);
+        if (formsError) throw formsError;
+        (forms ?? []).forEach((form) => formMap.set(form.id, form.nama));
+      }
+      (data ?? []).forEach((record: any) => {
+        const item = record.assignment?.item;
+        if (item) item.bentuk = formMap.get(item.id_bentuk) ?? null;
+      });
       return data as TransactionRecord[];
     },
   });
@@ -398,10 +419,17 @@ export default function ReportPage() {
       if (itemIds.length === 0) return [] as ExpiringBatchRecord[];
       const { data: items, error: itemError } = await supabase
         .from("items")
-        .select("id, kod_item, nama_item, kekuatan")
+        .select("id, kod_item, nama_item, kekuatan, id_bentuk")
         .in("id", itemIds);
       if (itemError) throw itemError;
       const itemMap = new Map((items ?? []).map((item: any) => [item.id, item]));
+      const formIds = [...new Set((items ?? []).map((item: any) => item.id_bentuk).filter(Boolean))];
+      if (formIds.length > 0) {
+        const { data: forms, error: formsError } = await supabase.from("item_forms").select("id, nama").in("id", formIds);
+        if (formsError) throw formsError;
+        const formMap = new Map((forms ?? []).map((form) => [form.id, form.nama]));
+        (items ?? []).forEach((item: any) => { item.bentuk = formMap.get(item.id_bentuk) ?? null; });
+      }
       return (batches ?? []).map((batch: ItemBatch) => ({
         ...batch,
         item: itemMap.get(batch.item_id) ?? null,
@@ -418,7 +446,7 @@ export default function ReportPage() {
       const [itemsResult, usageResult] = await Promise.all([
         supabase
           .from("items")
-          .select("id, kod_item, nama_item, kekuatan, item_batches(kuantiti, dilupuskan)")
+          .select("id, kod_item, nama_item, kekuatan, id_bentuk, item_batches(kuantiti, dilupuskan)")
           .eq("aktif", true),
         supabase
           .from("supply_records")
@@ -434,6 +462,14 @@ export default function ReportPage() {
         const itemId = record.assignment?.item_id;
         if (itemId) usageByItem.set(itemId, (usageByItem.get(itemId) ?? 0) + (record.kuantiti || 0));
       });
+
+      const formIds = [...new Set((itemsResult.data ?? []).map((item: any) => item.id_bentuk).filter(Boolean))];
+      if (formIds.length > 0) {
+        const { data: forms, error: formsError } = await supabase.from("item_forms").select("id, nama").in("id", formIds);
+        if (formsError) throw formsError;
+        const formMap = new Map((forms ?? []).map((form) => [form.id, form.nama]));
+        (itemsResult.data ?? []).forEach((item: any) => { item.bentuk = formMap.get(item.id_bentuk) ?? null; });
+      }
 
       return (itemsResult.data ?? [])
         .map((item: any) => {
@@ -460,7 +496,7 @@ export default function ReportPage() {
         item.item_batches.length > 0
           ? item.item_batches.map((b) => ({
               kod_item: item.kod_item,
-              nama_item: item.nama_item,
+              nama_item: formatItemDisplay(item),
               kekuatan: item.kekuatan ?? "-",
               kuota: item.kuota ?? "-",
               nombor_kelompok: b.nombor_kelompok,
@@ -470,7 +506,7 @@ export default function ReportPage() {
           : [
               {
                 kod_item: item.kod_item,
-                nama_item: item.nama_item,
+                nama_item: formatItemDisplay(item),
                 kekuatan: item.kekuatan ?? "-",
                 kuota: item.kuota ?? "-",
                 nombor_kelompok: "-",
@@ -493,7 +529,7 @@ export default function ReportPage() {
         item.item_batches.length > 0
           ? item.item_batches.map((b) => ({
               kod_item: item.kod_item,
-              nama_item: item.nama_item,
+              nama_item: formatItemDisplay(item),
               kekuatan: item.kekuatan ?? "-",
               kuota: item.kuota ?? "-",
               nombor_kelompok: b.nombor_kelompok,
@@ -503,7 +539,7 @@ export default function ReportPage() {
           : [
               {
                 kod_item: item.kod_item,
-                nama_item: item.nama_item,
+                nama_item: formatItemDisplay(item),
                 kekuatan: item.kekuatan ?? "-",
                 kuota: item.kuota ?? "-",
                 nombor_kelompok: "-",
@@ -525,7 +561,7 @@ export default function ReportPage() {
       const mapped = transactionsData.map((t) => ({
         tarikh: formatDate(t.tarikh_dibekal),
         pesakit: t.assignment?.patient?.nama ?? "-",
-        item: t.assignment?.item?.nama_item ?? "-",
+        item: formatItemDisplay(t.assignment?.item) || "-",
         dos: t.dos,
         kuantiti: t.kuantiti,
         kelompok: t.batch?.nombor_kelompok ?? "-",
@@ -544,7 +580,7 @@ export default function ReportPage() {
       const mapped = transactionsData.map((t) => ({
         tarikh: formatDate(t.tarikh_dibekal),
         pesakit: t.assignment?.patient?.nama ?? "-",
-        item: t.assignment?.item?.nama_item ?? "-",
+        item: formatItemDisplay(t.assignment?.item) || "-",
         dos: t.dos,
         kuantiti: t.kuantiti,
         kelompok: t.batch?.nombor_kelompok ?? "-",
@@ -836,7 +872,7 @@ function InventoryTab({
                           fontWeight: 500,
                         }}
                       >
-                        {item.nama_item}
+                        {formatItemDisplay(item)}
                       </td>
                       <td
                         className="px-3 py-3 text-[13px]"
@@ -1069,7 +1105,7 @@ function TransactionsTab({
                       className="px-3 py-3 text-[13px]"
                       style={{ borderBottom: "1px solid var(--border-light)" }}
                     >
-                      {t.assignment?.item?.nama_item ?? "-"}
+                      {formatItemDisplay(t.assignment?.item) || "-"}
                     </td>
                     <td
                       className="px-3 py-3 text-[13px]"
@@ -1186,7 +1222,7 @@ function ExpiryTab({
                   return (
                     <tr key={batch.id} style={{ background: "transparent" }}>
                       <td className="px-3 py-3 text-[13px] font-mono" style={{ borderBottom: "1px solid var(--border-light)" }}>{batch.item?.kod_item ?? "-"}</td>
-                      <td className="px-3 py-3 text-[13px]" style={{ borderBottom: "1px solid var(--border-light)" }}>{[batch.item?.nama_item, batch.item?.kekuatan].filter(Boolean).join(" ") || "-"}</td>
+                      <td className="px-3 py-3 text-[13px]" style={{ borderBottom: "1px solid var(--border-light)" }}>{formatItemDisplay(batch.item) || "-"}</td>
                       <td className="px-3 py-3 text-[13px] font-mono font-semibold" style={{ borderBottom: "1px solid var(--border-light)", color: "#ea580c" }}>{batch.nombor_kelompok}</td>
                       <td className="px-3 py-3 text-[13px]" style={{ borderBottom: "1px solid var(--border-light)" }}>{formatDate(batch.tarikh_luput)}</td>
                       <td className="px-3 py-3 text-[13px] font-semibold" style={{ borderBottom: "1px solid var(--border-light)", color: remainingDays <= 7 ? "#dc2626" : "#ea580c" }}>{remainingDays} hari</td>
@@ -1257,7 +1293,7 @@ function LowStockTab({
                 {displayData.map((item) => (
                   <tr key={item.id}>
                     <td className="px-3 py-3 text-[13px] font-mono" style={{ borderBottom: "1px solid var(--border-light)" }}>{item.kod_item}</td>
-                    <td className="px-3 py-3 text-[13px]" style={{ borderBottom: "1px solid var(--border-light)" }}>{[item.nama_item, item.kekuatan].filter(Boolean).join(" ")}</td>
+                    <td className="px-3 py-3 text-[13px]" style={{ borderBottom: "1px solid var(--border-light)" }}>{formatItemDisplay(item)}</td>
                     <td className="px-3 py-3 text-[13px] font-semibold" style={{ borderBottom: "1px solid var(--border-light)", color: "#dc2626" }}>{Math.ceil(item.requiredFourWeeks).toLocaleString("ms-MY")}</td>
                     <td className="px-3 py-3 text-[13px] font-semibold" style={{ borderBottom: "1px solid var(--border-light)", color: "var(--text-primary)" }}>{item.currentBalance.toLocaleString("ms-MY")}</td>
                   </tr>

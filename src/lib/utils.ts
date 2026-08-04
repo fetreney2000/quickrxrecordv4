@@ -6,6 +6,22 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/** Format an item consistently as name, strength, and dosage form. */
+export function formatItemDisplay(
+  item: {
+    nama_item?: string | null;
+    kekuatan?: string | null;
+    bentuk?: string | null;
+    item_forms?: { nama?: string | null } | null;
+  } | null | undefined,
+  bentuk?: string | null
+): string {
+  if (!item) return "Item Tidak Dikenali";
+  return [item.nama_item, item.kekuatan, bentuk ?? item.bentuk ?? item.item_forms?.nama]
+    .filter(Boolean)
+    .join(" ");
+}
+
 /** Asia/Kuala_Lumpur timezone identifier used everywhere. */
 export const KL_TIMEZONE = "Asia/Kuala_Lumpur";
 

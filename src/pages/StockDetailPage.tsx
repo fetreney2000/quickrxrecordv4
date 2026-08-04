@@ -39,6 +39,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useNavStore } from "@/lib/nav-store";
 import {
   formatDate,
+  formatItemDisplay,
   formatNumber,
   getKLDayEndISO,
   getKLDayStartISO,
@@ -602,7 +603,7 @@ export default function StockDetailPage() {
   }
 
   const formName = item.id_bentuk ? forms.find((f) => f.id === item.id_bentuk)?.nama : null;
-  const displayTitle = [item.nama_item, item.kekuatan, formName].filter(Boolean).join(" ");
+  const displayTitle = formatItemDisplay(item, formName);
 
   return (
     <div className="space-y-4">

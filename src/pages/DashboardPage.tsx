@@ -26,7 +26,7 @@ import {
   type ExpiryBatch,
   type ExpiryStatus,
 } from "@/hooks/use-dashboard-stats";
-import { formatDate, toTitleCase } from "@/lib/utils";
+import { formatDate, formatItemDisplay, toTitleCase } from "@/lib/utils";
 import type { UserRole } from "@/types";
 
 const ROLE_LABELS: Record<UserRole, string> = {
@@ -189,7 +189,7 @@ interface ExpiryRowProps { batch: ExpiryBatch; item: ReturnType<typeof getExpiry
 function ExpiryRow({ batch, item, status, daysLeft }: ExpiryRowProps) {
   return (
     <tr style={{ background: STATUS_BG[status], borderBottom: "1px solid rgba(0,0,0,0.04)" }}>
-      <td className="px-3 py-2.5 text-xs"><div className="font-semibold" style={{ color: "var(--text-primary)" }}>{item?.nama_item ?? "—"}</div>{item?.kod_item && <div className="text-2xs" style={{ color: "var(--text-secondary)" }}>{item.kod_item}{item.kekuatan ? ` · ${item.kekuatan}` : ""}</div>}</td>
+      <td className="px-3 py-2.5 text-xs"><div className="font-semibold" style={{ color: "var(--text-primary)" }}>{formatItemDisplay(item) || "—"}</div>{item?.kod_item && <div className="text-2xs" style={{ color: "var(--text-secondary)" }}>{item.kod_item}</div>}</td>
       <td className="px-3 py-2.5 text-xs font-mono" style={{ color: "var(--text-primary)" }}>{batch.nombor_kelompok}</td>
       <td className="px-3 py-2.5 text-xs" style={{ color: "var(--text-primary)" }}>{formatDate(batch.tarikh_luput)}</td>
       <td className="px-3 py-2.5 text-xs text-center font-semibold" style={{ color: "var(--text-primary)" }}>{batch.kuantiti.toLocaleString("ms-MY")}</td>

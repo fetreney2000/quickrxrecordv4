@@ -22,7 +22,7 @@ import {
   Edit,
   Loader2,
 } from "lucide-react";
-import { cn, formatDate, formatMyKad } from "@/lib/utils";
+import { cn, formatDate, formatItemDisplay, formatMyKad } from "@/lib/utils";
 import {
   useAvailableBatches,
   useSupplyDurations,
@@ -254,7 +254,7 @@ export function AddAssignmentDialog({
                     key={i.id}
                     onClick={() => !active && !kuotaPenuh && setSelectedItemId(i.id)}
                     disabled={active || kuotaPenuh}
-                    title={`Pilih ${i.nama_item}`}
+                    title={`Pilih ${formatItemDisplay(i, i.id_bentuk ? formsMap.get(i.id_bentuk) : null)}`}
                     className={cn(
                       "w-full text-left px-3 py-2 text-xs border-b last:border-b-0 transition-colors",
                       (active || kuotaPenuh) && "opacity-50 cursor-not-allowed",
@@ -267,12 +267,10 @@ export function AddAssignmentDialog({
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <p className="font-semibold truncate" style={{ color: "var(--text-primary)" }}>
-                          {i.nama_item}
+                          {formatItemDisplay(i, i.id_bentuk ? formsMap.get(i.id_bentuk) : null)}
                         </p>
                         <p style={{ color: "var(--text-secondary)" }}>
                           {i.kod_item}
-                          {i.kekuatan ? ` · ${i.kekuatan}` : ""}
-                          {i.id_bentuk && formsMap.has(i.id_bentuk) ? ` · ${formsMap.get(i.id_bentuk)}` : ""}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
@@ -397,12 +395,14 @@ export function SupplyDialog({
   open,
   onOpenChange,
   assignment,
+  formsMap,
   onSubmit,
   isPending,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   assignment: AssignmentWithItem;
+  formsMap: Map<string, string>;
   onSubmit: (data: {
     dos: string;
     kuantiti: number;
@@ -472,7 +472,7 @@ export function SupplyDialog({
             <div>
               <DialogTitle>Bekal Ubat</DialogTitle>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
-                {assignment.item?.nama_item}
+                {formatItemDisplay(assignment.item, assignment.item?.id_bentuk ? formsMap.get(assignment.item.id_bentuk) : null)}
               </p>
             </div>
           </div>

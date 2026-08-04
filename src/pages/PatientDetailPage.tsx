@@ -36,6 +36,7 @@ import {
   toTitleCase,
   myKadToDob,
   formatAge,
+  formatItemDisplay,
 } from "@/lib/utils";
 import {
   usePatient,
@@ -136,11 +137,7 @@ export default function PatientDetailPage() {
   const formsMap = useMemo(() => { const map = new Map<string, string>(); itemForms.forEach((f) => map.set(f.id, f.nama)); return map; }, [itemForms]);
   const activeItemIds = useMemo(() => { const set = new Set<string>(); assignments.filter((a) => a.aktif).forEach((a) => set.add(a.item_id)); return set; }, [assignments]);
   const getItemDisplayName = useCallback((item: AssignmentWithItem["item"]) => {
-    if (!item) return "Item Tidak Dikenali";
-    const parts = [item.nama_item];
-    if (item.kekuatan) parts.push(item.kekuatan);
-    if (item.id_bentuk) { const formName = formsMap.get(item.id_bentuk); if (formName) parts.push(formName); }
-    return parts.join(" · ");
+    return formatItemDisplay(item, item?.id_bentuk ? formsMap.get(item.id_bentuk) : null);
   }, [formsMap]);
   const stats = useMemo(() => { const total = assignments.length; const active = assignments.filter((a) => a.aktif).length; return { total, active, inactive: total - active }; }, [assignments]);
   const sortedAssignments = useMemo(() => [...assignments].sort((a, b) => { if (a.aktif !== b.aktif) return a.aktif ? -1 : 1; return new Date(b.tarikh_mula_guna).getTime() - new Date(a.tarikh_mula_guna).getTime(); }), [assignments]);
@@ -260,7 +257,7 @@ export default function PatientDetailPage() {
 
       <DeactivateDialog open={openDeactivate} onOpenChange={setOpenDeactivate} onConfirm={() => deactivatePatient.mutate(undefined, { onSuccess: () => setOpenDeactivate(false) })} isPending={deactivatePatient.isPending} patientName={patient.nama} />
       <AddAssignmentDialog open={openAddAssignment} onOpenChange={setOpenAddAssignment} items={itemsWithStats} activeItemIds={activeItemIds} onSubmit={(data) => addAssignment.mutate(data, { onSuccess: () => setOpenAddAssignment(false) })} isPending={addAssignment.isPending} formsMap={formsMap} />
-      {supplyAssignment && <SupplyDialog open={!!openSupply} onOpenChange={(o) => !o && setOpenSupply(null)} assignment={supplyAssignment} onSubmit={(data) => supplyMut.mutate({ ...data, assignmentId: supplyAssignment.id, itemId: supplyAssignment.item_id }, { onSuccess: () => setOpenSupply(null) })} isPending={supplyMut.isPending} />}
+      {supplyAssignment && <SupplyDialog open={!!openSupply} onOpenChange={(o) => !o && setOpenSupply(null)} assignment={supplyAssignment} formsMap={formsMap} onSubmit={(data) => supplyMut.mutate({ ...data, assignmentId: supplyAssignment.id, itemId: supplyAssignment.item_id }, { onSuccess: () => setOpenSupply(null) })} isPending={supplyMut.isPending} />}
       {updateDoseAssignment && <UpdateDoseDialog open={!!openUpdateDose} onOpenChange={(o) => !o && setOpenUpdateDose(null)} currentDose={updateDoseAssignment.dos} onSubmit={(data) => updateDoseMut.mutate({ ...data, assignmentId: updateDoseAssignment.id }, { onSuccess: () => setOpenUpdateDose(null) })} isPending={updateDoseMut.isPending} />}
       <StopAssignmentDialog open={!!openStopAssign} onOpenChange={(o) => !o && setOpenStopAssign(null)} onSubmit={(sebab) => stopAssignment.mutate({ assignmentId: openStopAssign!, sebab }, { onSuccess: () => setOpenStopAssign(null) })} isPending={stopAssignment.isPending} />
       <EditSupplyDialog supply={editSupplyRecord} onClose={() => setEditSupplyRecord(null)} onSubmit={(data) => updateSupplyMut.mutate({ ...data, assignmentId: editSupplyRecord!.assignment_id }, { onSuccess: () => setEditSupplyRecord(null) })} isPending={updateSupplyMut.isPending} />

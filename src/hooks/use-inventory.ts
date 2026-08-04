@@ -173,8 +173,19 @@ export function useItems({
       const { data, error, count } = await query;
       if (error) throw error;
 
+      const formIds = [...new Set((data ?? []).map((item: any) => item.id_bentuk).filter(Boolean))];
+      const formMap = new Map<string, string>();
+      if (formIds.length > 0) {
+        const { data: forms, error: formsError } = await supabase
+          .from("item_forms")
+          .select("id, nama")
+          .in("id", formIds);
+        if (formsError) throw formsError;
+        (forms ?? []).forEach((form) => formMap.set(form.id, form.nama));
+      }
+
       return {
-        items: (data ?? []) as any[],
+        items: (data ?? []).map((item: any) => ({ ...item, bentuk: formMap.get(item.id_bentuk) ?? null })),
         total: count ?? 0,
         totalPages: Math.max(1, Math.ceil((count ?? 0) / pageSize)),
       };

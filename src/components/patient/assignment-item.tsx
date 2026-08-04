@@ -3,6 +3,7 @@
  */
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { formatItemDisplay } from "@/lib/utils";
 import {
   Pill,
   Package,
@@ -123,9 +124,7 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
           <div className="flex items-start justify-between gap-2 flex-wrap">
             <div className="min-w-0">
               <p className="text-sm font-bold truncate" style={{ color: "var(--text-primary)", cursor: "pointer" }} onClick={(e) => { e.stopPropagation(); if (item?.id) navigate(`/stok/${item.id}`); }}>
-                {item?.nama_item ?? "Item Tidak Dikenali"}
-                {item?.kekuatan ? <span className="text-xs font-medium ml-1" style={{ color: "var(--text-secondary)" }}>· {item.kekuatan}</span> : null}
-                {formName ? <span className="text-xs font-medium ml-1" style={{ color: "var(--text-secondary)" }}>· {formName}</span> : null}
+                {formatItemDisplay(item, formName)}
               </p>
               <div className="flex items-center gap-2 mt-0.5 text-xs flex-wrap" style={{ color: "var(--text-secondary)" }}>
                 {item?.kod_item && <span className="font-mono">{item.kod_item}</span>}

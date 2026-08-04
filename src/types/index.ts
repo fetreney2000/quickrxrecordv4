@@ -50,6 +50,7 @@ export interface Item {
 export interface ItemWithLookups extends Item {
   item_categories?: { id: string; nama: string } | null;
   item_forms?: { id: string; nama: string } | null;
+  bentuk?: string | null;
   // Pengiraan stok semasa dari item_batches
   stok_semasa?: number;
   // Pengiraan tugasan aktif (dari count_active_assignments)

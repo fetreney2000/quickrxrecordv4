@@ -2,7 +2,7 @@
  * StockRow — Baris item inventori dengan dwi-mod (desktop/mudah alih).
  */
 import { ArrowRight } from "lucide-react";
-import { cn, formatNumber } from "@/lib/utils";
+import { cn, formatItemDisplay, formatNumber } from "@/lib/utils";
 import type { Item } from "@/types";
 
 interface StockRowProps {
@@ -24,7 +24,7 @@ function computeStock(item: StockRowProps["item"]): number {
 
 export function StockRow({ item, index, onClick }: StockRowProps) {
   const stock = computeStock(item);
-  const displayName = [item.nama_item, item.kekuatan].filter(Boolean).join(" ");
+  const displayName = formatItemDisplay(item);
 
   return (
     <>

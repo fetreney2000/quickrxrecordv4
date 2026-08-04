@@ -628,12 +628,39 @@ export function useItemTransactionHistory(itemId: string | undefined) {
 
       const { data: inventoryTransactions, error: transactionError } = await supabase
         .from("inventory_transactions")
-        .select("id, created_at, batch_id, jenis, kuantiti, catatan, rujukan_type, batch:item_batches!batch_id(nombor_kelompok), addition:batch_additions!batch_id(added_by, staff:profiles!added_by(nama))")
+        .select("id, created_at, batch_id, jenis, kuantiti, catatan, rujukan_type, batch:item_batches!batch_id(nombor_kelompok)")
         .eq("item_id", itemId)
         .neq("rujukan_type", "supply")
         .order("created_at", { ascending: false })
         .limit(500);
       if (transactionError) throw transactionError;
+
+      const additionBatchIds = ((inventoryTransactions ?? []) as any[])
+        .filter((tx) => tx.rujukan_type === "batch_addition")
+        .map((tx) => tx.batch_id)
+        .filter(Boolean);
+      const additionStaffMap = new Map<string, string>();
+      if (additionBatchIds.length > 0) {
+        const { data: additions, error: additionsError } = await supabase
+          .from("batch_additions")
+          .select("batch_id, added_by")
+          .in("batch_id", additionBatchIds);
+        if (additionsError) throw additionsError;
+        const staffIds = (additions ?? []).map((addition: any) => addition.added_by).filter(Boolean);
+        const staffMap = new Map<string, string>();
+        if (staffIds.length > 0) {
+          const { data: staff, error: staffError } = await supabase
+            .from("profiles")
+            .select("id, nama")
+            .in("id", staffIds);
+          if (staffError) throw staffError;
+          (staff ?? []).forEach((person: any) => staffMap.set(person.id, person.nama));
+        }
+        (additions ?? []).forEach((addition: any) => {
+          const name = addition.added_by ? staffMap.get(addition.added_by) : undefined;
+          if (name) additionStaffMap.set(addition.batch_id, name);
+        });
+      }
 
       // Combine both into CombinedTransaction array
       const combined: CombinedTransaction[] = [];
@@ -679,7 +706,7 @@ export function useItemTransactionHistory(itemId: string | undefined) {
           perubahan: tx.jenis === "masuk" ? tx.kuantiti : -tx.kuantiti,
           perubahan_label: tx.jenis === "masuk" ? `+${tx.kuantiti}` : `-${tx.kuantiti}`,
           catatan: tx.catatan ?? null,
-          kakitangan: tx.addition?.staff?.nama ?? null,
+          kakitangan: tx.rujukan_type === "batch_addition" ? additionStaffMap.get(tx.batch_id) ?? null : null,
           pesakit: null,
         });
       });

@@ -818,7 +818,7 @@ function TransactionsTab({
     >
       <CardContent className="p-0 relative">
         {/* Header */}
-        <div className="p-4 sm:p-5 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--border-light)" }}>
+        <div className="p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--border-light)" }}>
           <div className="flex items-center gap-2">
             <Activity className="w-4 h-4" style={{ color: "#7c3aed" }} />
             <h2
@@ -828,29 +828,33 @@ function TransactionsTab({
               Log Transaksi Bekalan
             </h2>
           </div>
-          <div className="flex flex-wrap items-end gap-2">
-            <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
-              Dari
+          <div className="flex flex-col sm:flex-row sm:items-end gap-2.5">
+            <div className="flex items-end gap-2 rounded-xl px-2.5 py-2" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-light)" }}>
+              <label className="flex flex-col gap-1 text-2xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
+                Dari
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => onDateFromChange(e.target.value)}
-                className="block mt-1 h-8 rounded-lg px-2 text-xs"
-                style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                  className="h-8 rounded-lg px-2 text-xs font-medium normal-case tracking-normal"
+                  style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
               />
-            </label>
-            <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
-              Hingga
+              </label>
+              <span className="pb-2 text-xs" style={{ color: "var(--text-muted)" }}>-</span>
+              <label className="flex flex-col gap-1 text-2xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
+                Hingga
               <input
                 type="date"
                 value={dateTo}
                 min={dateFrom || undefined}
                 onChange={(e) => onDateToChange(e.target.value)}
-                className="block mt-1 h-8 rounded-lg px-2 text-xs"
-                style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                  className="h-8 rounded-lg px-2 text-xs font-medium normal-case tracking-normal"
+                  style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
               />
-            </label>
-            <button
+              </label>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
               onClick={onExportExcel}
               disabled={loading || !data}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[12px] font-semibold transition-all disabled:opacity-40"
@@ -862,8 +866,8 @@ function TransactionsTab({
             >
               <FileSpreadsheet className="w-3.5 h-3.5" />
               Excel
-            </button>
-            <button
+              </button>
+              <button
               onClick={onExportPDF}
               disabled={loading || !data}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[12px] font-semibold transition-all disabled:opacity-40"
@@ -875,7 +879,8 @@ function TransactionsTab({
             >
               <FileText className="w-3.5 h-3.5" />
               PDF
-            </button>
+              </button>
+            </div>
           </div>
         </div>
 

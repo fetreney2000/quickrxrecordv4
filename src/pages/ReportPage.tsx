@@ -828,7 +828,28 @@ function TransactionsTab({
               Log Transaksi Bekalan
             </h2>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+              Dari
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => onDateFromChange(e.target.value)}
+                className="block mt-1 h-8 rounded-lg px-2 text-xs"
+                style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+              />
+            </label>
+            <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+              Hingga
+              <input
+                type="date"
+                value={dateTo}
+                min={dateFrom || undefined}
+                onChange={(e) => onDateToChange(e.target.value)}
+                className="block mt-1 h-8 rounded-lg px-2 text-xs"
+                style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+              />
+            </label>
             <button
               onClick={onExportExcel}
               disabled={loading || !data}

@@ -18,6 +18,7 @@ import {
   BarChart3,
   Package,
   Activity,
+  AlertTriangle,
   Loader2,
   FileSpreadsheet,
   FileText,
@@ -25,7 +26,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { supabase } from "@/lib/supabase";
-import { formatDate } from "@/lib/utils";
+import { formatDate, getTodayStrKL } from "@/lib/utils";
 import { toast } from "sonner";
 import type { ItemBatch } from "@/types";
 
@@ -51,6 +52,23 @@ interface TransactionRecord {
   } | null;
   batch: { nombor_kelompok: string } | null;
   staff: { nama: string } | null;
+}
+
+interface ExpiringBatchRecord extends ItemBatch {
+  item: { kod_item: string; nama_item: string; kekuatan: string | null } | null;
+}
+
+function addDays(dateString: string, days: number) {
+  const date = new Date(`${dateString}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function daysBetween(start: string, end: string) {
+  return Math.round(
+    (new Date(`${end}T00:00:00Z`).getTime() - new Date(`${start}T00:00:00Z`).getTime()) /
+      86400000
+  );
 }
 
 // ─── Generic Export Helpers ──────────────────────────────────────────────────
@@ -298,15 +316,18 @@ const TRANSACTION_COLUMN_LABELS: Record<string, string> = {
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
-type TabKey = "inventory" | "transactions";
+type TabKey = "inventory" | "transactions" | "expiry";
 
 export default function ReportPage() {
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabKey>("inventory");
   const today = new Date().toISOString().slice(0, 10);
   const showTodayTransactions = searchParams.get("tab") === "transactions" && searchParams.get("date") === "today";
+  const showExpiry = searchParams.get("tab") === "expiry";
+  const initialExpiryDays = Number(searchParams.get("days")) || 30;
   const [dateFrom, setDateFrom] = useState(showTodayTransactions ? today : "");
   const [dateTo, setDateTo] = useState(showTodayTransactions ? today : "");
+  const [expiryDays, setExpiryDays] = useState(initialExpiryDays);
 
   useEffect(() => {
     document.title = "Laporan — QuickRxRecord";
@@ -315,7 +336,11 @@ export default function ReportPage() {
       setDateFrom(today);
       setDateTo(today);
     }
-  }, [showTodayTransactions, today]);
+    if (showExpiry) {
+      setActiveTab("expiry");
+      setExpiryDays(initialExpiryDays);
+    }
+  }, [showTodayTransactions, showExpiry, today, initialExpiryDays]);
 
   // ── Queries ────────────────────────────────────────────────────────────────
 
@@ -346,6 +371,36 @@ export default function ReportPage() {
         .limit(500);
       if (error) throw error;
       return data as TransactionRecord[];
+    },
+  });
+
+  const { data: expiryData, isLoading: expiryLoading } = useQuery({
+    queryKey: ["report-expiry", expiryDays],
+    queryFn: async () => {
+      const expiryStart = getTodayStrKL();
+      const expiryEnd = addDays(expiryStart, expiryDays);
+      const { data: batches, error: batchError } = await supabase
+        .from("item_batches")
+        .select("*")
+        .eq("dilupuskan", false)
+        .gt("kuantiti", 0)
+        .gte("tarikh_luput", expiryStart)
+        .lte("tarikh_luput", expiryEnd)
+        .order("tarikh_luput", { ascending: true });
+      if (batchError) throw batchError;
+
+      const itemIds = [...new Set((batches ?? []).map((batch: ItemBatch) => batch.item_id))];
+      if (itemIds.length === 0) return [] as ExpiringBatchRecord[];
+      const { data: items, error: itemError } = await supabase
+        .from("items")
+        .select("id, kod_item, nama_item, kekuatan")
+        .in("id", itemIds);
+      if (itemError) throw itemError;
+      const itemMap = new Map((items ?? []).map((item: any) => [item.id, item]));
+      return (batches ?? []).map((batch: ItemBatch) => ({
+        ...batch,
+        item: itemMap.get(batch.item_id) ?? null,
+      })) as ExpiringBatchRecord[];
     },
   });
 
@@ -461,6 +516,7 @@ export default function ReportPage() {
   const tabs: { key: TabKey; label: string; icon: typeof Package }[] = [
     { key: "inventory", label: "Inventori", icon: Package },
     { key: "transactions", label: "Transaksi", icon: Activity },
+    { key: "expiry", label: "Akan Luput", icon: AlertTriangle },
   ];
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -545,7 +601,7 @@ export default function ReportPage() {
                         ? "#f43f5e"
                         : tab.key === "transactions"
                         ? "#7c3aed"
-                        : "var(--text-secondary)",
+                        : "#ea580c",
                   }}
                 />
                 {tab.label}
@@ -566,7 +622,7 @@ export default function ReportPage() {
               onExportExcel={handleExportInventoryExcel}
               onExportPDF={handleExportInventoryPDF}
             />
-          ) : (
+          ) : activeTab === "transactions" ? (
               <TransactionsTab
                 data={transactionsData}
                 loading={transactionsLoading}
@@ -577,6 +633,8 @@ export default function ReportPage() {
               onExportExcel={handleExportTransactionExcel}
               onExportPDF={handleExportTransactionPDF}
             />
+          ) : (
+            <ExpiryTab data={expiryData} loading={expiryLoading} days={expiryDays} onDaysChange={setExpiryDays} />
           )}
         </div>
     </div>
@@ -994,6 +1052,99 @@ function TransactionsTab({
                     </td>
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ExpiryTab({
+  data,
+  loading,
+  days,
+  onDaysChange,
+}: {
+  data: ExpiringBatchRecord[] | undefined;
+  loading: boolean;
+  days: number;
+  onDaysChange: (days: number) => void;
+}) {
+  const today = getTodayStrKL();
+  const displayData = data ?? [];
+
+  return (
+    <Card
+      className="relative overflow-hidden"
+      style={{
+        background: "var(--card)",
+        backdropFilter: "blur(12px)",
+        border: "1px solid var(--border-medium)",
+        borderRadius: 16,
+        boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
+      }}
+    >
+      <CardContent className="p-0 relative">
+        <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--border-light)" }}>
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" style={{ color: "#ea580c" }} />
+            <div>
+              <h2 className="text-[15px] font-bold" style={{ color: "var(--text-primary)" }}>Kelompok Akan Luput</h2>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Stok yang akan luput dalam tempoh dipilih</p>
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>
+            Tempoh
+            <select
+              value={days}
+              onChange={(event) => onDaysChange(Number(event.target.value))}
+              className="h-9 rounded-lg px-2 text-xs font-medium"
+              style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+            >
+              {[7, 14, 30, 60, 90, 180].map((duration) => (
+                <option key={duration} value={duration}>{duration} hari</option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-2" style={{ color: "var(--text-secondary)" }}>
+            <Loader2 className="w-6 h-6 animate-spin" style={{ color: "#ea580c" }} />
+            <p className="text-sm">Memuatkan kelompok...</p>
+          </div>
+        ) : displayData.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-2" style={{ color: "var(--text-muted)" }}>
+            <AlertTriangle className="w-10 h-10 opacity-40" />
+            <p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Tiada kelompok akan luput.</p>
+            <p className="text-xs">Tiada stok aktif dalam {days} hari akan datang.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  {["Kod Item", "Nama Item", "Kelompok", "Tarikh Luput", "Baki Hari", "Kuantiti"].map((heading) => (
+                    <th key={heading} className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-[0.05em]" style={{ color: "var(--text-secondary)", borderBottom: "2px solid var(--border-medium)", background: "var(--bg-secondary)" }}>{heading}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {displayData.map((batch) => {
+                  const remainingDays = daysBetween(today, batch.tarikh_luput);
+                  return (
+                    <tr key={batch.id} style={{ background: "transparent" }}>
+                      <td className="px-3 py-3 text-[13px] font-mono" style={{ borderBottom: "1px solid var(--border-light)" }}>{batch.item?.kod_item ?? "-"}</td>
+                      <td className="px-3 py-3 text-[13px]" style={{ borderBottom: "1px solid var(--border-light)" }}>{[batch.item?.nama_item, batch.item?.kekuatan].filter(Boolean).join(" ") || "-"}</td>
+                      <td className="px-3 py-3 text-[13px] font-mono font-semibold" style={{ borderBottom: "1px solid var(--border-light)", color: "#ea580c" }}>{batch.nombor_kelompok}</td>
+                      <td className="px-3 py-3 text-[13px]" style={{ borderBottom: "1px solid var(--border-light)" }}>{formatDate(batch.tarikh_luput)}</td>
+                      <td className="px-3 py-3 text-[13px] font-semibold" style={{ borderBottom: "1px solid var(--border-light)", color: remainingDays <= 7 ? "#dc2626" : "#ea580c" }}>{remainingDays} hari</td>
+                      <td className="px-3 py-3 text-[13px] font-semibold" style={{ borderBottom: "1px solid var(--border-light)" }}>{batch.kuantiti.toLocaleString("ms-MY")}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

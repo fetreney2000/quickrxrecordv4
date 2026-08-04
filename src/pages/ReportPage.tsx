@@ -12,6 +12,7 @@
  *  - Orb merah, breadcrumb, header dengan ikon BarChart3
  */
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart3,
@@ -300,11 +301,15 @@ const TRANSACTION_COLUMN_LABELS: Record<string, string> = {
 type TabKey = "inventory" | "transactions";
 
 export default function ReportPage() {
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabKey>("inventory");
+  const today = new Date().toISOString().slice(0, 10);
+  const showTodayTransactions = searchParams.get("tab") === "transactions" && searchParams.get("date") === "today";
 
   useEffect(() => {
     document.title = "Laporan — QuickRxRecord";
-  }, []);
+    if (showTodayTransactions) setActiveTab("transactions");
+  }, [showTodayTransactions]);
 
   // ── Queries ────────────────────────────────────────────────────────────────
 
@@ -329,7 +334,9 @@ export default function ReportPage() {
         .select(
           "*, assignment:patient_item_assignments(patient:patients(nama), item:items(nama_item, kekuatan)), batch:item_batches(nombor_kelompok), staff:profiles!kakitangan_pembekal(nama)"
         )
-        .order("created_at", { ascending: false })
+       .order("created_at", { ascending: false })
+       .gte("tarikh_dibekal", showTodayTransactions ? `${today}T00:00:00.000Z` : "1900-01-01T00:00:00.000Z")
+       .lt("tarikh_dibekal", showTodayTransactions ? `${today}T23:59:59.999Z` : "9999-12-31T23:59:59.999Z")
         .limit(500);
       if (error) throw error;
       return data as TransactionRecord[];

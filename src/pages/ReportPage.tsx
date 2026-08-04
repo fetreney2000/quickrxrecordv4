@@ -305,11 +305,17 @@ export default function ReportPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("inventory");
   const today = new Date().toISOString().slice(0, 10);
   const showTodayTransactions = searchParams.get("tab") === "transactions" && searchParams.get("date") === "today";
+  const [dateFrom, setDateFrom] = useState(showTodayTransactions ? today : "");
+  const [dateTo, setDateTo] = useState(showTodayTransactions ? today : "");
 
   useEffect(() => {
     document.title = "Laporan — QuickRxRecord";
-    if (showTodayTransactions) setActiveTab("transactions");
-  }, [showTodayTransactions]);
+    if (showTodayTransactions) {
+      setActiveTab("transactions");
+      setDateFrom(today);
+      setDateTo(today);
+    }
+  }, [showTodayTransactions, today]);
 
   // ── Queries ────────────────────────────────────────────────────────────────
 
@@ -327,7 +333,7 @@ export default function ReportPage() {
   });
 
   const { data: transactionsData, isLoading: transactionsLoading } = useQuery({
-    queryKey: ["report-transactions"],
+    queryKey: ["report-transactions", dateFrom, dateTo],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("supply_records")
@@ -335,8 +341,8 @@ export default function ReportPage() {
           "*, assignment:patient_item_assignments(patient:patients(nama), item:items(nama_item, kekuatan)), batch:item_batches(nombor_kelompok), staff:profiles!kakitangan_pembekal(nama)"
         )
        .order("created_at", { ascending: false })
-       .gte("tarikh_dibekal", showTodayTransactions ? `${today}T00:00:00.000Z` : "1900-01-01T00:00:00.000Z")
-       .lt("tarikh_dibekal", showTodayTransactions ? `${today}T23:59:59.999Z` : "9999-12-31T23:59:59.999Z")
+       .gte("tarikh_dibekal", dateFrom ? `${dateFrom}T00:00:00.000Z` : "1900-01-01T00:00:00.000Z")
+       .lt("tarikh_dibekal", dateTo ? `${dateTo}T23:59:59.999Z` : "9999-12-31T23:59:59.999Z")
         .limit(500);
       if (error) throw error;
       return data as TransactionRecord[];
@@ -561,9 +567,13 @@ export default function ReportPage() {
               onExportPDF={handleExportInventoryPDF}
             />
           ) : (
-            <TransactionsTab
-              data={transactionsData}
-              loading={transactionsLoading}
+              <TransactionsTab
+                data={transactionsData}
+                loading={transactionsLoading}
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+                onDateFromChange={setDateFrom}
+                onDateToChange={setDateTo}
               onExportExcel={handleExportTransactionExcel}
               onExportPDF={handleExportTransactionPDF}
             />
@@ -578,11 +588,19 @@ export default function ReportPage() {
 function InventoryTab({
   data,
   loading,
+  dateFrom,
+  dateTo,
+  onDateFromChange,
+  onDateToChange,
   onExportExcel,
   onExportPDF,
 }: {
   data: InventoryItem[] | undefined;
   loading: boolean;
+  dateFrom: string;
+  dateTo: string;
+  onDateFromChange: (value: string) => void;
+  onDateToChange: (value: string) => void;
   onExportExcel: () => void;
   onExportPDF: () => void;
 }) {
@@ -608,6 +626,16 @@ function InventoryTab({
             >
               Paras Stok Inventori
             </h2>
+          </div>
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+              Dari
+              <input type="date" value={dateFrom} onChange={(e) => onDateFromChange(e.target.value)} className="block mt-1 h-8 rounded-lg px-2 text-xs" style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)" }} />
+            </label>
+            <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+              Hingga
+              <input type="date" value={dateTo} min={dateFrom || undefined} onChange={(e) => onDateToChange(e.target.value)} className="block mt-1 h-8 rounded-lg px-2 text-xs" style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)" }} />
+            </label>
           </div>
           <div className="flex items-center gap-2">
             <button

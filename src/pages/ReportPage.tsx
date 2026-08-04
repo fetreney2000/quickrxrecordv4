@@ -58,6 +58,15 @@ interface ExpiringBatchRecord extends ItemBatch {
   item: { kod_item: string; nama_item: string; kekuatan: string | null } | null;
 }
 
+interface LowStockRecord {
+  id: string;
+  kod_item: string;
+  nama_item: string;
+  kekuatan: string | null;
+  requiredFourWeeks: number;
+  currentBalance: number;
+}
+
 function addDays(dateString: string, days: number) {
   const date = new Date(`${dateString}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() + days);
@@ -316,7 +325,7 @@ const TRANSACTION_COLUMN_LABELS: Record<string, string> = {
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
-type TabKey = "inventory" | "transactions" | "expiry";
+type TabKey = "inventory" | "transactions" | "expiry" | "low-stock";
 
 export default function ReportPage() {
   const [searchParams] = useSearchParams();
@@ -324,6 +333,7 @@ export default function ReportPage() {
   const today = new Date().toISOString().slice(0, 10);
   const showTodayTransactions = searchParams.get("tab") === "transactions" && searchParams.get("date") === "today";
   const showExpiry = searchParams.get("tab") === "expiry";
+  const showLowStock = searchParams.get("tab") === "low-stock";
   const initialExpiryDays = Number(searchParams.get("days")) || 30;
   const [dateFrom, setDateFrom] = useState(showTodayTransactions ? today : "");
   const [dateTo, setDateTo] = useState(showTodayTransactions ? today : "");
@@ -340,7 +350,8 @@ export default function ReportPage() {
       setActiveTab("expiry");
       setExpiryDays(initialExpiryDays);
     }
-  }, [showTodayTransactions, showExpiry, today, initialExpiryDays]);
+    if (showLowStock) setActiveTab("low-stock");
+  }, [showTodayTransactions, showExpiry, showLowStock, today, initialExpiryDays]);
 
   // ── Queries ────────────────────────────────────────────────────────────────
 
@@ -401,6 +412,47 @@ export default function ReportPage() {
         ...batch,
         item: itemMap.get(batch.item_id) ?? null,
       })) as ExpiringBatchRecord[];
+    },
+  });
+
+  const { data: lowStockData, isLoading: lowStockLoading } = useQuery({
+    queryKey: ["report-low-stock"],
+    queryFn: async () => {
+      const today = getTodayStrKL();
+      const usageStart = addDays(today, -84);
+      const usageEnd = addDays(today, 1);
+      const [itemsResult, usageResult] = await Promise.all([
+        supabase
+          .from("items")
+          .select("id, kod_item, nama_item, kekuatan, item_batches(kuantiti, dilupuskan)")
+          .eq("aktif", true),
+        supabase
+          .from("supply_records")
+          .select("kuantiti, assignment:patient_item_assignments!inner(item_id)")
+          .gte("tarikh_dibekal", `${usageStart}T00:00:00.000Z`)
+          .lt("tarikh_dibekal", `${usageEnd}T00:00:00.000Z`),
+      ]);
+      if (itemsResult.error) throw itemsResult.error;
+      if (usageResult.error) throw usageResult.error;
+
+      const usageByItem = new Map<string, number>();
+      (usageResult.data ?? []).forEach((record: any) => {
+        const itemId = record.assignment?.item_id;
+        if (itemId) usageByItem.set(itemId, (usageByItem.get(itemId) ?? 0) + (record.kuantiti || 0));
+      });
+
+      return (itemsResult.data ?? [])
+        .map((item: any) => {
+          const usage12Weeks = usageByItem.get(item.id) ?? 0;
+          const requiredFourWeeks = (usage12Weeks / 12) * 4;
+          const currentBalance = (item.item_batches ?? []).reduce(
+            (sum: number, batch: any) => sum + (batch.dilupuskan ? 0 : batch.kuantiti || 0),
+            0
+          );
+          return { ...item, requiredFourWeeks, currentBalance };
+        })
+        .filter((item: LowStockRecord) => item.currentBalance < item.requiredFourWeeks)
+        .sort((a: LowStockRecord, b: LowStockRecord) => (b.requiredFourWeeks - b.currentBalance) - (a.requiredFourWeeks - a.currentBalance)) as LowStockRecord[];
     },
   });
 
@@ -517,6 +569,7 @@ export default function ReportPage() {
     { key: "inventory", label: "Inventori", icon: Package },
     { key: "transactions", label: "Transaksi", icon: Activity },
     { key: "expiry", label: "Akan Luput", icon: AlertTriangle },
+    { key: "low-stock", label: "Stok Rendah", icon: AlertTriangle },
   ];
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -633,8 +686,10 @@ export default function ReportPage() {
               onExportExcel={handleExportTransactionExcel}
               onExportPDF={handleExportTransactionPDF}
             />
-          ) : (
+          ) : activeTab === "expiry" ? (
             <ExpiryTab data={expiryData} loading={expiryLoading} days={expiryDays} onDaysChange={setExpiryDays} />
+          ) : (
+            <LowStockTab data={lowStockData} loading={lowStockLoading} />
           )}
         </div>
     </div>
@@ -1145,6 +1200,74 @@ function ExpiryTab({
                     </tr>
                   );
                 })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function LowStockTab({
+  data,
+  loading,
+}: {
+  data: LowStockRecord[] | undefined;
+  loading: boolean;
+}) {
+  const displayData = data ?? [];
+
+  return (
+    <Card
+      className="relative overflow-hidden"
+      style={{
+        background: "var(--card)",
+        backdropFilter: "blur(12px)",
+        border: "1px solid var(--border-medium)",
+        borderRadius: 16,
+        boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
+      }}
+    >
+      <CardContent className="p-0 relative">
+        <div className="p-4 sm:p-5 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border-light)" }}>
+          <AlertTriangle className="w-4 h-4" style={{ color: "#dc2626" }} />
+          <div>
+            <h2 className="text-[15px] font-bold" style={{ color: "var(--text-primary)" }}>Stok Rendah</h2>
+            <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Item dengan baki semasa kurang daripada keperluan 4 minggu</p>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-2" style={{ color: "var(--text-secondary)" }}>
+            <Loader2 className="w-6 h-6 animate-spin" style={{ color: "#dc2626" }} />
+            <p className="text-sm">Mengira stok rendah...</p>
+          </div>
+        ) : displayData.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-2" style={{ color: "var(--text-muted)" }}>
+            <Package className="w-10 h-10 opacity-40" />
+            <p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Tiada item stok rendah.</p>
+            <p className="text-xs">Semua baki stok mencukupi untuk keperluan 4 minggu.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  {["Kod Item", "Nama Item", "Kuantiti Diperlukan (4 Minggu)", "Baki Semasa"].map((heading) => (
+                    <th key={heading} className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-[0.05em]" style={{ color: "var(--text-secondary)", borderBottom: "2px solid var(--border-medium)", background: "var(--bg-secondary)" }}>{heading}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {displayData.map((item) => (
+                  <tr key={item.id}>
+                    <td className="px-3 py-3 text-[13px] font-mono" style={{ borderBottom: "1px solid var(--border-light)" }}>{item.kod_item}</td>
+                    <td className="px-3 py-3 text-[13px]" style={{ borderBottom: "1px solid var(--border-light)" }}>{[item.nama_item, item.kekuatan].filter(Boolean).join(" ")}</td>
+                    <td className="px-3 py-3 text-[13px] font-semibold" style={{ borderBottom: "1px solid var(--border-light)", color: "#dc2626" }}>{Math.ceil(item.requiredFourWeeks).toLocaleString("ms-MY")}</td>
+                    <td className="px-3 py-3 text-[13px] font-semibold" style={{ borderBottom: "1px solid var(--border-light)", color: "var(--text-primary)" }}>{item.currentBalance.toLocaleString("ms-MY")}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

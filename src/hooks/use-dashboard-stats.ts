@@ -50,22 +50,39 @@ export function useDashboardStats() {
       // Kueri kelima (berjujukan): item dengan kelompok untuk kiraan stok
       const { data: itemsWithBatches, error: stockError } = await supabase
         .from("items")
-        .select("id, kuota, item_batches(kuantiti)")
+        .select("id, item_batches(kuantiti, dilupuskan)")
         .eq("aktif", true);
 
       if (stockError) throw stockError;
 
+      const usageStart = new Date(startOfToday);
+      usageStart.setDate(usageStart.getDate() - 84);
+      const usageEnd = new Date(startOfToday);
+      usageEnd.setDate(usageEnd.getDate() + 1);
+      const { data: recentUsage, error: usageError } = await supabase
+        .from("supply_records")
+        .select("kuantiti, assignment:patient_item_assignments!inner(item_id)")
+        .gte("tarikh_dibekal", usageStart.toISOString())
+        .lt("tarikh_dibekal", usageEnd.toISOString());
+      if (usageError) throw usageError;
+
+      const usageByItem = new Map<string, number>();
+      (recentUsage ?? []).forEach((record: any) => {
+        const itemId = record.assignment?.item_id;
+        if (itemId) usageByItem.set(itemId, (usageByItem.get(itemId) ?? 0) + (record.kuantiti || 0));
+      });
+
       let totalStock = 0;
       let lowStockCount = 0;
       for (const item of itemsWithBatches ?? []) {
-        const batches = (item as any).item_batches as { kuantiti: number }[] | null;
+        const batches = (item as any).item_batches as { kuantiti: number; dilupuskan?: boolean }[] | null;
         const itemStock = (batches ?? []).reduce(
-          (sum, b) => sum + (b.kuantiti || 0),
+          (sum, b) => sum + (b.dilupuskan ? 0 : b.kuantiti || 0),
           0
         );
         totalStock += itemStock;
-        const quota = (item as any).kuota as number | null;
-        if (quota && itemStock < quota) lowStockCount++;
+        const requiredFourWeeks = ((usageByItem.get((item as any).id) ?? 0) / 12) * 4;
+        if (itemStock < requiredFourWeeks) lowStockCount++;
       }
 
       return {

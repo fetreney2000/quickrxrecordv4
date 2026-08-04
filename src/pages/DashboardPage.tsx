@@ -56,7 +56,7 @@ const ALL_CARDS: StatCardConfig[] = [
   { key: "supply", title: "Bekalan Hari Ini", subtitle: "Pembekalan yang dilakukan hari ini", icon: TrendingUp, gradient: ["#7c3aed", "#8b5cf6"], roles: ["Pentadbir", "Penjaga Stor", "Kakitangan Farmasi", "Kakitangan Klinik"], getValue: (s) => s.supplyToday, href: "/laporan?tab=transactions&date=today" },
   { key: "expiry", title: "Akan Luput (30 Hari)", subtitle: "Kelompok yang akan tamat tempoh", icon: AlertTriangle, gradient: ["#ea580c", "#f97316"], roles: ["Pentadbir", "Penjaga Stor", "Kakitangan Farmasi", "Kakitangan Klinik"], getValue: (s) => s.expiringSoon, href: "/laporan?tab=expiry&days=30" },
   { key: "stock", title: "Jumlah Stok", subtitle: "Unit stok tersedia", icon: Package, gradient: ["#0891b2", "#06b6d4"], roles: ["Pentadbir", "Penjaga Stor", "Kakitangan Klinik"], getValue: (s) => s.totalStock, href: "/stok" },
-  { key: "lowStock", title: "Stok Rendah", subtitle: "Item di bawah kuota minimum", icon: AlertTriangle, gradient: ["#dc2626", "#ef4444"], roles: ["Pentadbir", "Penjaga Stor", "Kakitangan Farmasi"], getValue: (s) => s.lowStockCount, href: "/stok" },
+  { key: "lowStock", title: "Stok Rendah", subtitle: "Item di bawah keperluan 4 minggu", icon: AlertTriangle, gradient: ["#dc2626", "#ef4444"], roles: ["Pentadbir", "Penjaga Stor", "Kakitangan Farmasi"], getValue: (s) => s.lowStockCount, href: "/laporan?tab=low-stock" },
 ];
 
 const STATUS_BG: Record<ExpiryStatus, string> = { critical: "rgba(254,226,226,0.4)", warning: "rgba(254,215,170,0.3)", safe: "transparent" };

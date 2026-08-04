@@ -56,3 +56,16 @@ $$;
 GRANT ALL ON FUNCTION process_batch_disposal(UUID, UUID, TEXT) TO anon, authenticated;
 
 NOTIFY pgrst, 'reload schema';
+
+CREATE TABLE IF NOT EXISTS batch_additions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  batch_id UUID NOT NULL REFERENCES item_batches(id) ON DELETE CASCADE,
+  quantity INTEGER NOT NULL CHECK (quantity > 0),
+  added_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_batch_additions_batch ON batch_additions(batch_id);
+CREATE INDEX IF NOT EXISTS idx_batch_additions_added_by ON batch_additions(added_by);
+ALTER TABLE batch_additions DISABLE ROW LEVEL SECURITY;
+GRANT ALL ON batch_additions TO anon, authenticated;

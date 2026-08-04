@@ -98,8 +98,8 @@ export default function StockListPage() {
                 <SortableHeader columnKey="kod_item" label="Kod" sort={sort} onSort={toggleSort} icon={Hash} />
                 <SortableHeader columnKey="nama_item" label="Nama Item" sort={sort} onSort={toggleSort} icon={TagIcon} />
                 <SortableHeader columnKey="quota" label="Kuota" sort={sort} onSort={toggleSort} icon={BarChart3} />
-                <div className="flex items-center gap-1.5" style={{ color: "var(--text-secondary)" }}><Package className="w-3 h-3" /><span>Stok</span></div>
-                <div>Baki Kuota</div>
+                 <SortableHeader columnKey="stock" label="Stok" sort={sort} onSort={toggleSort} icon={Package} />
+                 <SortableHeader columnKey="remaining" label="Baki Kuota" sort={sort} onSort={toggleSort} icon={BarChart3} />
               </div>
               {items.map((it, idx) => <StockRow key={it.id} item={it as any} index={idx} onClick={() => handleItemClick(it)} />)}
             </>
@@ -138,6 +138,6 @@ interface SortableHeaderProps { columnKey: string; label: string; sort: SortStat
 
 function SortableHeader({ columnKey, label, sort, onSort, icon: Icon }: SortableHeaderProps) {
   const isActive = sort?.key === columnKey;
-  const titles: Record<string, string> = { kod_item: "Isih mengikut Kod", nama_item: "Isih mengikut Nama Item", quota: "Isih mengikut Kuota" };
+   const titles: Record<string, string> = { kod_item: "Isih mengikut Kod", nama_item: "Isih mengikut Nama Item", quota: "Isih mengikut Kuota", stock: "Isih mengikut Stok", remaining: "Isih mengikut Baki Kuota" };
   return <button type="button" onClick={() => onSort(columnKey)} title={titles[columnKey]} className="flex items-center gap-1.5 hover:text-foreground transition-colors text-left" style={{ color: isActive ? "#7c3aed" : "var(--text-secondary)" }}><Icon className="w-3 h-3" /><span>{label}</span><SortIcon active={isActive} dir={sort?.dir ?? "asc"} /></button>;
 }

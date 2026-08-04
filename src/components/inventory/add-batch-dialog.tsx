@@ -162,7 +162,6 @@ export function AddBatchDialog({
               onBlur={(e) =>
                 updateField("nombor_kelompok", e.target.value.toUpperCase())
               }
-              placeholder="Cth: BATCH2024001"
               required
               style={{
                 ...inputStyle,

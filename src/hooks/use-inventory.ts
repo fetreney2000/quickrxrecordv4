@@ -312,6 +312,7 @@ export function useBatches(itemId: string | undefined) {
 
 export function useAddBatch(itemId: string | undefined) {
   const queryClient = useQueryClient();
+  const { profile } = useAuth();
   return useMutation({
     mutationFn: async (batchData: {
       nombor_kelompok: string;
@@ -349,6 +350,12 @@ export function useAddBatch(itemId: string | undefined) {
         catatan: existing ? "Tambah stok ke kelompok sedia ada" : "Kelompok baharu",
       });
       if (transactionError) throw transactionError;
+      const { error: staffError } = await supabase.from("batch_additions").insert({
+        batch_id: batchId,
+        quantity: batchData.kuantiti,
+        added_by: profile?.id ?? null,
+      });
+      if (staffError) throw staffError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["batches", itemId] });
@@ -621,7 +628,7 @@ export function useItemTransactionHistory(itemId: string | undefined) {
 
       const { data: inventoryTransactions, error: transactionError } = await supabase
         .from("inventory_transactions")
-        .select("id, created_at, batch_id, jenis, kuantiti, catatan, batch:item_batches!batch_id(nombor_kelompok)")
+        .select("id, created_at, batch_id, jenis, kuantiti, catatan, rujukan_type, batch:item_batches!batch_id(nombor_kelompok), addition:batch_additions!batch_id(added_by, staff:profiles!added_by(nama))")
         .eq("item_id", itemId)
         .neq("rujukan_type", "supply")
         .order("created_at", { ascending: false })
@@ -672,7 +679,7 @@ export function useItemTransactionHistory(itemId: string | undefined) {
           perubahan: tx.jenis === "masuk" ? tx.kuantiti : -tx.kuantiti,
           perubahan_label: tx.jenis === "masuk" ? `+${tx.kuantiti}` : `-${tx.kuantiti}`,
           catatan: tx.catatan ?? null,
-          kakitangan: null,
+          kakitangan: tx.addition?.staff?.nama ?? null,
           pesakit: null,
         });
       });

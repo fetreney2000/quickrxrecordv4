@@ -588,19 +588,11 @@ export default function ReportPage() {
 function InventoryTab({
   data,
   loading,
-  dateFrom,
-  dateTo,
-  onDateFromChange,
-  onDateToChange,
   onExportExcel,
   onExportPDF,
 }: {
   data: InventoryItem[] | undefined;
   loading: boolean;
-  dateFrom: string;
-  dateTo: string;
-  onDateFromChange: (value: string) => void;
-  onDateToChange: (value: string) => void;
   onExportExcel: () => void;
   onExportPDF: () => void;
 }) {
@@ -804,11 +796,19 @@ function InventoryTab({
 function TransactionsTab({
   data,
   loading,
+  dateFrom,
+  dateTo,
+  onDateFromChange,
+  onDateToChange,
   onExportExcel,
   onExportPDF,
 }: {
   data: TransactionRecord[] | undefined;
   loading: boolean;
+  dateFrom: string;
+  dateTo: string;
+  onDateFromChange: (value: string) => void;
+  onDateToChange: (value: string) => void;
   onExportExcel: () => void;
   onExportPDF: () => void;
 }) {

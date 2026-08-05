@@ -149,7 +149,12 @@ export default function PatientDetailPage() {
     const effective = latestDosMap?.get(a.id) || a.dos || null;
     return effective !== a.dos ? { ...a, dos: effective } : a;
   }, [assignments, openSupply, latestDosMap]);
-  const updateDoseAssignment = useMemo(() => assignments.find((a) => a.id === openUpdateDose) ?? null, [assignments, openUpdateDose]);
+  const updateDoseAssignment = useMemo(() => {
+    const assignment = assignments.find((a) => a.id === openUpdateDose) ?? null;
+    if (!assignment) return null;
+    const latestDose = latestDosMap?.get(assignment.id) || assignment.dos || null;
+    return latestDose !== assignment.dos ? { ...assignment, dos: latestDose } : assignment;
+  }, [assignments, openUpdateDose, latestDosMap]);
 
   const startEdit = () => { if (!patient) return; setEditData({ nama: patient.nama, nombor_kad_pengenalan: patient.nombor_kad_pengenalan, nombor_pendaftaran_hospital: patient.nombor_pendaftaran_hospital, dokumen_lain: patient.dokumen_lain, nombor_telefon: patient.nombor_telefon, alamat: patient.alamat, catatan: patient.catatan }); setEditMode(true); };
   const cancelEdit = () => { setEditMode(false); setEditData({}); };

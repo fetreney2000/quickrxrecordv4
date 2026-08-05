@@ -665,7 +665,7 @@ export function UpdateDoseDialog({
 
   useEffect(() => {
     if (open) {
-      setDos(currentDose ?? "");
+      setDos("");
       setCatatan("");
     }
   }, [open, currentDose]);
@@ -689,6 +689,17 @@ export function UpdateDoseDialog({
             </div>
           </div>
         </DialogHeader>
+        <div
+          className="rounded-xl px-3 py-2.5"
+          style={{ background: "rgba(24,119,242,0.06)", border: "1px solid rgba(24,119,242,0.16)" }}
+        >
+          <p className="text-2xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-secondary)" }}>
+            Dos Semasa (Rujukan)
+          </p>
+          <p className="text-sm font-bold mt-0.5" style={{ color: "#1877f2" }}>
+            {currentDose || "Tiada dos direkodkan"}
+          </p>
+        </div>
         <form
           onSubmit={(e) => {
             e.preventDefault();

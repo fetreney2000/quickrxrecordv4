@@ -702,77 +702,21 @@ export function useMergePatients() {
       primaryPatientId: string;
       duplicateIds: string[];
     }) => {
-      const today = getTodayStrKL();
-
-      for (const dupId of duplicateIds) {
-        // 1. Get duplicate assignments
-        const { data: dupAssignments } = await supabase
-          .from("patient_item_assignments")
-          .select("id, item_id, dos, catatan_penggunaan, tarikh_mula_guna, aktif")
-          .eq("patient_id", dupId);
-
-        if (!dupAssignments?.length) continue;
-
-        // 2. Get primary active assignments
-        const { data: primaryAssignments } = await supabase
-          .from("patient_item_assignments")
-          .select("id, item_id, aktif")
-          .eq("patient_id", primaryPatientId)
-          .eq("aktif", true);
-
-        const primaryActiveMap = new Map(
-          (primaryAssignments ?? []).map((a) => [a.item_id, a.id])
-        );
-
-        for (const dupA of dupAssignments) {
-          const primaryActiveId = primaryActiveMap.get(dupA.item_id);
-
-          if (primaryActiveId) {
-            // Duplicate has item that also exists in primary — transfer history
-            // Transfer dose history
-            await supabase
-              .from("dose_history")
-              .update({ assignment_id: primaryActiveId })
-              .eq("assignment_id", dupA.id);
-
-            // Transfer supply records
-            await supabase
-              .from("supply_records")
-              .update({ assignment_id: primaryActiveId })
-              .eq("assignment_id", dupA.id);
-
-            // Terminate duplicate assignment
-            await supabase
-              .from("patient_item_assignments")
-              .update({
-                aktif: false,
-                tarikh_tamat_guna: today,
-                sebab_tamat: "Digabungkan ke pesakit lain",
-                ditamatkan_oleh: profile?.id ?? null,
-              })
-              .eq("id", dupA.id);
-          } else {
-            // Unique item — transfer assignment to primary
-            await supabase
-              .from("patient_item_assignments")
-              .update({ patient_id: primaryPatientId })
-              .eq("id", dupA.id);
-          }
-        }
-
-        // 3. Mark duplicate patient as merged and deactivate
-        await supabase
-          .from("patients")
-          .update({
-            merged_into: primaryPatientId,
-            aktif: false,
-            updated_at: getNowISOKL(),
-          })
-          .eq("id", dupId);
-      }
+      const { error } = await supabase.rpc("merge_patients", {
+        p_primary_id: primaryPatientId,
+        p_secondary_ids: duplicateIds,
+        p_merge_date: getTodayStrKL(),
+        p_merged_by: profile?.id ?? null,
+      });
+      if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       toast.success("Pesakit berjaya digabungkan.");
+      queryClient.invalidateQueries({ queryKey: ["patient", variables.primaryPatientId] });
+      queryClient.invalidateQueries({ queryKey: ["assignments", variables.primaryPatientId] });
+      queryClient.invalidateQueries({ queryKey: ["assignments"] });
+      queryClient.invalidateQueries({ queryKey: ["supply-history"] });
+      queryClient.invalidateQueries({ queryKey: ["dose-history"] });
       queryClient.invalidateQueries({ queryKey: ["patients"] });
       queryClient.invalidateQueries({ queryKey: ["latest-dose-history-dos"] });
     },

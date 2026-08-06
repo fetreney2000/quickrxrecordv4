@@ -137,19 +137,19 @@ export default function DashboardPage() {
 
       {isStoreOrAdmin && (
         <div>
-          <Card><CardContent className="p-5">
-            <div className="flex items-center gap-3 mb-4">
+          <Card><CardContent className="p-4 sm:p-5">
+            <div className="flex items-start gap-3 mb-4">
               <div className="w-9 h-9 rounded-[11px] flex items-center justify-center text-white flex-shrink-0" style={{ background: "linear-gradient(135deg, #ea580c, #dc2626)", boxShadow: "0 4px 12px rgba(234,88,12,0.25)" }}>
                 <Calendar className="w-4 h-4" strokeWidth={2.5} />
               </div>
-              <div className="flex-1">
+              <div className="min-w-0 flex-1">
                 <h2 className="text-base font-bold leading-tight" style={{ color: "var(--text-primary)" }}>Papan Pemuka Luput</h2>
                 <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Pantau kelompok ubat yang akan tamat tempoh</p>
               </div>
             </div>
             <div className="mb-4"><ExpirySummaryBadges critical={expiryStats.critical} warning={expiryStats.warning} safe={expiryStats.safe} /></div>
             <div className="overflow-x-auto rounded-[14px]" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
-              <table className="w-full border-collapse" style={{ background: "var(--card)" }}>
+              <table className="w-full min-w-[640px] border-collapse" style={{ background: "var(--card)" }}>
                 <thead>
                   <tr style={{ background: "var(--bg-secondary)", borderBottom: "1px solid var(--border-light)" }}>
                     <th className="text-left px-3 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>Nama Item</th>

@@ -133,6 +133,11 @@
     height: 100%;
   }
 
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: "Inter", "Roboto", system-ui, -apple-system,

@@ -79,9 +79,10 @@ export function MobileNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-stretch"
       style={{
-        height: 60,
+        minHeight: 68,
+        paddingBottom: "env(safe-area-inset-bottom)",
         background:
           "linear-gradient(180deg, rgba(12,16,42,0.98) 0%, rgba(10,14,35,1) 100%)",
         backdropFilter: "blur(24px)",
@@ -101,8 +102,8 @@ export function MobileNav() {
             key={item.href}
             to={item.href}
             end={item.href === "/"}
-            className="mobile-nav-item relative"
-            style={{ minWidth: 0 }}
+            className="mobile-nav-item relative flex min-h-[68px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-0.5"
+            aria-label={item.label}
           >
             {/* Top active indicator bar */}
             {active && (
@@ -119,11 +120,9 @@ export function MobileNav() {
 
             <div
               className={cn(
-                "flex items-center justify-center rounded-[10px] transition-all duration-200"
+                "flex h-9 w-10 items-center justify-center rounded-[10px] transition-all duration-200"
               )}
               style={{
-                width: 36,
-                height: 36,
                 background: active ? tintBg : "transparent",
                 boxShadow: active
                   ? `0 4px 12px ${tintShadow}`
@@ -138,6 +137,9 @@ export function MobileNav() {
                 }}
               />
             </div>
+            <span className={cn("max-w-full truncate px-0.5 text-[10px] font-medium leading-none", active ? "text-white" : "text-white/55")}>
+              {item.label}
+            </span>
           </NavLink>
         );
       })}

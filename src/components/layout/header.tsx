@@ -130,7 +130,7 @@ export function Header() {
         }}
       >
 
-        <div className="relative h-full px-4 md:px-6 flex items-center justify-between gap-3">
+        <div className="relative h-full px-3 sm:px-4 md:px-6 flex items-center justify-between gap-2 sm:gap-3">
           {/* Search bar (centered on desktop, full width on mobile) */}
           {canViewPatients ? (
             <div
@@ -237,7 +237,7 @@ export function Header() {
           <button
             type="button"
             onClick={toggleTheme}
-            className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors hover:bg-muted"
+            className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors hover:bg-muted"
             style={{ color: "var(--text-secondary)" }}
             aria-label={theme === "dark" ? "Tukar ke mod terang" : "Tukar ke mod gelap"}
             title={theme === "dark" ? "Tukar ke mod terang" : "Tukar ke mod gelap"}
@@ -250,7 +250,7 @@ export function Header() {
               await signOut();
               navigate("/login", { replace: true });
             }}
-            className="md:hidden w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors hover:bg-red-50"
+            className="md:hidden w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors hover:bg-red-50"
             style={{ color: "#dc2626" }}
             aria-label="Log keluar"
             title="Log keluar"

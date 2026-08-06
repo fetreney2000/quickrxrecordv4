@@ -120,7 +120,7 @@ export function DashboardLayout() {
         <Header />
         <main
           key={location.pathname}
-          className="flex-1 px-3 sm:px-4 md:px-6 py-4 md:py-6 pb-20 md:pb-6 animate-fade-in"
+          className="flex-1 min-w-0 px-3 sm:px-4 md:px-6 py-4 md:py-6 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-6 animate-fade-in"
         >
           <Outlet />
         </main>

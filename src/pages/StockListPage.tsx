@@ -79,13 +79,13 @@ export default function StockListPage() {
         {canEdit && <Button onClick={() => setOpenAdd(true)} title="Tambah item ubat baharu" className="self-start sm:self-auto" style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)", boxShadow: "0 4px 12px rgba(124,58,237,0.25)" }}><Plus className="w-4 h-4" /> Tambah Item</Button>}
       </div>
       <div><Card><CardContent className="p-0 relative">
-        <div className="p-4 sm:p-5 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#f0f2f5]">
+        <div className="p-3 sm:p-5 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#f0f2f5]">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <div className="relative flex-1 min-w-0" style={{ maxWidth: 500 }}>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: searchFocused ? "#7c3aed" : "var(--text-muted)" }} />
               <Input ref={searchInputRef} type="search" value={search} onChange={(e) => setSearch(e.target.value)} onFocus={() => setSearchFocused(true)} onBlur={() => setSearchFocused(false)} placeholder="Cari kod, nama, atau nama dagangan..." className="h-9 pl-10 text-[13px] font-medium" style={{ background: "rgba(124,58,237,0.04)", border: searchFocused ? "1px solid rgba(124,58,237,0.3)" : "1px solid transparent", borderRadius: 10, boxShadow: searchFocused ? "0 0 0 4px rgba(124,58,237,0.08)" : "none" }} />
             </div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[12px] font-semibold flex-shrink-0" style={{ background: "rgba(124,58,237,0.06)", color: "var(--text-secondary)", border: "1px solid rgba(124,58,237,0.10)" }}><span style={{ color: "#7c3aed" }}>{total.toLocaleString("ms-MY")}</span><span>item</span></div>
+            <div className="inline-flex min-h-10 items-center gap-1.5 px-2.5 py-1 rounded-xl text-[12px] font-semibold flex-shrink-0" style={{ background: "rgba(124,58,237,0.06)", color: "var(--text-secondary)", border: "1px solid rgba(124,58,237,0.10)" }}><span style={{ color: "#7c3aed" }}>{total.toLocaleString("ms-MY")}</span><span>item</span></div>
             {isFetching && !isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "#7c3aed" }} />}
           </div>
         </div>

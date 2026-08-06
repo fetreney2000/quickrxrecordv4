@@ -135,13 +135,13 @@ export default function PatientListPage() {
       <div>
         <div className="relative rounded-2xl overflow-hidden" style={{ background: "var(--card)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", boxShadow: "0 4px 16px rgba(0,0,0,0.06)" }}>
 			
-          <div className="p-4 sm:p-5 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b" style={{ borderColor: "var(--border-light)" }}>
+          <div className="p-3 sm:p-5 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b" style={{ borderColor: "var(--border-light)" }}>
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <div className="relative flex-1 min-w-0" style={{ maxWidth: 500 }}>
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: searchFocused ? "#1877f2" : "var(--text-muted)" }} />
                 <Input ref={searchInputRef} type="search" value={search} onChange={(e) => setSearch(e.target.value)} onFocus={() => setSearchFocused(true)} onBlur={() => setSearchFocused(false)} placeholder="Cari nama, No. KP, atau No. Hospital..." className="h-9 pl-10 text-[13px] font-medium" style={{ background: "var(--bg-accent-blue)", border: searchFocused ? "1px solid rgba(24,119,242,0.3)" : "1px solid transparent", borderRadius: 10, boxShadow: searchFocused ? "0 0 0 4px rgba(24,119,242,0.08)" : "none" }} />
               </div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[12px] font-semibold flex-shrink-0" style={{ background: "var(--bg-accent-blue)", color: "var(--text-secondary)", border: "1px solid var(--bg-accent-blue)" }}>
+              <div className="inline-flex min-h-10 items-center gap-1.5 px-2.5 py-1 rounded-xl text-[12px] font-semibold flex-shrink-0" style={{ background: "var(--bg-accent-blue)", color: "var(--text-secondary)", border: "1px solid var(--bg-accent-blue)" }}>
                 <span style={{ color: "#1877f2" }}>{total.toLocaleString("ms-MY")}</span><span>pesakit</span>
               </div>
               {isFetching && !isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "#1877f2" }} />}

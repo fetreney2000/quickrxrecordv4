@@ -32,10 +32,10 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg lg:max-w-xl translate-x-[-50%] translate-y-[-50%] gap-4",
+        "fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-1.5rem)] max-w-lg lg:max-w-xl translate-x-[-50%] translate-y-[-50%] gap-4",
         "border bg-card p-4 sm:p-6 shadow-lg rounded-2xl",
-        "max-sm:!max-w-[calc(100vw-32px)]",
-        "max-h-[90vh] overflow-y-auto scrollbar-thin",
+        "max-sm:!max-w-[calc(100vw-1.5rem)]",
+        "max-h-[calc(100dvh-1.5rem)] overflow-y-auto scrollbar-thin",
         className
       )}
       {...props}

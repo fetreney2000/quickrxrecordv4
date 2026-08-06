@@ -48,7 +48,7 @@ export default function LoginPage() {
 
   return (
     <div
-      className="relative min-h-screen flex items-center justify-center overflow-hidden p-4"
+      className="relative min-h-[100dvh] flex items-center justify-center overflow-y-auto overflow-x-hidden p-3 sm:p-4"
       style={{ background: "#0a0e27" }}
     >
       <AuthBackground orbCount={4} particleCount={20} />
@@ -139,14 +139,14 @@ export default function LoginPage() {
 
         {/* ===== KAD LOG MASUK (KANAN) ===== */}
         <div
-          className="relative w-full md:w-[440px] flex-shrink-0"
+          className="relative w-full p-4 md:w-[440px] sm:p-6 flex-shrink-0"
           style={{
             background: "rgba(255,255,255,0.07)",
             backdropFilter: "blur(24px)",
             WebkitBackdropFilter: "blur(24px)",
             border: "1px solid rgba(255,255,255,0.1)",
             borderRadius: 20,
-            padding: 24,
+             padding: 24,
             boxShadow:
               "0 25px 50px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
           }}
@@ -261,7 +261,7 @@ export default function LoginPage() {
                   type="button"
                   tabIndex={-1}
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center transition-colors"
+                   className="absolute right-2.5 top-1/2 h-11 w-11 -translate-y-1/2 flex items-center justify-center transition-colors"
                   style={{
                     color: showPassword
                       ? "#60a5fa"
@@ -312,7 +312,7 @@ export default function LoginPage() {
             <div className="text-center pt-2">
               <Link
                 to="/lupa-kata-laluan"
-                className="inline-flex items-center gap-1.5 text-[13px] transition-colors"
+                 className="inline-flex min-h-11 items-center gap-1.5 px-2 text-[13px] transition-colors"
                 style={{ color: "rgba(255,255,255,0.4)" }}
                 onMouseEnter={(e) =>
                   ((e.currentTarget as HTMLElement).style.color =

@@ -64,7 +64,7 @@ export default function ForgotPasswordPage() {
   if (sent) {
     return (
       <div
-        className="relative min-h-screen flex items-center justify-center overflow-hidden p-4"
+         className="relative min-h-[100dvh] flex items-center justify-center overflow-hidden p-3 sm:p-4"
         style={{ background: "#0a0e27" }}
       >
         <AuthBackground orbCount={3} particleCount={16} />
@@ -80,20 +80,20 @@ export default function ForgotPasswordPage() {
 
   return (
     <div
-      className="relative min-h-screen flex items-center justify-center overflow-hidden p-4"
+       className="relative min-h-[100dvh] flex items-center justify-center overflow-y-auto overflow-x-hidden p-3 sm:p-4"
       style={{ background: "#0a0e27" }}
     >
       <AuthBackground orbCount={3} particleCount={16} />
 
       <div
-        className="relative w-full max-w-[440px]"
-        style={{
+        className="relative w-full max-w-[440px] p-4 sm:p-6"
+         style={{
           background: "rgba(255,255,255,0.07)",
           backdropFilter: "blur(24px)",
           WebkitBackdropFilter: "blur(24px)",
           border: "1px solid rgba(255,255,255,0.1)",
           borderRadius: 20,
-            padding: 24,
+             padding: 24,
           boxShadow:
             "0 25px 50px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
         }}
@@ -168,7 +168,7 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-[50px] flex items-center justify-center gap-2 text-[15px] font-bold text-white disabled:opacity-80 transition-all"
+               className="w-full min-h-[50px] flex items-center justify-center gap-2 text-[15px] font-bold text-white disabled:opacity-80 transition-all"
               style={{
                 background: "linear-gradient(135deg, #1877f2, #0d5bd4)",
                 borderRadius: 12,
@@ -191,7 +191,7 @@ export default function ForgotPasswordPage() {
           <div className="text-center pt-2">
             <Link
               to="/login"
-              className="inline-flex items-center gap-1.5 text-[13px] transition-colors"
+               className="inline-flex min-h-11 items-center gap-1.5 px-2 text-[13px] transition-colors"
               style={{ color: "rgba(255,255,255,0.4)" }}
               onMouseEnter={(e) =>
                 ((e.currentTarget as HTMLElement).style.color =

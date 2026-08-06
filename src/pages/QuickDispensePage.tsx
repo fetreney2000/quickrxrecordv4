@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavStore } from "@/lib/nav-store";
-import { formatItemDisplay, getInitials, formatMyKad } from "@/lib/utils";
+import { formatItemDisplay, getInitials, formatMyKad, formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 import { AddPatientDialog } from "@/components/patient/add-patient-dialog";
 import {
@@ -34,6 +34,7 @@ import {
   useAddAssignmentInline,
 } from "@/hooks/use-quick-dispense";
 import { useLatestDoseHistoryDos } from "@/hooks/use-patient-detail";
+import { useSupplyHistory, weeksSince } from "@/hooks/use-patient-detail";
 import type { Patient } from "@/types";
 
 const inputStyle: React.CSSProperties = {
@@ -108,6 +109,8 @@ export default function QuickDispensePage() {
   const { data: availableBatches = [] } = useQuickDispenseBatches(
     selectedItem?.item_id ?? null
   );
+  const { data: supplyHistory = [], isLoading: supplyHistoryLoading } =
+    useSupplyHistory(selectedItem?.assignment_id ?? null);
   const selectableBatches = useMemo(
     () => availableBatches.filter((batch) => batch.kuantiti > 0 && batch.dilupuskan !== true),
     [availableBatches]
@@ -240,7 +243,12 @@ export default function QuickDispensePage() {
     quantity.trim() !== "" &&
     parseInt(quantity) > 0 &&
      selectableBatches.some((batch) => batch.id === selectedBatchId) &&
-    dose.trim() !== "";
+     dose.trim() !== "";
+
+  const latestSupply = supplyHistory[0] ?? null;
+  const latestSupplyWeeks = latestSupply
+    ? weeksSince(latestSupply.tarikh_dibekal)
+    : null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -268,7 +276,7 @@ export default function QuickDispensePage() {
   };
 
   return (
-    <div className="space-y-4" style={{ padding: "0 8px" }}>
+    <div className="space-y-4">
       <Breadcrumb items={[{ label: "Dispen Pantas" }]} />
 
       <div className="flex items-center gap-3">
@@ -283,7 +291,7 @@ export default function QuickDispensePage() {
         </div>
         <div>
           <h1
-            className="text-[22px] sm:text-[18px] font-bold"
+            className="text-[20px] font-bold sm:text-[22px]"
             style={{ color: "var(--text-primary)" }}
           >
             Dispen Pantas
@@ -326,7 +334,7 @@ export default function QuickDispensePage() {
 
       {!selectedPatient && (
         <Card>
-          <CardContent className="p-6 sm:p-8">
+          <CardContent className="p-4 sm:p-8">
             <h2 className="text-[15px] font-bold mb-3" style={{ color: "var(--text-primary)" }}>
               Cari Pesakit
             </h2>
@@ -373,7 +381,7 @@ export default function QuickDispensePage() {
                         key={p.id}
                         title={"Pilih " + p.nama}
                         onMouseDown={(e) => { e.preventDefault(); setSelectedPatient(p); setSearchQuery(""); setShowResults(false); setSelectedItem(null); }}
-                        className="w-full text-left px-4 py-2.5 border-b last:border-b-0 transition-colors"
+                        className="min-h-14 w-full text-left px-4 py-3 border-b last:border-b-0 transition-colors"
                         style={{ borderColor: "var(--border-light)" }}
                         onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(240,147,43,0.06)"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
@@ -399,10 +407,10 @@ export default function QuickDispensePage() {
 
       {selectedPatient && !selectedItem && (
         <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[14px] font-bold" style={{ color: "var(--text-primary)" }}>{selectedPatient.nama}</h3>
-              <Button size="sm" variant="ghost" onClick={() => setSelectedPatient(null)} className="h-7" title="Tukar pesakit"><X className="w-3.5 h-3.5" /> Tukar</Button>
+          <CardContent className="p-4 sm:pt-5">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h3 className="min-w-0 truncate text-[14px] font-bold" style={{ color: "var(--text-primary)" }}>{selectedPatient.nama}</h3>
+              <Button size="sm" variant="ghost" onClick={() => setSelectedPatient(null)} className="h-11 flex-shrink-0" title="Tukar pesakit"><X className="w-3.5 h-3.5" /> Tukar</Button>
             </div>
             {frequentItems.length > 0 && (
               <div className="mb-3">
@@ -412,7 +420,7 @@ export default function QuickDispensePage() {
                     const assignment = (assignedItems as any[]).find((a: any) => a.item_id === it.id);
                     return (
                       <button key={it.id} title={"Pilih " + formatItemDisplay(it.item)} onClick={() => assignment && setSelectedItem(assignment)}
-                        className="text-[12px] font-medium px-2.5 py-1 rounded-full" style={{ background: "var(--bg-accent-blue)", color: "#1877f2", border: "1px solid rgba(24,119,242,0.2)" }}>
+                         className="min-h-11 text-[12px] font-medium px-3 py-1 rounded-full" style={{ background: "var(--bg-accent-blue)", color: "#1877f2", border: "1px solid rgba(24,119,242,0.2)" }}>
                         {formatItemDisplay(it.item)}
                       </button>
                     );
@@ -426,7 +434,7 @@ export default function QuickDispensePage() {
                 <div className="text-center text-xs py-6" style={{ color: "var(--text-muted)" }}>Tiada padanan.</div>
               ) : (
                 filteredItems.map((a: any) => (
-                  <button key={a.assignment_id} title={"Pilih " + formatItemDisplay(a.item)} onClick={() => setSelectedItem(a)} className="w-full text-left px-3 py-2 text-xs border-b last:border-b-0 hover:bg-blue-50/50" style={{ borderColor: "var(--border-light)" }}>
+                   <button key={a.assignment_id} title={"Pilih " + formatItemDisplay(a.item)} onClick={() => setSelectedItem(a)} className="min-h-14 w-full text-left px-3 py-2.5 text-xs border-b last:border-b-0 hover:bg-blue-50/50" style={{ borderColor: "var(--border-light)" }}>
                     <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{formatItemDisplay(a.item)}</p>
                     <p style={{ color: "var(--text-secondary)" }}>{a.item?.kod_item} · Dos: {effectiveDos(a)}</p>
                   </button>
@@ -434,7 +442,7 @@ export default function QuickDispensePage() {
               )}
             </div>
             <button type="button" title="Daftar item baharu untuk pesakit" onClick={() => { setShowRegisterDialog(true); setRegisterItemSearch(""); }}
-              className="mt-3 w-full text-xs font-semibold flex items-center justify-center gap-1.5 py-2 rounded-xl border-2 border-dashed cursor-pointer" style={{ borderColor: "rgba(16,185,129,0.4)", color: "#059669" }}>
+               className="mt-3 min-h-11 w-full text-xs font-semibold flex items-center justify-center gap-1.5 py-2 rounded-xl border-2 border-dashed cursor-pointer" style={{ borderColor: "rgba(16,185,129,0.4)", color: "#059669" }}>
               <Plus className="w-3.5 h-3.5" /> Daftar Item Baharu
             </button>
           </CardContent>
@@ -443,19 +451,58 @@ export default function QuickDispensePage() {
 
       {selectedItem && (
         <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2 min-w-0">
+          <CardContent className="p-4 sm:pt-5">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-2">
                 <Pill className="w-4 h-4 text-blue-500" />
                 <p className="text-[14px] font-bold truncate" style={{ color: "var(--text-primary)" }}>{formatItemDisplay(selectedItem.item)}</p>
               </div>
-              <Button size="sm" variant="ghost" onClick={() => setSelectedItem(null)} className="h-7" title="Tukar item"><X className="w-3.5 h-3.5" /> Tukar</Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelectedItem(null)} className="h-11 flex-shrink-0" title="Tukar item"><X className="w-3.5 h-3.5" /> Tukar</Button>
             </div>
             {selectedPatient && (
               <div className="flex items-center gap-2 mb-3 p-2 rounded-lg text-xs" style={{ background: "rgba(240,147,43,0.06)", border: "1px solid rgba(240,147,43,0.12)" }}>
                 <span style={{ color: "var(--text-secondary)" }}>{selectedPatient.nama}{selectedPatient.nombor_kad_pengenalan && <> · KP: {formatMyKad(selectedPatient.nombor_kad_pengenalan)}</>}{selectedPatient.nombor_pendaftaran_hospital && <> · Hosp: {selectedPatient.nombor_pendaftaran_hospital}</>}</span>
               </div>
             )}
+            <div
+              className="mb-4 rounded-xl border p-3"
+              aria-label="Rujukan bekalan terakhir"
+              style={{
+                background: "rgba(24,119,242,0.04)",
+                borderColor: "rgba(24,119,242,0.14)",
+              }}
+            >
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-xs font-bold" style={{ color: "var(--text-primary)" }}>
+                  Rujukan Bekalan Terakhir
+                </p>
+                <span className="text-right text-2xs font-medium" style={{ color: "var(--text-muted)" }}>
+                  Rujukan sahaja
+                </span>
+              </div>
+              {supplyHistoryLoading ? (
+                <div className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                  Memuatkan rekod bekalan...
+                </div>
+              ) : latestSupply ? (
+                <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4">
+                  <ReferenceValue label="Tarikh diambil" value={formatDate(latestSupply.tarikh_dibekal)} />
+                  <ReferenceValue label="Dos" value={latestSupply.dos || "—"} />
+                  <ReferenceValue label="Tempoh dibekal" value={latestSupply.tempoh_dibekal || "—"} />
+                  <ReferenceValue label="Kuantiti" value={`${latestSupply.kuantiti} unit`} />
+                  <div className="col-span-2 sm:col-span-4">
+                    <ReferenceValue
+                      label="Tempoh sejak bekalan"
+                      value={latestSupplyWeeks === null ? "—" : `${latestSupplyWeeks} minggu lalu`}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                  Tiada rekod bekalan terdahulu untuk item ini.
+                </p>
+              )}
+            </div>
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <Label style={labelStyle}>Pilih Kelompok (FEFO)</Label>
@@ -464,7 +511,7 @@ export default function QuickDispensePage() {
                 ) : (
                   <div className="space-y-1 max-h-40 overflow-y-auto">
                     {selectableBatches.map((b: any) => (
-                      <label key={b.id} className="flex items-center gap-2 px-3 py-2 text-xs border rounded-lg cursor-pointer"
+                      <label key={b.id} className="flex min-h-14 items-center gap-2 px-3 py-2.5 text-xs border rounded-lg cursor-pointer"
                         style={{ borderColor: selectedBatchId === b.id ? "#f59e0b" : "var(--border-medium)", background: selectedBatchId === b.id ? "rgba(245,158,11,0.06)" : "var(--card)" }}>
                         <input type="radio" name="batch" checked={selectedBatchId === b.id} onChange={() => setSelectedBatchId(b.id)} style={{ accentColor: "#f59e0b" }} />
                         <div className="flex-1">
@@ -502,9 +549,9 @@ export default function QuickDispensePage() {
 
       {/* Register New Item Dialog */}
       {showRegisterDialog && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.4)" }}
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4" style={{ background: "rgba(0,0,0,0.4)" }}
           onClick={(e) => { if (e.target === e.currentTarget) { setShowRegisterDialog(false); setRegisterItemSearch(""); setRegisterSelectedItem(null); setRegisterDos(""); } }}>
-          <div className="w-full max-w-md bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+          <div className="w-full max-w-md max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-2xl bg-white" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
             <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid #f0f2f5" }}>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(16,185,129,0.10)" }}>
@@ -515,7 +562,7 @@ export default function QuickDispensePage() {
                   <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>{registerSelectedItem ? `Daftarkan ${formatItemDisplay(registerSelectedItem)} kepada ${selectedPatient?.nama}` : `Pilih item untuk didaftarkan kepada ${selectedPatient?.nama}`}</p>
                 </div>
               </div>
-              <button type="button" title="Tutup dialog" onClick={() => { setShowRegisterDialog(false); setRegisterItemSearch(""); setRegisterSelectedItem(null); setRegisterDos(""); }} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-100">
+              <button type="button" title="Tutup dialog" onClick={() => { setShowRegisterDialog(false); setRegisterItemSearch(""); setRegisterSelectedItem(null); setRegisterDos(""); }} className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg hover:bg-gray-100">
                 <X className="w-4 h-4" style={{ color: "var(--text-secondary)" }} />
               </button>
             </div>
@@ -533,7 +580,7 @@ export default function QuickDispensePage() {
                     <div className="space-y-1">
                       {filteredRegisterItems.map((it: any) => (
                         <button key={it.id} type="button" title={"Pilih " + formatItemDisplay(it)} disabled={it.kuota_penuh} onClick={() => handleSelectRegisterItem(it)}
-                          className="w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center justify-between transition-colors"
+                           className="min-h-14 w-full text-left px-3 py-3 rounded-xl text-xs flex items-center justify-between gap-3 transition-colors"
                           style={{ opacity: it.kuota_penuh ? 0.45 : 1, cursor: it.kuota_penuh ? "not-allowed" : "pointer", background: "transparent" }}
                           onMouseEnter={(e) => { if (!it.kuota_penuh) e.currentTarget.style.background = "rgba(16,185,129,0.06)"; }}
                           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
@@ -587,6 +634,19 @@ export default function QuickDispensePage() {
         </div>
       )}
       <AddPatientDialog open={showAddPatient} onOpenChange={setShowAddPatient} />
+    </div>
+  );
+}
+
+function ReferenceValue({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-2xs font-medium" style={{ color: "var(--text-secondary)" }}>
+        {label}
+      </p>
+      <p className="truncate text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
+        {value}
+      </p>
     </div>
   );
 }

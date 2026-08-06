@@ -290,16 +290,18 @@ export default function ProfilePage() {
       >
         {/* Card header */}
         <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 16,
+           className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+           style={{
+             display: "flex",
+             alignItems: "center",
+             justifyContent: "space-between",
+             marginBottom: 16,
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div
-              style={{
+               className="min-h-11"
+               style={{
                 width: 32,
                 height: 32,
                 borderRadius: 10,
@@ -365,13 +367,14 @@ export default function ProfilePage() {
               Edit Profil
             </button>
           ) : (
-            <div style={{ display: "flex", gap: 8 }}>
+             <div className="flex gap-2" style={{ display: "flex" }}>
               <button
                 type="button"
                 onClick={cancelEdit}
                 title="Batal edit profil"
                 aria-label="Batal edit"
-                style={{
+                 className="min-h-11"
+                 style={{
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 6,
@@ -400,7 +403,8 @@ export default function ProfilePage() {
                 title="Simpan perubahan profil"
                 aria-label="Simpan profil"
                 disabled={updateProfileMutation.isPending}
-                style={{
+                 className="min-h-11"
+                 style={{
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 6,
@@ -608,11 +612,12 @@ export default function ProfilePage() {
           </div>
 
           {!changingPassword && (
-            <button
+             <button
               type="button"
               onClick={toggleChangingPassword}
               title="Tukar kata laluan"
               aria-label="Tukar Kata Laluan"
+              className="min-h-11"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -877,12 +882,13 @@ export default function ProfilePage() {
               </div>
 
               {/* Action buttons */}
-              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+              <div className="flex flex-col gap-2 sm:flex-row" style={{ display: "flex", gap: 8, marginTop: 4 }}>
                 <button
                   type="button"
                   onClick={toggleChangingPassword}
                   title="Batal tukar kata laluan"
                   aria-label="Batal tukar kata laluan"
+                  className="min-h-11 flex-1 sm:flex-none"
                   style={{
                     flex: 1,
                     display: "inline-flex",
@@ -914,6 +920,7 @@ export default function ProfilePage() {
                   title="Sahkan tukar kata laluan"
                   aria-label="Sahkan tukar kata laluan"
                   disabled={changePasswordMutation.isPending}
+                  className="min-h-11 flex-1 sm:flex-none"
                   style={{
                     flex: 1,
                     display: "inline-flex",

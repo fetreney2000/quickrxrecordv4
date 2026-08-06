@@ -40,7 +40,7 @@ export default function CopyrightPage() {
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors hover:bg-red-50"
+         className="h-11 w-11 rounded-xl flex items-center justify-center transition-colors hover:bg-red-50"
           style={{ color: "#e11d48" }}
           aria-label="Kembali"
         >
@@ -166,7 +166,7 @@ function InfoRow({ icon, iconColor, label, value }: InfoRowProps) {
           {label}
         </p>
         <p
-          className="text-[13px] font-semibold truncate"
+               className="break-words text-[13px] font-semibold"
           style={{ color: "var(--text-primary)" }}
         >
           {value}

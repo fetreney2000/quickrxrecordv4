@@ -92,36 +92,36 @@ export default function DashboardPage() {
   const roleLabel = ROLE_LABELS[peranan] || peranan;
 
   return (
-    <div className="relative space-y-5">
+    <div className="relative space-y-4 sm:space-y-5">
       <Breadcrumb />
 
-      <div className="flex flex-col items-start md:flex-row md:items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-11 h-11 rounded-[14px] flex items-center justify-center text-white flex-shrink-0" style={{ background: "linear-gradient(135deg, #1877f2, #0d5bd4)", boxShadow: "0 4px 12px rgba(24,119,242,0.3)" }}>
+      <div className="flex flex-col items-start gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex w-full min-w-0 items-center gap-3 md:w-auto">
+          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[14px] text-white" style={{ background: "linear-gradient(135deg, #1877f2, #0d5bd4)", boxShadow: "0 4px 12px rgba(24,119,242,0.3)" }}>
             <Activity className="w-5 h-5" strokeWidth={2.5} />
           </div>
           <div className="min-w-0">
-            <h1 className="text-[22px] font-bold leading-tight truncate" style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}>Selamat Datang, {toTitleCase(profile?.nama ?? "Pengguna")}</h1>
+            <h1 className="truncate text-[20px] font-bold leading-tight sm:text-[22px]" style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}>Selamat Datang, {toTitleCase(profile?.nama ?? "Pengguna")}</h1>
             <p className="text-[13px] font-medium mt-0.5" style={{ color: "var(--text-secondary)" }}>{roleLabel} — Papan Pemuka</p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
+        <div className="flex w-full flex-wrap items-center gap-2 md:w-auto md:self-auto">
           {peranan && (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full" style={{ background: roleColors.bg, border: `1px solid ${roleColors.border}` }}>
+            <div className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 py-1.5" style={{ background: roleColors.bg, border: `1px solid ${roleColors.border}` }}>
               <PulsingDot color={roleColors.text} />
               <span className="text-xs font-semibold" style={{ color: roleColors.text }}>{roleLabel}</span>
             </div>
           )}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full" style={{ background: "rgba(22,197,94,0.08)", border: "1px solid rgba(22,197,94,0.20)" }}>
+          <div className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 py-1.5" style={{ background: "rgba(22,197,94,0.08)", border: "1px solid rgba(22,197,94,0.20)" }}>
             <PulsingDot color="#16a34a" />
             <span className="text-xs font-semibold" style={{ color: "#16a34a" }}>Sistem Beroperasi</span>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-5">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
         {statsLoading && !stats ? Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="rounded-xl p-4" style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.06)" }}>
+          <div key={i} className="rounded-xl p-3.5 sm:p-4" style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.06)" }}>
             <div className="flex items-center gap-3">
               <Skeleton className="w-9 h-9 rounded-lg" />
               <div className="flex-1 space-y-2">
@@ -138,8 +138,8 @@ export default function DashboardPage() {
       {isStoreOrAdmin && (
         <div>
           <Card><CardContent className="p-4 sm:p-5">
-            <div className="flex items-start gap-3 mb-4">
-              <div className="w-9 h-9 rounded-[11px] flex items-center justify-center text-white flex-shrink-0" style={{ background: "linear-gradient(135deg, #ea580c, #dc2626)", boxShadow: "0 4px 12px rgba(234,88,12,0.25)" }}>
+            <div className="mb-4 flex items-start gap-3">
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[11px] text-white" style={{ background: "linear-gradient(135deg, #ea580c, #dc2626)", boxShadow: "0 4px 12px rgba(234,88,12,0.25)" }}>
                 <Calendar className="w-4 h-4" strokeWidth={2.5} />
               </div>
               <div className="min-w-0 flex-1">
@@ -147,8 +147,8 @@ export default function DashboardPage() {
                 <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Pantau kelompok ubat yang akan tamat tempoh</p>
               </div>
             </div>
-            <div className="mb-4"><ExpirySummaryBadges critical={expiryStats.critical} warning={expiryStats.warning} safe={expiryStats.safe} /></div>
-            <div className="overflow-x-auto rounded-[14px]" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
+            <div className="mb-4 overflow-x-auto pb-1"><ExpirySummaryBadges critical={expiryStats.critical} warning={expiryStats.warning} safe={expiryStats.safe} /></div>
+            <div className="overflow-x-auto rounded-[14px]" role="region" aria-label="Jadual kelompok ubat yang akan luput" tabIndex={0} style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
               <table className="w-full min-w-[640px] border-collapse" style={{ background: "var(--card)" }}>
                 <thead>
                   <tr style={{ background: "var(--bg-secondary)", borderBottom: "1px solid var(--border-light)" }}>

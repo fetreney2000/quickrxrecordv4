@@ -182,7 +182,7 @@ export function AddAssignmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-xl max-sm:max-h-[calc(100dvh-1.5rem)]">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div
@@ -231,7 +231,7 @@ export function AddAssignmentDialog({
           {/* Item list */}
           <div
             className="border rounded-xl overflow-y-auto"
-            style={{ borderColor: "var(--border-medium)", maxHeight: 200 }}
+            style={{ borderColor: "var(--border-medium)", maxHeight: "min(320px, 34dvh)" }}
           >
             {filtered.length === 0 ? (
               <div
@@ -256,7 +256,7 @@ export function AddAssignmentDialog({
                     disabled={active || kuotaPenuh}
                     title={`Pilih ${formatItemDisplay(i, i.id_bentuk ? formsMap.get(i.id_bentuk) : null)}`}
                     className={cn(
-                      "w-full text-left px-3 py-2 text-xs border-b last:border-b-0 transition-colors",
+                      "min-h-14 w-full text-left px-3 py-3 text-xs border-b last:border-b-0 transition-colors",
                       (active || kuotaPenuh) && "opacity-50 cursor-not-allowed",
                       !active && !kuotaPenuh && selectedItemId === i.id
                         ? "bg-blue-50"
@@ -364,6 +364,7 @@ export function AddAssignmentDialog({
             onClick={() => onOpenChange(false)}
             disabled={isPending}
             title="Batal tambah item"
+            className="min-h-11 sm:min-h-0"
           >
             Batal
           </Button>
@@ -378,6 +379,7 @@ export function AddAssignmentDialog({
             }}
             disabled={!canSubmit || isPending}
             title="Tambah item untuk pesakit"
+            className="min-h-11 sm:min-h-0"
           >
             {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             Tambah

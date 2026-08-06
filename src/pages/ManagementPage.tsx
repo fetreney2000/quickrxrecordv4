@@ -370,17 +370,17 @@ export default function ManagementPage() {
       <Breadcrumb items={[{ label: "Pengurusan" }]} />
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
           <div
             className="inline-flex items-center justify-center w-11 h-11 rounded-xl"
             style={{ background: "rgba(6, 182, 212, 0.1)" }}
           >
             <Users className="h-6 w-6" style={{ color: "#06b6d4" }} />
           </div>
-          <div>
+          <div className="min-w-0">
             <h1
-              className="text-[22px] font-bold"
+              className="truncate text-[20px] font-bold sm:text-[22px]"
               style={{ color: "var(--text-primary)" }}
             >
               Pengurusan
@@ -392,7 +392,7 @@ export default function ManagementPage() {
         </div>
         <Button
           onClick={() => setOpenAdd(true)}
-          className="text-white font-semibold shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="min-h-11 w-full text-white font-semibold shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 sm:w-auto"
           style={{ background: "linear-gradient(135deg, #1877f2, #0d5bd4)" }}
         >
           <UserPlus className="h-4 w-4 mr-1.5" />
@@ -402,12 +402,12 @@ export default function ManagementPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="users" className="gap-2">
+        <TabsList className="mb-4 flex h-auto max-w-full gap-1 overflow-x-auto p-1">
+          <TabsTrigger value="users" className="min-h-11 flex-shrink-0 gap-2 sm:min-h-0">
             <Users className="h-4 w-4" />
             Pengguna
           </TabsTrigger>
-          <TabsTrigger value="reset-requests" className="gap-2">
+          <TabsTrigger value="reset-requests" className="min-h-11 flex-shrink-0 gap-2 sm:min-h-0">
             <MailQuestion className="h-4 w-4" />
             Permintaan Reset
             {pendingCount > 0 && (
@@ -416,7 +416,7 @@ export default function ManagementPage() {
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="references" className="gap-2">
+          <TabsTrigger value="references" className="min-h-11 flex-shrink-0 gap-2 sm:min-h-0">
             <BookOpen className="h-4 w-4" />
             Rujukan
           </TabsTrigger>
@@ -449,8 +449,8 @@ export default function ManagementPage() {
                 Tiada pengguna didaftarkan.
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
+              <div className="overflow-x-auto" role="region" aria-label="Jadual pengguna" tabIndex={0}>
+                <table className="w-full min-w-[760px]">
                   <thead>
                     <tr>
                       {["", "Nama", "Nama Pengguna", "Jawatan", "Peranan", "Status"].map(
@@ -538,7 +538,7 @@ export default function ManagementPage() {
                       req.status === "pending" ? "rgba(217,119,6,0.25)" : "var(--border-light)",
                   }}
                 >
-                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
                       <div
                         className="inline-flex items-center justify-center w-10 h-10 rounded-xl"
@@ -576,7 +576,7 @@ export default function ManagementPage() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Badge
                         variant={
                           req.status === "pending"
@@ -605,7 +605,7 @@ export default function ManagementPage() {
                             }
                             disabled={resolveRequestMutation.isPending}
                             style={{ background: "#42b72a" }}
-                            className="text-white text-xs"
+                            className="min-h-11 text-white text-xs sm:min-h-0"
                           >
                             <CheckCircle2Icon className="h-3.5 w-3.5 mr-1" />
                             Sah & Reset
@@ -621,7 +621,7 @@ export default function ManagementPage() {
                               })
                             }
                             disabled={resolveRequestMutation.isPending}
-                            className="text-xs"
+                            className="min-h-11 text-xs sm:min-h-0"
                           >
                             <XCircleIcon className="h-3.5 w-3.5 mr-1" />
                             Tolak
@@ -652,7 +652,7 @@ export default function ManagementPage() {
       {/* DIALOG: Tambah Pengguna Baharu                                        */}
       {/* ═══════════════════════════════════════════════════════════════════════ */}
       <Dialog open={openAdd} onOpenChange={setOpenAdd}>
-        <DialogContent>
+        <DialogContent className="max-sm:max-h-[calc(100dvh-1.5rem)]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <UserPlus className="h-5 w-5" style={{ color: "#06b6d4" }} />
@@ -727,7 +727,7 @@ export default function ManagementPage() {
                 onChange={(e) =>
                   setNewUser({ ...newUser, peranan: e.target.value })
                 }
-                className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+                className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
               >
                 <option value="Pentadbir">Pentadbir</option>
                 <option value="Penjaga Stor">Penjaga Stor</option>
@@ -737,14 +737,14 @@ export default function ManagementPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenAdd(false)}>
+            <Button variant="outline" onClick={() => setOpenAdd(false)} className="min-h-11 sm:min-h-0">
               Batal
             </Button>
             <Button
               onClick={handleAddUser}
               disabled={addUserMutation.isPending}
               style={{ background: "#1877f2" }}
-              className="text-white"
+              className="min-h-11 text-white sm:min-h-0"
             >
               {addUserMutation.isPending ? "Menyimpan..." : "Simpan"}
             </Button>
@@ -1027,7 +1027,7 @@ function UserRow({
                   style={{ background: "var(--bg-secondary)" }}
                 >
                   {/* User Info Grid */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
                     <div>
                       <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
                         Nama Pengguna
@@ -1063,7 +1063,7 @@ function UserRow({
                   {/* Edit Form OR Action Buttons */}
                     {isEditing ? (
                       <div
-                        className="grid grid-cols-1 md:grid-cols-4 gap-3"
+                        className="grid grid-cols-1 gap-3 md:grid-cols-4"
                       >
                         <div className="space-y-1">
                           <Label className="text-xs">Nama</Label>
@@ -1126,19 +1126,20 @@ function UserRow({
                             </option>
                           </select>
                         </div>
-                        <div className="md:col-span-4 flex gap-2 mt-2">
+                         <div className="md:col-span-4 flex flex-col gap-2 mt-2 sm:flex-row">
                           <Button
                             size="sm"
                             onClick={onSaveEdit}
                             style={{ background: "#1877f2" }}
-                            className="text-white"
+                             className="min-h-11 text-white sm:min-h-0"
                           >
                             Simpan Perubahan
                           </Button>
                           <Button
                             size="sm"
-                            variant="outline"
+                             variant="outline"
                             onClick={onCancelEdit}
+                            className="min-h-11 sm:min-h-0"
                           >
                             Batal
                           </Button>
@@ -1146,11 +1147,12 @@ function UserRow({
                       </div>
                     ) : (
                       <div
-                        className="flex gap-2"
+                        className="flex flex-col gap-2 sm:flex-row sm:flex-wrap"
                       >
                         <Button
                           size="sm"
                           variant="outline"
+                          className="min-h-11 sm:min-h-0"
                           onClick={(e) => {
                             e.stopPropagation();
                             onEdit();
@@ -1162,6 +1164,7 @@ function UserRow({
                         <Button
                           size="sm"
                           variant={user.aktif ? "destructive" : "default"}
+                          className={`min-h-11 sm:min-h-0 ${!user.aktif ? "text-white" : ""}`}
                           onClick={(e) => {
                             e.stopPropagation();
                             onToggleActive();
@@ -1169,7 +1172,6 @@ function UserRow({
                           style={
                             !user.aktif ? { background: "#42b72a" } : undefined
                           }
-                          className={!user.aktif ? "text-white" : ""}
                         >
                           {user.aktif ? (
                             <>
@@ -1185,8 +1187,9 @@ function UserRow({
                         </Button>
                         {user.peranan !== "Pentadbir" && (
                           <Button
-                            size="sm"
+                             size="sm"
                             variant="outline"
+                            className="min-h-11 sm:min-h-0"
                             onClick={(e) => {
                               e.stopPropagation();
                               onResetPassword();

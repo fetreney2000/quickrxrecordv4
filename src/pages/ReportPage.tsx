@@ -657,7 +657,7 @@ export default function ReportPage() {
       {/* Tab Segmented Control */}
       <div>
         <div
-          className="inline-flex items-center gap-1 p-1 rounded-[14px]"
+          className="flex max-w-full items-center gap-1 overflow-x-auto rounded-[14px] p-1"
           style={{ background: "var(--bg-secondary)" }}
         >
           {tabs.map((tab) => {
@@ -667,7 +667,7 @@ export default function ReportPage() {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-[10px] text-[13px] font-semibold transition-all duration-200"
+                className="flex min-h-11 flex-shrink-0 items-center gap-1.5 rounded-[10px] px-4 py-2 text-[13px] font-semibold transition-all duration-200 sm:min-h-0"
                 style={{
                   background: isActive ? "var(--card)" : "transparent",
                   color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
@@ -766,7 +766,7 @@ function InventoryTab({
             <button
               onClick={onExportExcel}
               disabled={loading || !data}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[12px] font-semibold transition-all disabled:opacity-40"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-[12px] font-semibold transition-all disabled:opacity-40 sm:min-h-0"
               style={{
                 background: "rgba(34,197,94,0.08)",
                 color: "var(--text-primary)",
@@ -779,7 +779,7 @@ function InventoryTab({
             <button
               onClick={onExportPDF}
               disabled={loading || !data}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[12px] font-semibold transition-all disabled:opacity-40"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-[12px] font-semibold transition-all disabled:opacity-40 sm:min-h-0"
               style={{
                 background: "rgba(239,68,68,0.08)",
                 color: "var(--text-primary)",
@@ -815,8 +815,8 @@ function InventoryTab({
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+          <div className="overflow-x-auto" role="region" aria-label="Jadual kelompok akan luput" tabIndex={0}>
+            <table className="w-full min-w-[720px] border-collapse">
               <thead>
                 <tr>
                   {[
@@ -979,7 +979,7 @@ function TransactionsTab({
                 type="date"
                 value={dateFrom}
                 onChange={(e) => onDateFromChange(e.target.value)}
-                  className="h-8 rounded-lg px-2 text-xs font-medium normal-case tracking-normal"
+                  className="h-11 rounded-lg px-2 text-xs font-medium normal-case tracking-normal sm:h-8"
                   style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
               />
               </label>
@@ -991,7 +991,7 @@ function TransactionsTab({
                 value={dateTo}
                 min={dateFrom || undefined}
                 onChange={(e) => onDateToChange(e.target.value)}
-                  className="h-8 rounded-lg px-2 text-xs font-medium normal-case tracking-normal"
+                  className="h-11 rounded-lg px-2 text-xs font-medium normal-case tracking-normal sm:h-8"
                   style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
               />
               </label>
@@ -1000,7 +1000,7 @@ function TransactionsTab({
               <button
               onClick={onExportExcel}
               disabled={loading || !data}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[12px] font-semibold transition-all disabled:opacity-40"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-[12px] font-semibold transition-all disabled:opacity-40 sm:min-h-0"
               style={{
                 background: "rgba(34,197,94,0.08)",
                 color: "var(--text-primary)",
@@ -1013,7 +1013,7 @@ function TransactionsTab({
               <button
               onClick={onExportPDF}
               disabled={loading || !data}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[12px] font-semibold transition-all disabled:opacity-40"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-[12px] font-semibold transition-all disabled:opacity-40 sm:min-h-0"
               style={{
                 background: "rgba(239,68,68,0.08)",
                 color: "var(--text-primary)",
@@ -1050,8 +1050,8 @@ function TransactionsTab({
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+          <div className="overflow-x-auto" role="region" aria-label="Jadual stok rendah" tabIndex={0}>
+            <table className="w-full min-w-[620px] border-collapse">
               <thead>
                 <tr>
                   {[
@@ -1185,7 +1185,7 @@ function ExpiryTab({
             <select
               value={days}
               onChange={(event) => onDaysChange(Number(event.target.value))}
-              className="h-9 rounded-lg px-2 text-xs font-medium"
+              className="h-11 rounded-lg px-2 text-xs font-medium sm:h-9"
               style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
             >
               {[7, 14, 30, 60, 90, 180].map((duration) => (
@@ -1207,8 +1207,8 @@ function ExpiryTab({
             <p className="text-xs">Tiada stok aktif dalam {days} hari akan datang.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+          <div className="overflow-x-auto" role="region" aria-label="Jadual paras stok inventori" tabIndex={0}>
+            <table className="w-full min-w-[760px] border-collapse">
               <thead>
                 <tr>
                   {["Kod Item", "Nama Item", "Kelompok", "Tarikh Luput", "Baki Hari", "Kuantiti"].map((heading) => (
@@ -1280,8 +1280,8 @@ function LowStockTab({
             <p className="text-xs">Semua baki stok mencukupi untuk keperluan 4 minggu.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+          <div className="overflow-x-auto" role="region" aria-label="Jadual transaksi bekalan" tabIndex={0}>
+            <table className="w-full min-w-[820px] border-collapse">
               <thead>
                 <tr>
                   {["Kod Item", "Nama Item", "Kuantiti Diperlukan (4 Minggu)", "Baki Semasa"].map((heading) => (

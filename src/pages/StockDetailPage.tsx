@@ -766,7 +766,7 @@ function ItemEditForm({ editData, setEditData, forms, categories }: { editData: 
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div><Label style={labelStyle}>Kod Item</Label><Input value={editData.kod_item ?? ""} readOnly className="bg-muted/30" style={{ ...inputBaseStyle, fontFamily: "ui-monospace, SFMono-Regular, monospace" }} /></div>
+        <div><Label style={labelStyle}>Kod Item <span style={{ color: "#dc2626" }}>*</span></Label><Input value={editData.kod_item ?? ""} onChange={(e) => setEditData({ ...editData, kod_item: e.target.value.toUpperCase() })} required style={{ ...inputBaseStyle, fontFamily: "ui-monospace, SFMono-Regular, monospace", textTransform: "uppercase" }} /></div>
         <div><Label style={labelStyle}>Kekuatan</Label><Input value={editData.kekuatan ?? ""} onChange={(e) => setEditData({ ...editData, kekuatan: e.target.value })} onBlur={(e) => setEditData({ ...editData, kekuatan: e.target.value.toUpperCase() })} style={{ ...inputBaseStyle, textTransform: "uppercase" }} /></div>
       </div>
       <div><Label style={labelStyle}>Nama Item <span style={{ color: "#dc2626" }}>*</span></Label><Input value={editData.nama_item ?? ""} onChange={(e) => setEditData({ ...editData, nama_item: e.target.value })} onBlur={(e) => setEditData({ ...editData, nama_item: toTitleCaseKeepAcronyms(e.target.value) })} style={inputBaseStyle} /></div>

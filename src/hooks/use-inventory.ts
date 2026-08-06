@@ -288,15 +288,34 @@ export function useUpdateItem(id: string | undefined) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: Partial<Item>) => {
+      if (data.kod_item !== undefined) {
+        const kodItem = data.kod_item.trim();
+        if (!kodItem) throw new Error("Kod item diperlukan.");
+        const { data: duplicate, error: duplicateError } = await supabase
+          .from("items")
+          .select("id")
+          .ilike("kod_item", kodItem)
+          .neq("id", id!)
+          .maybeSingle();
+        if (duplicateError) throw duplicateError;
+        if (duplicate) throw new Error("Kod item sudah digunakan. Sila gunakan kod yang unik.");
+        data = { ...data, kod_item: kodItem };
+      }
       const { error } = await supabase
         .from("items")
         .update(data)
         .eq("id", id!);
-      if (error) throw error;
+      if (error) {
+        if (error.code === "23505") throw new Error("Kod item sudah digunakan. Sila gunakan kod yang unik.");
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["item", id] });
       queryClient.invalidateQueries({ queryKey: ["items"] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Gagal mengemaskini item.");
     },
   });
 }
@@ -643,6 +662,7 @@ export function useItemTransactionHistory(itemId: string | undefined) {
         .eq("item_id", itemId)
         .neq("rujukan_type", "supply")
         .neq("rujukan_type", "batch_disposal")
+        .neq("rujukan_type", "migration_initial_stock")
         .order("created_at", { ascending: false })
         .limit(500);
       if (transactionError) throw transactionError;

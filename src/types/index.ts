@@ -26,6 +26,7 @@ export interface Profile {
   kata_laluan_hash: string | null;
   created_at: string;
   updated_at: string;
+  tema?: "light" | "dark" | null;
 }
 
 // ============================================================================

@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavStore } from "@/lib/nav-store";
-import { formatItemDisplay, getInitials, formatMyKad, formatDate } from "@/lib/utils";
+import { formatItemDisplay, getInitials, formatMyKad, formatDate, getTodayStrKL, toDateInputValue } from "@/lib/utils";
 import { toast } from "sonner";
 import { AddPatientDialog } from "@/components/patient/add-patient-dialog";
 import {
@@ -248,6 +248,15 @@ export default function QuickDispensePage() {
   const latestSupply = supplyHistory[0] ?? null;
   const latestSupplyWeeks = latestSupply
     ? weeksSince(latestSupply.tarikh_dibekal)
+    : null;
+  const latestSupplyDays = latestSupply
+    ? parseDurationDays(latestSupply.tempoh_dibekal)
+    : null;
+  const daysSinceLatestSupply = latestSupply
+    ? calendarDaysSince(latestSupply.tarikh_dibekal)
+    : null;
+  const estimatedBalanceDays = latestSupplyDays !== null && daysSinceLatestSupply !== null
+    ? latestSupplyDays - daysSinceLatestSupply
     : null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -485,11 +494,12 @@ export default function QuickDispensePage() {
                   Memuatkan rekod bekalan...
                 </div>
               ) : latestSupply ? (
-                <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4">
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4">
                   <ReferenceValue label="Tarikh diambil" value={formatDate(latestSupply.tarikh_dibekal)} />
                   <ReferenceValue label="Dos" value={latestSupply.dos || "—"} />
                   <ReferenceValue label="Tempoh dibekal" value={latestSupply.tempoh_dibekal || "—"} />
                   <ReferenceValue label="Kuantiti" value={`${latestSupply.kuantiti} unit`} />
+                  <ReferenceValue label="Baki anggaran" value={formatBalanceDays(estimatedBalanceDays)} />
                   <div className="col-span-2 sm:col-span-4">
                     <ReferenceValue
                       label="Tempoh sejak bekalan"
@@ -636,6 +646,30 @@ export default function QuickDispensePage() {
       <AddPatientDialog open={showAddPatient} onOpenChange={setShowAddPatient} />
     </div>
   );
+}
+
+function parseDurationDays(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const match = value.trim().match(/(\d+(?:\.\d+)?)\s*(hari|day|minggu|week|bulan|month)/i);
+  if (!match) return null;
+  const amount = Number(match[1]);
+  if (!Number.isFinite(amount)) return null;
+  const unit = match[2].toLowerCase();
+  if (unit.startsWith("minggu") || unit.startsWith("week")) return Math.round(amount * 7);
+  if (unit.startsWith("bulan") || unit.startsWith("month")) return Math.round(amount * 30);
+  return Math.round(amount);
+}
+
+function calendarDaysSince(value: string): number {
+  const today = new Date(`${getTodayStrKL()}T00:00:00Z`).getTime();
+  const supplied = new Date(`${toDateInputValue(value)}T00:00:00Z`).getTime();
+  return Math.max(0, Math.floor((today - supplied) / (1000 * 60 * 60 * 24)));
+}
+
+function formatBalanceDays(days: number | null): string {
+  if (days === null) return "Tidak dapat dikira";
+  if (days < 0) return `${Math.abs(days)} hari lewat`;
+  return `${days} hari`;
 }
 
 function ReferenceValue({ label, value }: { label: string; value: string }) {

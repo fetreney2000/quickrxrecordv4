@@ -22,9 +22,10 @@ import {
   Edit,
   Loader2,
 } from "lucide-react";
-import { cn, formatDate, formatItemDisplay, formatMyKad } from "@/lib/utils";
+import { cn, formatDate, formatItemDisplay, formatMyKad, getTodayStrKL, toDateInputValue } from "@/lib/utils";
 import {
   useAvailableBatches,
+  useSupplyHistory,
   useSupplyDurations,
   type AssignmentWithItem,
 } from "@/hooks/use-patient-detail";
@@ -423,6 +424,9 @@ export function SupplyDialog({
   const { data: batches = [], isLoading: batchesLoading } = useAvailableBatches(
     open ? assignment.item_id : null
   );
+  const { data: supplyHistory = [], isLoading: supplyHistoryLoading } = useSupplyHistory(
+    open ? assignment.id : null
+  );
   const selectableBatches = batches.filter(
     (batch) => batch.kuantiti > 0 && batch.dilupuskan !== true
   );
@@ -456,6 +460,12 @@ export function SupplyDialog({
 
   const selectedBatch = selectableBatches.find((b) => b.id === batchId);
   const maxQty = selectedBatch?.kuantiti ?? 0;
+  const latestSupply = supplyHistory[0];
+  const latestSupplyDays = latestSupply ? parseDurationDays(latestSupply.tempoh_dibekal) : null;
+  const daysSinceSupply = latestSupply ? calendarDaysSince(latestSupply.tarikh_dibekal) : null;
+  const balanceDays = latestSupplyDays !== null && daysSinceSupply !== null
+    ? latestSupplyDays - daysSinceSupply
+    : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -479,6 +489,32 @@ export function SupplyDialog({
             </div>
           </div>
         </DialogHeader>
+
+        <div
+          className="rounded-xl border p-3"
+          style={{ background: "rgba(124,58,237,0.04)", borderColor: "rgba(124,58,237,0.15)" }}
+        >
+          <p className="mb-2 text-xs font-semibold" style={{ color: "#6d28d9" }}>
+            Rujukan bekalan terakhir
+          </p>
+          {supplyHistoryLoading ? (
+            <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Memuatkan maklumat bekalan...</p>
+          ) : !latestSupply ? (
+            <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Tiada rekod bekalan terdahulu.</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs sm:grid-cols-3">
+              <ReferenceValue label="Tarikh bekalan" value={formatDate(latestSupply.tarikh_dibekal)} />
+              <ReferenceValue label="Dos" value={latestSupply.dos || "—"} />
+              <ReferenceValue label="Tempoh dibekal" value={latestSupply.tempoh_dibekal || "—"} />
+              <ReferenceValue label="Kuantiti dibekal" value={String(latestSupply.kuantiti)} />
+              <ReferenceValue label="Bekalan lepas" value={formatWeeksAgo(daysSinceSupply)} />
+              <ReferenceValue label="Baki anggaran" value={formatBalanceDays(balanceDays)} />
+            </div>
+          )}
+          <p className="mt-2 text-[11px] italic" style={{ color: "var(--text-muted)" }}>
+            Maklumat ini untuk rujukan sahaja dan bukan kiraan stok sebenar.
+          </p>
+        </div>
 
         <form
           onSubmit={(e) => {
@@ -644,6 +680,45 @@ export function SupplyDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+function ReferenceValue({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <p style={{ color: "var(--text-secondary)" }}>{label}</p>
+      <p className="truncate font-semibold" style={{ color: "var(--text-primary)" }}>{value}</p>
+    </div>
+  );
+}
+
+function parseDurationDays(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const match = value.trim().match(/(\d+(?:\.\d+)?)\s*(hari|day|minggu|week|bulan|month)/i);
+  if (!match) return null;
+  const amount = Number(match[1]);
+  if (!Number.isFinite(amount)) return null;
+  const unit = match[2].toLowerCase();
+  if (unit.startsWith("minggu") || unit.startsWith("week")) return Math.round(amount * 7);
+  if (unit.startsWith("bulan") || unit.startsWith("month")) return Math.round(amount * 30);
+  return Math.round(amount);
+}
+
+function calendarDaysSince(value: string): number {
+  const today = new Date(`${getTodayStrKL()}T00:00:00Z`).getTime();
+  const supplied = new Date(`${toDateInputValue(value)}T00:00:00Z`).getTime();
+  return Math.max(0, Math.floor((today - supplied) / (1000 * 60 * 60 * 24)));
+}
+
+function formatWeeksAgo(days: number | null): string {
+  if (days === null) return "Tidak dapat dikira";
+  const weeks = Math.floor(days / 7);
+  return weeks === 1 ? "1 minggu lepas" : `${weeks} minggu lepas`;
+}
+
+function formatBalanceDays(days: number | null): string {
+  if (days === null) return "Tidak dapat dikira";
+  if (days < 0) return `${Math.abs(days)} hari lewat`;
+  return `${days} hari`;
 }
 
 // ============================================================================

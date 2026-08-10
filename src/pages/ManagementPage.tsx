@@ -338,7 +338,10 @@ export default function ManagementPage() {
   };
 
   const handleSaveEdit = (userId: string) => {
-    updateUserMutation.mutate({ id: userId, data: editData });
+    updateUserMutation.mutate({
+      id: userId,
+      data: { ...editData, nama: toTitleCase(editData.nama) },
+    });
   };
 
   const handleCancelEdit = () => {
@@ -1073,6 +1076,12 @@ function UserRow({
                               onEditDataChange({
                                 ...editData,
                                 nama: e.target.value,
+                              })
+                            }
+                            onBlur={() =>
+                              onEditDataChange({
+                                ...editData,
+                                nama: toTitleCase(editData.nama),
                               })
                             }
                             className="h-10 text-sm"

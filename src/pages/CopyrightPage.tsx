@@ -121,11 +121,14 @@ export default function CopyrightPage() {
               {/* Copyright Notice */}
               <div
                 className="rounded-xl p-4 text-center"
-                style={{ background: "rgba(240,242,245,0.5)" }}
+                style={{
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--border-light)",
+                }}
               >
                 <p
                   className="text-xs"
-                  style={{ color: "var(--text-muted)" }}
+                  style={{ color: "var(--text-secondary)" }}
                 >
                   © {currentYear} QuickRxRecord · Jabatan Farmasi Hospital
                   Keningau. Hak cipta terpelihara.

@@ -40,8 +40,8 @@ const inputStyle: React.CSSProperties = {
   height: "42px",
   padding: "0 14px",
   borderRadius: "10px",
-  border: "1px solid #dddfe2",
-  background: "#fff",
+  border: "1px solid var(--border)",
+  background: "var(--card)",
   fontSize: "14px",
   fontWeight: 500,
   color: "var(--text-primary)",
@@ -86,6 +86,7 @@ export default function ProfilePage() {
   const token = useAuthStore((s) => s.token);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const canEditUsername = profile?.peranan === "Pentadbir";
 
   // ── State ───────────────────────────────────────────────────────────────
   const [editing, setEditing] = useState(false);
@@ -130,7 +131,7 @@ export default function ProfilePage() {
         .update({
           nama: data.nama,
           jawatan: data.jawatan,
-          nama_pengguna: data.nama_pengguna,
+          ...(canEditUsername ? { nama_pengguna: data.nama_pengguna } : {}),
         })
         .eq("id", profile.id);
       if (error) throw error;
@@ -497,14 +498,22 @@ export default function ProfilePage() {
                       nama_pengguna: e.target.value,
                     }))
                   }
+                  readOnly={!canEditUsername}
                   style={
-                    focusedField === "edit-username"
+                    focusedField === "edit-username" && canEditUsername
                       ? inputFocusStyle
-                      : inputStyle
+                      : {
+                          ...inputStyle,
+                          ...(canEditUsername ? {} : {
+                            background: "var(--bg-secondary)",
+                            cursor: "not-allowed",
+                          }),
+                        }
                   }
-                  onFocus={() => setFocusedField("edit-username")}
+                  onFocus={() => canEditUsername && setFocusedField("edit-username")}
                   placeholder="nama_pengguna"
                   aria-label="Nama pengguna"
+                  aria-readonly={!canEditUsername}
                 />
               </div>
               <div style={{ gridColumn: "1 / -1" }}>

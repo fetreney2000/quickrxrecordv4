@@ -183,7 +183,7 @@ export function AddAssignmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl max-sm:max-h-[calc(100dvh-1.5rem)]">
+      <DialogContent className="max-w-3xl max-sm:max-h-[calc(100dvh-1.5rem)]">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div
@@ -606,11 +606,11 @@ export function SupplyDialog({
                 {selectableBatches.map((b) => (
                   <label
                     key={b.id}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-2 text-xs border-b last:border-b-0 cursor-pointer",
-                      batchId === b.id ? "bg-blue-50" : "hover:bg-blue-50/50"
-                    )}
-                    style={{ borderColor: "var(--border-light)" }}
+                    className="flex items-center gap-2 px-3 py-2 text-xs border-b last:border-b-0 cursor-pointer"
+                    style={{
+                      borderColor: "var(--border-light)",
+                      background: batchId === b.id ? "var(--bg-accent-blue)" : "transparent",
+                    }}
                   >
                     <input
                       type="radio"

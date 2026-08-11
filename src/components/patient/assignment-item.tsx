@@ -40,7 +40,7 @@ interface AssignmentItemProps {
   onDeleteSupply: (id: string) => void;
   canEdit: boolean;
   formsMap: Map<string, string>;
-  weeksSinceLastSupply: number | null;
+  lastSupplyAge: string | null;
 }
 
 type SortDir = "asc" | "desc";
@@ -61,7 +61,7 @@ function SortableHeader({ label, sortKey, currentSort, onSort }: { label: string
 const DOSE_PAGE_SIZE = 20;
 const SUPPLY_PAGE_SIZE = 20;
 
-export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpdateDose, onStop, onEditSupply, onDeleteSupply, canEdit, formsMap, weeksSinceLastSupply }: AssignmentItemProps) {
+export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpdateDose, onStop, onEditSupply, onDeleteSupply, canEdit, formsMap, lastSupplyAge }: AssignmentItemProps) {
   const navigate = useNavigate();
   const [doseSort, setDoseSort] = useState<{ key: string; dir: SortDir } | null>(null);
   const [supplySort, setSupplySort] = useState<{ key: string; dir: SortDir } | null>(null);
@@ -138,7 +138,7 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
               </div>
               <div className="flex items-center gap-2 mt-1">
                 {assignment.aktif ? <Badge variant="green" className="text-2xs">Aktif</Badge> : <Badge variant="slate" className="text-2xs">Tidak Aktif</Badge>}
-                {assignment.aktif && weeksSinceLastSupply !== null && <><span className="text-2xs mr-1" style={{ color: "var(--text-secondary)" }}>Bekalan Terakhir:</span><SupplyWeeksBadge weeks={weeksSinceLastSupply} /></>}
+                {assignment.aktif && lastSupplyAge !== null && <><span className="text-2xs mr-1" style={{ color: "var(--text-secondary)" }}>Bekalan Terakhir:</span><SupplyAgeBadge label={lastSupplyAge} /></>}
               </div>
             </div>
             {canEdit && assignment.aktif && (
@@ -241,13 +241,10 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
   );
 }
 
-function SupplyWeeksBadge({ weeks }: { weeks: number }) {
-  const weeksLabel = weeks === 1 ? "1 Minggu Lepas" : `${weeks} Minggu Lepas`;
-  const color = weeks <= 5 ? "#10b981" : weeks <= 13 ? "#f59e0b" : "#ef4444";
-  const bg = weeks <= 5 ? "rgba(16,185,129,0.10)" : weeks <= 13 ? "rgba(245,158,11,0.10)" : "rgba(239,68,68,0.10)";
+function SupplyAgeBadge({ label }: { label: string }) {
   return (
-    <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-md" style={{ background: bg, color }}>
-      {weeksLabel}
+    <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-md" style={{ background: "var(--bg-accent-blue)", color: "var(--text-blue)" }}>
+      {label}
     </span>
   );
 }

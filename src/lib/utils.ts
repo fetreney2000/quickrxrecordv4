@@ -129,6 +129,23 @@ export function getKLDayEndISO(dateInput?: string): string {
   return getKLDayStartISO(addDaysToDateInput(dateInput || getTodayStrKL(), 1));
 }
 
+/** Return the number of Kuala Lumpur calendar days since a date. */
+export function calendarDaysSinceKL(value: string | Date | null | undefined): number | null {
+  const date = toDateInputValue(value);
+  if (!date) return null;
+  const diffMs = new Date(getKLDayStartISO()).getTime() - new Date(getKLDayStartISO(date)).getTime();
+  return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+}
+
+/** Format a supply date using the application's Malay relative-age labels. */
+export function formatSupplyAge(value: string | Date | null | undefined): string | null {
+  const days = calendarDaysSinceKL(value);
+  if (days === null) return null;
+  if (days === 0) return "Hari Ini";
+  if (days < 7) return `${days} Hari Lalu`;
+  return `${Math.floor(days / 7)} Minggu Lalu`;
+}
+
 /** Title-case a name while keeping common acronyms uppercase. */
 export function toTitleCase(input: string | null | undefined): string {
   if (!input) return "";

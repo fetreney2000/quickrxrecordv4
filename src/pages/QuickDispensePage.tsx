@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavStore } from "@/lib/nav-store";
-import { formatItemDisplay, getInitials, formatMyKad, formatDate, getTodayStrKL, toDateInputValue } from "@/lib/utils";
+import { formatItemDisplay, getInitials, formatMyKad, formatDate, getTodayStrKL, toDateInputValue, formatSupplyAge } from "@/lib/utils";
 import { toast } from "sonner";
 import { AddPatientDialog } from "@/components/patient/add-patient-dialog";
 import {
@@ -34,7 +34,7 @@ import {
   useAddAssignmentInline,
 } from "@/hooks/use-quick-dispense";
 import { useLatestDoseHistoryDos } from "@/hooks/use-patient-detail";
-import { useSupplyHistory, weeksSince } from "@/hooks/use-patient-detail";
+import { useSupplyHistory } from "@/hooks/use-patient-detail";
 import type { Patient } from "@/types";
 
 const inputStyle: React.CSSProperties = {
@@ -246,9 +246,6 @@ export default function QuickDispensePage() {
      dose.trim() !== "";
 
   const latestSupply = supplyHistory[0] ?? null;
-  const latestSupplyWeeks = latestSupply
-    ? weeksSince(latestSupply.tarikh_dibekal)
-    : null;
   const latestSupplyDays = latestSupply
     ? parseDurationDays(latestSupply.tempoh_dibekal)
     : null;
@@ -503,7 +500,7 @@ export default function QuickDispensePage() {
                   <div className="col-span-2 sm:col-span-4">
                     <ReferenceValue
                       label="Tempoh sejak bekalan"
-                      value={latestSupplyWeeks === null ? "—" : `${latestSupplyWeeks} minggu lalu`}
+                      value={formatSupplyAge(latestSupply.tarikh_dibekal) ?? "—"}
                     />
                   </div>
                 </div>

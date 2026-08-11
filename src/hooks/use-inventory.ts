@@ -131,6 +131,7 @@ export function useItems({
   sort: SortState | null;
   pageSize?: number;
 }) {
+  const needsClientSort = sort?.key === "stock" || sort?.key === "remaining";
   return useQuery({
     queryKey: ["items", search, page, sort, pageSize],
     queryFn: async () => {
@@ -148,6 +149,39 @@ export function useItems({
         query = query.or(
           `kod_item.ilike.%${term}%,nama_item.ilike.%${term}%,nama_dagangan.ilike.%${term}%`
         );
+      }
+
+      // stok dan baki kuota bukan lajur dalam jadual items (nilai terhitung),
+      // jadi isihan dilakukan di sisi klien selepas memuatkan semua padanan.
+      if (needsClientSort) {
+        const { data, error, count } = await query;
+        if (error) throw error;
+
+        const formIds = [...new Set((data ?? []).map((item: any) => item.id_bentuk).filter(Boolean))];
+        const formMap = new Map<string, string>();
+        if (formIds.length > 0) {
+          const { data: forms, error: formsError } = await supabase
+            .from("item_forms")
+            .select("id, nama")
+            .in("id", formIds);
+          if (formsError) throw formsError;
+          (forms ?? []).forEach((form) => formMap.set(form.id, form.nama));
+        }
+
+        const rows = (data ?? []).map((item: any) => ({ ...item, bentuk: formMap.get(item.id_bentuk) ?? null }));
+        rows.sort((a: any, b: any) => {
+          const av = sort.key === "stock" ? computeStock(a) : computeRemaining(a);
+          const bv = sort.key === "stock" ? computeStock(b) : computeRemaining(b);
+          const cmp = compareNullable(av, bv);
+          return sort.dir === "asc" ? cmp : -cmp;
+        });
+
+        const from = page * pageSize;
+        return {
+          items: rows.slice(from, from + pageSize),
+          total: count ?? 0,
+          totalPages: Math.max(1, Math.ceil((count ?? 0) / pageSize)),
+        };
       }
 
       // Sort
@@ -192,6 +226,22 @@ export function useItems({
     },
     staleTime: 30_000,
   });
+}
+
+function computeStock(item: { item_batches?: { kuantiti: number }[] }): number {
+  return (item.item_batches ?? []).reduce((sum, b) => sum + (b.kuantiti || 0), 0);
+}
+
+function computeRemaining(item: { kuota?: number | null; patient_item_assignments?: { id: string }[] }): number | null {
+  if (item.kuota == null) return null;
+  return Math.max(0, item.kuota - (item.patient_item_assignments?.length ?? 0));
+}
+
+function compareNullable(a: number | null, b: number | null): number {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1;
+  if (b === null) return -1;
+  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 export function useItem(id: string | undefined) {

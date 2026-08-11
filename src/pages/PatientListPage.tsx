@@ -69,17 +69,6 @@ export default function PatientListPage() {
 
   useEffect(() => { setPage(0); }, [pageSize]);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "/" && document.activeElement !== searchInputRef.current) {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, []);
-
   const { data, isLoading, isFetching } = usePatients({ search: debouncedSearch, page, pageSize, sort });
   const patients = data?.patients ?? [];
   const total = data?.total ?? 0;

@@ -41,17 +41,6 @@ export default function StockListPage() {
   useEffect(() => { document.title = "Inventori — QuickRxRecord"; setNavSource("list"); setBreadcrumbTrail([HOME_CRUMB, { label: "Senarai Inventori" }]); }, [setNavSource, setBreadcrumbTrail]);
   useEffect(() => { setPage(0); }, [pageSize]);
   useEffect(() => { if (debounceTimer.current) clearTimeout(debounceTimer.current); debounceTimer.current = setTimeout(() => { setDebouncedSearch(search); setPage(0); }, SEARCH_DEBOUNCE_MS); return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); }; }, [search]);
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "/" && document.activeElement !== searchInputRef.current) {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, []);
-
   const { data, isLoading, isFetching } = useItems({ search: debouncedSearch, page, pageSize, sort });
   const items = data?.items ?? [];
   const total = data?.total ?? 0;

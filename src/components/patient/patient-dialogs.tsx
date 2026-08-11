@@ -183,7 +183,7 @@ export function AddAssignmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl lg:max-w-3xl max-sm:max-h-[calc(100dvh-1.5rem)]">
+      <DialogContent className="max-w-lg max-sm:max-h-[calc(100dvh-1.5rem)]">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div

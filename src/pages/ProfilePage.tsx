@@ -381,8 +381,8 @@ export default function ProfilePage() {
                   gap: 6,
                   padding: "8px 14px",
                   borderRadius: 10,
-                  border: "1px solid #dddfe2",
-                  background: "#fff",
+                  border: "1px solid var(--border)",
+                  background: "var(--card)",
                   color: "var(--text-secondary)",
                   fontSize: 12,
                   fontWeight: 600,
@@ -915,7 +915,7 @@ export default function ProfilePage() {
                     transition: "all 0.2s ease",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "#bec3c9";
+                  e.currentTarget.style.borderColor = "var(--border-medium)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.borderColor = "var(--border)";

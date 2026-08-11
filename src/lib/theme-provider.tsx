@@ -20,44 +20,62 @@ function isTheme(value: unknown): value is Theme {
   return value === "light" || value === "dark";
 }
 
-function getFallbackTheme(storageKey = STORAGE_KEY): Theme {
-  const stored = localStorage.getItem(storageKey) ?? localStorage.getItem(STORAGE_KEY);
-  if (isTheme(stored)) return stored;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+function readStoredTheme(): Theme | null {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  return isTheme(raw) ? raw : null;
+}
+
+function applyTheme(theme: Theme, userId?: string) {
+  document.documentElement.classList.toggle("dark", theme === "dark");
+  localStorage.setItem(STORAGE_KEY, theme);
+  if (userId) localStorage.setItem(`${STORAGE_KEY}:${userId}`, theme);
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const profile = useAuthStore((state) => state.profile);
-  const [theme, setTheme] = useState<Theme>(() => getFallbackTheme());
+  const [theme, setTheme] = useState<Theme>(() => {
+    const stored = readStoredTheme();
+    if (stored) return stored;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  });
 
+  // Apply theme to DOM and localStorage immediately on change.
   useEffect(() => {
+    applyTheme(theme, profile?.id);
+  }, [theme, profile?.id]);
+
+  // Sync from Supabase only on first login for a user; localStorage takes precedence afterwards.
+  useEffect(() => {
+    const userId = profile?.id;
+    if (!userId) return;
+
+    const stored = localStorage.getItem(`${STORAGE_KEY}:${userId}`);
+    if (isTheme(stored)) {
+      // Respect the user's explicit local preference.
+      setTheme(stored);
+      return;
+    }
+
     let cancelled = false;
-    const userStorageKey = profile?.id ? `${STORAGE_KEY}:${profile.id}` : STORAGE_KEY;
-    setTheme(isTheme(profile?.tema) ? profile.tema : getFallbackTheme(userStorageKey));
-
-    if (!profile?.id) return () => { cancelled = true; };
-
     void supabase
       .from("profiles")
       .select("tema")
-      .eq("id", profile.id)
+      .eq("id", userId)
       .maybeSingle()
       .then(({ data }) => {
-        if (!cancelled && isTheme(data?.tema)) setTheme(data.tema);
+        if (!cancelled && isTheme(data?.tema)) {
+          setTheme(data.tema);
+          applyTheme(data.tema, userId);
+        }
       });
 
     return () => { cancelled = true; };
   }, [profile?.id]);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-    localStorage.setItem(STORAGE_KEY, theme);
-    if (profile?.id) localStorage.setItem(`${STORAGE_KEY}:${profile.id}`, theme);
-  }, [profile?.id, theme]);
-
   const toggle = () => {
     setTheme((current) => {
       const next = current === "light" ? "dark" : "light";
+      applyTheme(next, profile?.id);
       if (profile?.id) {
         void supabase.from("profiles").update({ tema: next }).eq("id", profile.id);
       }

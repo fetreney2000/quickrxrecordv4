@@ -257,20 +257,20 @@ export function AddAssignmentDialog({
                     disabled={active || kuotaPenuh}
                     title={`Pilih ${formatItemDisplay(i, i.id_bentuk ? formsMap.get(i.id_bentuk) : null)}`}
                     className={cn(
-                      "min-h-14 w-full text-left px-3 py-3 text-xs border-b last:border-b-0 transition-colors",
+                      "min-h-14 w-full text-left px-3 py-3 text-xs border-b last:border-b-0 transition-colors overflow-hidden",
                       (active || kuotaPenuh) && "opacity-50 cursor-not-allowed",
                       !active && !kuotaPenuh && selectedItemId === i.id
-                        ? "bg-blue-50"
-                        : "hover:bg-blue-50/50"
+                        ? "bg-[var(--bg-accent-blue)]"
+                        : "hover:bg-[var(--bg-secondary)]"
                     )}
                     style={{ borderColor: "var(--border-light)" }}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2 min-w-0">
+                      <div className="min-w-0 flex-1 overflow-hidden">
                         <p className="font-semibold truncate" style={{ color: "var(--text-primary)" }}>
                           {formatItemDisplay(i, i.id_bentuk ? formsMap.get(i.id_bentuk) : null)}
                         </p>
-                        <p style={{ color: "var(--text-secondary)" }}>
+                        <p className="truncate" style={{ color: "var(--text-secondary)" }}>
                           {i.kod_item}
                         </p>
                       </div>

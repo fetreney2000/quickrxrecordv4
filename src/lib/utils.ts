@@ -146,40 +146,100 @@ export function formatSupplyAge(value: string | Date | null | undefined): string
   return `${Math.floor(days / 7)} Minggu Lalu`;
 }
 
+/** Singkatan nama Melayu/Malaysia yang dikekalkan dalam HURUF BESAR (A/L, A/P, S/O, dll.). */
+const MALAY_NAME_ABBREVIATIONS = new Set([
+  "A/L", "A/P", "S/O", "D/O", "B/O", "B/W",
+  "AK", "DG", "DK", "AG", "AWG", "AWGKU", "PG",
+]);
+
 /** Title-case a name while keeping common acronyms uppercase. */
 export function toTitleCase(input: string | null | undefined): string {
   if (!input) return "";
   return input
     .toLowerCase()
     .split(/\s+/)
-    .map((w) => (w.length > 0 ? w[0].toUpperCase() + w.slice(1) : w))
+    .map((w) => {
+      if (!w) return w;
+      const up = w.toUpperCase().replace(/[.,]$/, "");
+      if (MALAY_NAME_ABBREVIATIONS.has(up)) {
+        return w.toUpperCase();
+      }
+      return w[0].toUpperCase() + w.slice(1);
+    })
     .join(" ");
 }
 
-/** Title-case a name but preserve known acronyms (KP, HKL, etc.). */
+/**
+ * Istilah perubatan/farmasi yang tidak boleh ditukar kepada title case.
+ * Kekunci ialah bentuk UPPERCASE (padanan tak sensitif huruf); nilai ialah ejaan
+ * piawai yang dikekalkan. Sumber: drugs.com/article/prescription-abbreviations.html
+ * dan resourcepharm.com/pre-reg-pharmacist/pharmacy-abbreviations.html.
+ */
+const PHARMACY_ABBREVIATIONS: Record<string, string> = {
+  // Unit ukuran (huruf kecil mengikut konvensyen; mL, mEq, dL, dll.)
+  G: "g", MG: "mg", KG: "kg", MCG: "mcg", ML: "mL", DL: "dL",
+  MM: "mm", CM: "cm", CC: "cc", MEQ: "mEq", MMOL: "mmol", NMOL: "nmol",
+  MOL: "mol", HR: "hr", MIN: "min", GTT: "gtt", GTTS: "gtts", GR: "gr",
+  OZ: "oz", TSP: "tsp", TBSP: "tbsp", IU: "IU", U: "U",
+  // Bentuk dos, laluan pentadbiran & modifikasi pelepasan
+  IR: "IR", ER: "ER", MR: "MR", XR: "XR", XL: "XL", XT: "XT", SR: "SR",
+  CR: "CR", DR: "DR", LA: "LA", SA: "SA", PR: "PR", EC: "EC", FC: "FC",
+  SC: "SC", IM: "IM", IV: "IV", IVP: "IVP", IVIG: "IVIG", PO: "PO",
+  PV: "PV", SL: "SL", OD: "OD", OS: "OS", OU: "OU", AD: "AD", AS: "AS",
+  AU: "AU", IN: "IN", NAS: "NAS", NGT: "NGT", NPO: "NPO", SQ: "SQ",
+  OC: "OC", IUD: "IUD", NEB: "NEB", MDI: "MDI", DPI: "DPI", PCA: "PCA",
+  PICC: "PICC", PEG: "PEG", BSA: "BSA", CD: "CD", NRT: "NRT", WSP: "WSP",
+  YSP: "YSP", IJ: "IJ", NG: "NG", IA: "IA",
+  // Kekerapan & arahan preskripsi
+  BID: "BID", TID: "TID", QID: "QID", QD: "QD", QDS: "QDS", TDS: "TDS",
+  QHS: "QHS", QOD: "QOD", HS: "HS", PRN: "PRN", STAT: "STAT", RX: "Rx",
+  // Ubat & kelas ubat
+  APAP: "APAP", ASA: "ASA", NSAID: "NSAID", SNRI: "SNRI", SSRI: "SSRI",
+  ACEI: "ACEI", ARB: "ARB", OTC: "OTC", NDC: "NDC", HCTZ: "HCTZ",
+  TSH: "TSH", INR: "INR", PT: "PT", PTT: "PTT", APTT: "aPTT", MMR: "MMR",
+  MMRV: "MMRV", DTP: "DTP", DTAP: "DTaP", BCG: "BCG", HPV: "HPV",
+  HEPB: "HepB", HEPA: "HepA", HIB: "Hib", IPV: "IPV", OPV: "OPV",
+  PCV: "PCV", TD: "Td", TDAP: "Tdap", PHARMD: "PharmD",
+  // Keadaan perubatan & istilah klinikal
+  CAD: "CAD", DM: "DM", DVT: "DVT", GERD: "GERD", GI: "GI", GU: "GU",
+  HTN: "HTN", PE: "PE", RA: "RA", UTI: "UTI", MD: "MD", MI: "MI",
+  AF: "AF", COPD: "COPD", CHF: "CHF", CVA: "CVA", TB: "TB", HIV: "HIV",
+  AIDS: "AIDS", CKD: "CKD", AKI: "AKI", IHD: "IHD", CCF: "CCF",
+  SLE: "SLE", MS: "MS", BP: "BP", BMI: "BMI", CNS: "CNS", ENT: "ENT",
+  EENT: "EENT", FDA: "FDA", HCP: "HCP", NS: "NS", NKA: "NKA",
+  NKDA: "NKDA", DOB: "DOB", DAW: "DAW", HBP: "HBP",
+  // Ujian makmal & prosedur
+  CBC: "CBC", WBC: "WBC", RBC: "RBC", HB: "Hb", HCT: "HCT", FBS: "FBS",
+  HDL: "HDL", LDL: "LDL", ESR: "ESR", CRP: "CRP", LFT: "LFT",
+  RFT: "RFT", GFR: "GFR", BUN: "BUN", SCR: "SCr", AST: "AST", ALT: "ALT",
+  ALP: "ALP", GGT: "GGT", ECG: "ECG", EKG: "EKG", EEG: "EEG", MRI: "MRI",
+  CT: "CT", PFT: "PFT", CXR: "CXR", WNL: "WNL",
+  // Unsur / mineral
+  K: "K", FE: "Fe", CA: "Ca", NA: "Na", CL: "Cl", ZN: "Zn",
+  // Istilah sedia ada yang dikekalkan
+  KP: "KP", HKL: "HKL", HOSP: "HOSP", HOSPITAL: "HOSPITAL", NO: "NO",
+  PHARM: "PHARM", PHARMACY: "PHARMACY",
+};
+
+function preservePharmacyAbbreviation(word: string): string {
+  const match = word.match(/^([^A-Za-z]*)([A-Za-z]+)([^A-Za-z]*)$/);
+  if (!match) return "";
+  const canonical = PHARMACY_ABBREVIATIONS[match[2].toUpperCase()];
+  if (!canonical) return "";
+  return match[1] + canonical + match[3];
+}
+
+/** Title-case a name but preserve known medical/pharmacy abbreviations (MMR, IR, EC, mL, dll.). */
 export function toTitleCaseKeepAcronyms(input: string | null | undefined): string {
   if (!input) return "";
-  const ACRONYMS = new Set([
-    "KP",
-    "HKL",
-    "HOSP",
-    "HOSPITAL",
-    "NO",
-    "NO.",
-    "DR",
-    "DR.",
-    "PHARM",
-    "PHARMACY",
-  ]);
   return input
     .toLowerCase()
     .split(/\s+/)
     .map((w) => {
-      const up = w.toUpperCase().replace(/[.,]/g, "");
-      if (ACRONYMS.has(up)) {
-        return w.toUpperCase();
-      }
-      return w.length > 0 ? w[0].toUpperCase() + w.slice(1) : w;
+      if (!w) return w;
+      const preserved = preservePharmacyAbbreviation(w);
+      if (preserved) return preserved;
+      return w[0].toUpperCase() + w.slice(1);
     })
     .join(" ");
 }

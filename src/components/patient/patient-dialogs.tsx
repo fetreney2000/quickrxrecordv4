@@ -183,8 +183,8 @@ export function AddAssignmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-sm:max-h-[calc(100dvh-1.5rem)]">
-        <DialogHeader>
+      <DialogContent className="max-w-lg max-sm:max-h-[calc(100dvh-1.5rem)] overflow-x-hidden">
+        <DialogHeader className="min-w-0">
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center text-white"
@@ -214,9 +214,9 @@ export function AddAssignmentDialog({
               catatan: catatan.trim(),
             });
           }}
-          className="space-y-3 mt-2"
+          className="space-y-3 mt-2 min-w-0 w-full"
         >
-          <div>
+          <div className="min-w-0">
             <Label style={labelStyle}>Cari Item</Label>
             <div className="relative">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
@@ -231,7 +231,7 @@ export function AddAssignmentDialog({
 
           {/* Item list */}
           <div
-            className="border rounded-xl overflow-y-auto"
+            className="border rounded-xl overflow-y-auto min-w-0 w-full max-w-full"
             style={{ borderColor: "var(--border-medium)", maxHeight: "min(320px, 34dvh)" }}
           >
             {filtered.length === 0 ? (
@@ -257,13 +257,16 @@ export function AddAssignmentDialog({
                     disabled={active || kuotaPenuh}
                     title={`Pilih ${formatItemDisplay(i, i.id_bentuk ? formsMap.get(i.id_bentuk) : null)}`}
                     className={cn(
-                      "min-h-14 w-full text-left px-3 py-3 text-xs border-b last:border-b-0 transition-colors overflow-hidden",
+                      "min-h-14 w-full max-w-full text-left px-3 py-3 text-xs border-b last:border-b-0 transition-colors overflow-hidden",
                       (active || kuotaPenuh) && "opacity-50 cursor-not-allowed",
-                      !active && !kuotaPenuh && selectedItemId === i.id
-                        ? "bg-[var(--bg-accent-blue)]"
-                        : "hover:bg-[var(--bg-secondary)]"
+                      !active && !kuotaPenuh && "hover:bg-accent/50"
                     )}
-                    style={{ borderColor: "var(--border-light)" }}
+                    style={{
+                      borderColor: "var(--border-light)",
+                      ...(selectedItemId === i.id && !active && !kuotaPenuh
+                        ? { background: "var(--bg-accent-blue)" }
+                        : {}),
+                    }}
                   >
                     <div className="flex items-center justify-between gap-2 min-w-0">
                       <div className="min-w-0 flex-1 overflow-hidden">
@@ -339,7 +342,7 @@ export function AddAssignmentDialog({
             </div>
           )}
 
-          <div>
+          <div className="min-w-0">
             <Label style={labelStyle}>Dos *</Label>
             <Input
               value={dos}
@@ -794,7 +797,7 @@ export function UpdateDoseDialog({
               style={inputBaseStyle}
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <Label style={labelStyle}>Catatan</Label>
             <Input
               value={catatan}
@@ -803,7 +806,8 @@ export function UpdateDoseDialog({
             />
           </div>
         </form>
-        <DialogFooter className="mt-4">
+
+        <DialogFooter className="mt-4 min-w-0">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}

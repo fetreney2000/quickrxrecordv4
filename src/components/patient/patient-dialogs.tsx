@@ -274,10 +274,10 @@ export function AddAssignmentDialog({
                           {i.kod_item}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="flex items-center gap-2 flex-shrink-0 min-w-0 max-w-[40%]">
                         {kuotaPenuh && !active ? (
                           <span
-                            className="text-2xs font-semibold px-2 py-0.5 rounded-full"
+                            className="text-2xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap"
                             style={{
                               background: "rgba(220,38,38,0.10)",
                               color: "#dc2626",
@@ -287,7 +287,7 @@ export function AddAssignmentDialog({
                           </span>
                         ) : active ? (
                           <span
-                            className="text-2xs font-semibold px-2 py-0.5 rounded-full"
+                            className="text-2xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap"
                             style={{
                               background: "rgba(217,119,6,0.1)",
                               color: "#d97706",
@@ -297,7 +297,7 @@ export function AddAssignmentDialog({
                           </span>
                         ) : selectedItemId === i.id ? (
                           <span
-                            className="text-2xs font-semibold px-2 py-0.5 rounded-full"
+                            className="text-2xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap"
                             style={{
                               background: "var(--bg-accent-blue)",
                               color: "#1877f2",
@@ -307,7 +307,7 @@ export function AddAssignmentDialog({
                           </span>
                         ) : hasKuota ? (
                           <span
-                            className="text-2xs font-medium"
+                            className="text-2xs font-medium truncate"
                             style={{ color: "var(--text-secondary)" }}
                           >
                             Baki: {baki}/{kuota}

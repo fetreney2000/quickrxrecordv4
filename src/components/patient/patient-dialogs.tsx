@@ -516,7 +516,7 @@ export function SupplyDialog({
               <ReferenceValue label="Baki anggaran" value={formatBalanceDays(balanceDays)} />
             </div>
           )}
-          <p className="mt-2 text-[11px] italic" style={{ color: "var(--text-muted)" }}>
+          <p className="mt-2 text-xs italic" style={{ color: "var(--text-muted)" }}>
             Maklumat ini untuk rujukan sahaja dan bukan kiraan stok sebenar.
           </p>
         </div>

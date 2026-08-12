@@ -641,13 +641,13 @@ export default function ReportPage() {
         </div>
         <div className="min-w-0">
           <h1
-            className="text-[22px] font-bold leading-tight truncate"
+            className="text-2xl font-bold leading-tight truncate"
             style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}
           >
             Laporan
           </h1>
           <p
-            className="text-[13px] font-medium mt-0.5"
+            className="text-sm font-medium mt-0.5"
             style={{ color: "var(--text-secondary)" }}
           >
             Laporan inventori dan transaksi bekalan
@@ -668,7 +668,7 @@ export default function ReportPage() {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className="flex min-h-11 flex-shrink-0 items-center gap-1.5 rounded-[10px] px-4 py-2 text-[13px] font-semibold transition-all duration-200 sm:min-h-0"
+                className="flex min-h-11 flex-shrink-0 items-center gap-1.5 rounded-[10px] px-4 py-2 text-sm font-semibold transition-all duration-200 sm:min-h-0"
                 style={{
                   background: isActive ? "var(--card)" : "transparent",
                   color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
@@ -767,7 +767,7 @@ function InventoryTab({
             <button
               onClick={onExportExcel}
               disabled={loading || !data}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-[12px] font-semibold transition-all disabled:opacity-40 sm:min-h-0"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-xs font-semibold transition-all disabled:opacity-40 sm:min-h-0"
               style={{
                 background: "rgba(34,197,94,0.08)",
                 color: "var(--text-primary)",
@@ -780,7 +780,7 @@ function InventoryTab({
             <button
               onClick={onExportPDF}
               disabled={loading || !data}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-[12px] font-semibold transition-all disabled:opacity-40 sm:min-h-0"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-xs font-semibold transition-all disabled:opacity-40 sm:min-h-0"
               style={{
                 background: "rgba(239,68,68,0.08)",
                 color: "var(--text-primary)",
@@ -859,7 +859,7 @@ function InventoryTab({
                       onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                     >
                       <td
-                        className="px-3 py-3 text-[13px]"
+                        className="px-3 py-3 text-sm"
                         style={{ borderBottom: "1px solid var(--border-light)" }}
                       >
                         <span style={{ fontFamily: "monospace" }}>
@@ -867,7 +867,7 @@ function InventoryTab({
                         </span>
                       </td>
                       <td
-                        className="px-3 py-3 text-[13px]"
+                        className="px-3 py-3 text-sm"
                         style={{
                           borderBottom: "1px solid var(--border-light)",
                           fontWeight: 500,
@@ -876,19 +876,19 @@ function InventoryTab({
                         {formatItemDisplay(item)}
                       </td>
                       <td
-                        className="px-3 py-3 text-[13px]"
+                        className="px-3 py-3 text-sm"
                         style={{ borderBottom: "1px solid var(--border-light)" }}
                       >
                         {item.kekuatan ?? "-"}
                       </td>
                       <td
-                        className="px-3 py-3 text-[13px]"
+                        className="px-3 py-3 text-sm"
                         style={{ borderBottom: "1px solid var(--border-light)" }}
                       >
                         {item.kuota ?? "-"}
                       </td>
                       <td
-                        className="px-3 py-3 text-[13px]"
+                        className="px-3 py-3 text-sm"
                         style={{
                           borderBottom: "1px solid var(--border-light)",
                           fontWeight: 600,
@@ -999,7 +999,7 @@ function TransactionsTab({
               <button
               onClick={onExportExcel}
               disabled={loading || !data}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-[12px] font-semibold transition-all disabled:opacity-40 sm:min-h-0"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-xs font-semibold transition-all disabled:opacity-40 sm:min-h-0"
               style={{
                 background: "rgba(34,197,94,0.08)",
                 color: "var(--text-primary)",
@@ -1012,7 +1012,7 @@ function TransactionsTab({
               <button
               onClick={onExportPDF}
               disabled={loading || !data}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-[12px] font-semibold transition-all disabled:opacity-40 sm:min-h-0"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-xs font-semibold transition-all disabled:opacity-40 sm:min-h-0"
               style={{
                 background: "rgba(239,68,68,0.08)",
                 color: "var(--text-primary)",
@@ -1086,7 +1086,7 @@ function TransactionsTab({
                     onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                   >
                     <td
-                      className="px-3 py-3 text-[13px]"
+                      className="px-3 py-3 text-sm"
                       style={{
                         borderBottom: "1px solid var(--border-light)",
                         whiteSpace: "nowrap",
@@ -1095,25 +1095,25 @@ function TransactionsTab({
                       {formatDate(t.tarikh_dibekal)}
                     </td>
                     <td
-                      className="px-3 py-3 text-[13px]"
+                      className="px-3 py-3 text-sm"
                       style={{ borderBottom: "1px solid var(--border-light)" }}
                     >
                       {t.assignment?.patient?.nama ?? "-"}
                     </td>
                     <td
-                      className="px-3 py-3 text-[13px]"
+                      className="px-3 py-3 text-sm"
                       style={{ borderBottom: "1px solid var(--border-light)" }}
                     >
                       {formatItemDisplay(t.assignment?.item) || "-"}
                     </td>
                     <td
-                      className="px-3 py-3 text-[13px]"
+                      className="px-3 py-3 text-sm"
                       style={{ borderBottom: "1px solid var(--border-light)" }}
                     >
                       {t.dos}
                     </td>
                     <td
-                      className="px-3 py-3 text-[13px]"
+                      className="px-3 py-3 text-sm"
                       style={{
                         borderBottom: "1px solid var(--border-light)",
                         fontWeight: 600,
@@ -1123,13 +1123,13 @@ function TransactionsTab({
                       {t.kuantiti}
                     </td>
                     <td
-                      className="px-3 py-3 text-[13px]"
+                      className="px-3 py-3 text-sm"
                       style={{ borderBottom: "1px solid var(--border-light)", fontFamily: "monospace" }}
                     >
                       {t.batch?.nombor_kelompok ?? "-"}
                     </td>
                     <td
-                      className="px-3 py-3 text-[13px]"
+                      className="px-3 py-3 text-sm"
                       style={{ borderBottom: "1px solid var(--border-light)" }}
                     >
                       {t.staff?.nama ?? "-"}
@@ -1220,12 +1220,12 @@ function ExpiryTab({
                   const remainingDays = daysBetween(today, batch.tarikh_luput);
                   return (
                     <tr key={batch.id} style={{ background: "transparent" }}>
-                      <td className="px-3 py-3 text-[13px] font-mono" style={{ borderBottom: "1px solid var(--border-light)" }}>{batch.item?.kod_item ?? "-"}</td>
-                      <td className="px-3 py-3 text-[13px]" style={{ borderBottom: "1px solid var(--border-light)" }}>{formatItemDisplay(batch.item) || "-"}</td>
-                      <td className="px-3 py-3 text-[13px] font-mono font-semibold" style={{ borderBottom: "1px solid var(--border-light)", color: "#ea580c" }}>{batch.nombor_kelompok}</td>
-                      <td className="px-3 py-3 text-[13px]" style={{ borderBottom: "1px solid var(--border-light)" }}>{formatDate(batch.tarikh_luput)}</td>
-                      <td className="px-3 py-3 text-[13px] font-semibold" style={{ borderBottom: "1px solid var(--border-light)", color: remainingDays <= 7 ? "#dc2626" : "#ea580c" }}>{remainingDays} hari</td>
-                      <td className="px-3 py-3 text-[13px] font-semibold" style={{ borderBottom: "1px solid var(--border-light)" }}>{batch.kuantiti.toLocaleString("ms-MY")}</td>
+                      <td className="px-3 py-3 text-sm font-mono" style={{ borderBottom: "1px solid var(--border-light)" }}>{batch.item?.kod_item ?? "-"}</td>
+                      <td className="px-3 py-3 text-sm" style={{ borderBottom: "1px solid var(--border-light)" }}>{formatItemDisplay(batch.item) || "-"}</td>
+                      <td className="px-3 py-3 text-sm font-mono font-semibold" style={{ borderBottom: "1px solid var(--border-light)", color: "#ea580c" }}>{batch.nombor_kelompok}</td>
+                      <td className="px-3 py-3 text-sm" style={{ borderBottom: "1px solid var(--border-light)" }}>{formatDate(batch.tarikh_luput)}</td>
+                      <td className="px-3 py-3 text-sm font-semibold" style={{ borderBottom: "1px solid var(--border-light)", color: remainingDays <= 7 ? "#dc2626" : "#ea580c" }}>{remainingDays} hari</td>
+                      <td className="px-3 py-3 text-sm font-semibold" style={{ borderBottom: "1px solid var(--border-light)" }}>{batch.kuantiti.toLocaleString("ms-MY")}</td>
                     </tr>
                   );
                 })}
@@ -1291,10 +1291,10 @@ function LowStockTab({
               <tbody>
                 {displayData.map((item) => (
                   <tr key={item.id}>
-                    <td className="px-3 py-3 text-[13px] font-mono" style={{ borderBottom: "1px solid var(--border-light)" }}>{item.kod_item}</td>
-                    <td className="px-3 py-3 text-[13px]" style={{ borderBottom: "1px solid var(--border-light)" }}>{formatItemDisplay(item)}</td>
-                    <td className="px-3 py-3 text-[13px] font-semibold" style={{ borderBottom: "1px solid var(--border-light)", color: "#dc2626" }}>{Math.ceil(item.requiredFourWeeks).toLocaleString("ms-MY")}</td>
-                    <td className="px-3 py-3 text-[13px] font-semibold" style={{ borderBottom: "1px solid var(--border-light)", color: "var(--text-primary)" }}>{item.currentBalance.toLocaleString("ms-MY")}</td>
+                    <td className="px-3 py-3 text-sm font-mono" style={{ borderBottom: "1px solid var(--border-light)" }}>{item.kod_item}</td>
+                    <td className="px-3 py-3 text-sm" style={{ borderBottom: "1px solid var(--border-light)" }}>{formatItemDisplay(item)}</td>
+                    <td className="px-3 py-3 text-sm font-semibold" style={{ borderBottom: "1px solid var(--border-light)", color: "#dc2626" }}>{Math.ceil(item.requiredFourWeeks).toLocaleString("ms-MY")}</td>
+                    <td className="px-3 py-3 text-sm font-semibold" style={{ borderBottom: "1px solid var(--border-light)", color: "var(--text-primary)" }}>{item.currentBalance.toLocaleString("ms-MY")}</td>
                   </tr>
                 ))}
               </tbody>

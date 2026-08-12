@@ -617,8 +617,8 @@ export default function StockDetailPage() {
             <Pill className="w-5 h-5" strokeWidth={2.2} />
           </div>
           <div className="min-w-0">
-            <h1 className="text-[20px] font-bold leading-tight truncate sm:text-[22px]" style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}>{displayTitle}</h1>
-            <p className="text-[13px] font-medium mt-0.5 truncate" style={{ color: "var(--text-secondary)" }}>
+            <h1 className="text-xl font-bold leading-tight truncate sm:text-2xl" style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}>{displayTitle}</h1>
+            <p className="text-sm font-medium mt-0.5 truncate" style={{ color: "var(--text-secondary)" }}>
               <span className="font-mono font-semibold" style={{ color: "#7c3aed" }}>{item.kod_item}</span>
               {item.nama_dagangan && <> · {item.nama_dagangan}</>}
               {item.aktif ? " · Aktif" : " · Tidak Aktif"}

@@ -83,7 +83,7 @@ export function StatCard({
 
       {/* Title */}
       <p
-        className="text-[11px] font-semibold uppercase tracking-[0.06em] mb-2 relative z-10"
+        className="text-xs font-semibold uppercase tracking-[0.06em] mb-2 relative z-10"
         style={{ color: "rgba(255,255,255,0.7)" }}
       >
         {title}

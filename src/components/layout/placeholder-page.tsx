@@ -32,11 +32,11 @@ export function PlaceholderPage({
             <Icon className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-[22px] font-bold text-foreground leading-tight">
+            <h1 className="text-2xl font-bold text-foreground leading-tight">
               {title}
             </h1>
             {subtitle && (
-              <p className="text-[13px] font-medium text-muted-foreground mt-0.5">
+              <p className="text-sm font-medium text-muted-foreground mt-0.5">
                 {subtitle}
               </p>
             )}

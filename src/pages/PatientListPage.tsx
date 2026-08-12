@@ -110,8 +110,8 @@ export default function PatientListPage() {
             <Users className="w-5 h-5" strokeWidth={2.5} />
           </div>
           <div className="min-w-0">
-            <h1 className="text-[22px] font-bold leading-tight truncate" style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}>Senarai Pesakit</h1>
-            <p className="text-[13px] font-medium mt-0.5" style={{ color: "var(--text-secondary)" }}>Urus rekod pesakit berdaftar</p>
+            <h1 className="text-2xl font-bold leading-tight truncate" style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}>Senarai Pesakit</h1>
+            <p className="text-sm font-medium mt-0.5" style={{ color: "var(--text-secondary)" }}>Urus rekod pesakit berdaftar</p>
           </div>
         </div>
         {canEdit && (
@@ -128,9 +128,9 @@ export default function PatientListPage() {
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <div className="relative flex-1 min-w-0" style={{ maxWidth: 500 }}>
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: searchFocused ? "#1877f2" : "var(--text-muted)" }} />
-                <Input ref={searchInputRef} type="search" value={search} onChange={(e) => setSearch(e.target.value)} onFocus={() => setSearchFocused(true)} onBlur={() => setSearchFocused(false)} placeholder="Cari nama, No. KP, atau No. Hospital..." className="h-9 pl-10 text-[13px] font-medium" style={{ background: "var(--bg-accent-blue)", border: searchFocused ? "1px solid rgba(24,119,242,0.3)" : "1px solid transparent", borderRadius: 10, boxShadow: searchFocused ? "0 0 0 4px rgba(24,119,242,0.08)" : "none" }} />
+                <Input ref={searchInputRef} type="search" value={search} onChange={(e) => setSearch(e.target.value)} onFocus={() => setSearchFocused(true)} onBlur={() => setSearchFocused(false)} placeholder="Cari nama, No. KP, atau No. Hospital..." className="h-9 pl-10 text-sm font-medium" style={{ background: "var(--bg-accent-blue)", border: searchFocused ? "1px solid rgba(24,119,242,0.3)" : "1px solid transparent", borderRadius: 10, boxShadow: searchFocused ? "0 0 0 4px rgba(24,119,242,0.08)" : "none" }} />
               </div>
-              <div className="inline-flex min-h-10 items-center gap-1.5 px-2.5 py-1 rounded-xl text-[12px] font-semibold flex-shrink-0" style={{ background: "var(--bg-accent-blue)", color: "var(--text-secondary)", border: "1px solid var(--bg-accent-blue)" }}>
+              <div className="inline-flex min-h-10 items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold flex-shrink-0" style={{ background: "var(--bg-accent-blue)", color: "var(--text-secondary)", border: "1px solid var(--bg-accent-blue)" }}>
                 <span style={{ color: "#1877f2" }}>{total.toLocaleString("ms-MY")}</span><span>pesakit</span>
               </div>
               {isFetching && !isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "#1877f2" }} />}
@@ -158,7 +158,7 @@ export default function PatientListPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Halaman {page + 1} daripada {totalPages} ({total.toLocaleString("ms-MY")} pesakit)</p>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>Paparan:</span>
+                  <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Paparan:</span>
                   <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} className="h-11 min-w-16 text-xs px-2 rounded-lg sm:h-8" style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)" }} aria-label="Bilangan pesakit setiap halaman">
                     <option value={25}>25</option>
                     <option value={50}>50</option>

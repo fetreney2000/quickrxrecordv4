@@ -44,7 +44,7 @@ export function FoldableCard({
       >
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <h2
-            className="text-base font-bold truncate"
+            className="text-lg font-bold truncate"
             style={{ color: "var(--text-primary)" }}
           >
             {title}

@@ -43,7 +43,7 @@ export function InfoField({ icon: Icon, label, value, block }: InfoFieldProps) {
           {label}
         </p>
         <p
-          className="text-[13px] font-medium mt-0.5 break-words"
+          className="text-sm font-medium mt-0.5 break-words"
           style={{ color: "var(--text-primary)" }}
         >
           {display}

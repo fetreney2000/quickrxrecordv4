@@ -184,7 +184,7 @@ export function BatchRow({
         ) : (
           <div className="flex items-center gap-2 min-w-0">
             <Package2 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#7c3aed" }} />
-            <span className="font-mono font-semibold text-[13px] truncate" style={{ color: "#7c3aed" }}>
+            <span className="font-mono font-semibold text-sm truncate" style={{ color: "#7c3aed" }}>
               {batch.nombor_kelompok}
             </span>
           </div>
@@ -203,7 +203,7 @@ export function BatchRow({
             }}
           />
         ) : (
-          <span className="text-[13px]" style={{ color: "var(--text-primary)" }}>
+          <span className="text-sm" style={{ color: "var(--text-primary)" }}>
             {formatDate(batch.tarikh_luput)}
           </span>
         )}
@@ -249,7 +249,7 @@ export function BatchRow({
             </div>
           ) : (
             <span
-              className="inline-flex items-center gap-1 text-[13px] font-semibold"
+              className="inline-flex items-center gap-1 text-sm font-semibold"
               style={{ color: "var(--text-primary)" }}
             >
                {formatNumber(batch.kuantiti)}
@@ -354,11 +354,11 @@ export function BatchRow({
               }}
             />
           ) : (
-            <p className="font-mono font-semibold text-[13px] truncate" style={{ color: "#7c3aed" }}>
+            <p className="font-mono font-semibold text-sm truncate" style={{ color: "#7c3aed" }}>
               {batch.nombor_kelompok}
             </p>
           )}
-          <div className="flex items-center gap-2 mt-0.5 text-[12px] flex-wrap" style={{ color: "var(--text-secondary)" }}>
+          <div className="flex items-center gap-2 mt-0.5 text-xs flex-wrap" style={{ color: "var(--text-secondary)" }}>
             {editingInfo ? (
               <DateInput
                 value={draftLuput}
@@ -442,7 +442,7 @@ export function BatchRow({
               </div>
             ) : (
               <>
-                <span className="text-[14px] font-semibold" style={{ color: "var(--text-primary)" }}>
+                <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
                   {formatNumber(batch.kuantiti)} unit
                 </span>
                 {canEdit && !status.isExpired && (

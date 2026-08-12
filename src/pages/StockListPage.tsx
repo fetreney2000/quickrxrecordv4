@@ -63,7 +63,7 @@ export default function StockListPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-white flex-shrink-0" style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)", boxShadow: "0 4px 12px rgba(124,58,237,0.3)" }}><Pill className="w-5 h-5" strokeWidth={2.5} /></div>
-          <div className="min-w-0"><h1 className="text-[22px] font-bold leading-tight truncate" style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}>Senarai Inventori</h1><p className="text-[13px] font-medium mt-0.5" style={{ color: "var(--text-secondary)" }}>Urus item ubat dalam katalog</p></div>
+          <div className="min-w-0"><h1 className="text-2xl font-bold leading-tight truncate" style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}>Senarai Inventori</h1><p className="text-sm font-medium mt-0.5" style={{ color: "var(--text-secondary)" }}>Urus item ubat dalam katalog</p></div>
         </div>
         {canEdit && <Button onClick={() => setOpenAdd(true)} title="Tambah item ubat baharu" className="self-start sm:self-auto" style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)", boxShadow: "0 4px 12px rgba(124,58,237,0.25)" }}><Plus className="w-4 h-4" /> Tambah Item</Button>}
       </div>
@@ -72,9 +72,9 @@ export default function StockListPage() {
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <div className="relative flex-1 min-w-0" style={{ maxWidth: 500 }}>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: searchFocused ? "#7c3aed" : "var(--text-muted)" }} />
-              <Input ref={searchInputRef} type="search" value={search} onChange={(e) => setSearch(e.target.value)} onFocus={() => setSearchFocused(true)} onBlur={() => setSearchFocused(false)} placeholder="Cari kod, nama, atau nama dagangan..." className="h-9 pl-10 text-[13px] font-medium" style={{ background: "rgba(124,58,237,0.04)", border: searchFocused ? "1px solid rgba(124,58,237,0.3)" : "1px solid transparent", borderRadius: 10, boxShadow: searchFocused ? "0 0 0 4px rgba(124,58,237,0.08)" : "none" }} />
+              <Input ref={searchInputRef} type="search" value={search} onChange={(e) => setSearch(e.target.value)} onFocus={() => setSearchFocused(true)} onBlur={() => setSearchFocused(false)} placeholder="Cari kod, nama, atau nama dagangan..." className="h-9 pl-10 text-sm font-medium" style={{ background: "rgba(124,58,237,0.04)", border: searchFocused ? "1px solid rgba(124,58,237,0.3)" : "1px solid transparent", borderRadius: 10, boxShadow: searchFocused ? "0 0 0 4px rgba(124,58,237,0.08)" : "none" }} />
             </div>
-            <div className="inline-flex min-h-10 items-center gap-1.5 px-2.5 py-1 rounded-xl text-[12px] font-semibold flex-shrink-0" style={{ background: "rgba(124,58,237,0.06)", color: "var(--text-secondary)", border: "1px solid rgba(124,58,237,0.10)" }}><span style={{ color: "#7c3aed" }}>{total.toLocaleString("ms-MY")}</span><span>item</span></div>
+            <div className="inline-flex min-h-10 items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold flex-shrink-0" style={{ background: "rgba(124,58,237,0.06)", color: "var(--text-secondary)", border: "1px solid rgba(124,58,237,0.10)" }}><span style={{ color: "#7c3aed" }}>{total.toLocaleString("ms-MY")}</span><span>item</span></div>
             {isFetching && !isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "#7c3aed" }} />}
           </div>
         </div>
@@ -100,7 +100,7 @@ export default function StockListPage() {
             <div className="flex items-center gap-3">
               <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Halaman {page + 1} daripada {totalPages} ({total.toLocaleString("ms-MY")} item)</p>
               <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>Paparan:</span>
+<span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Paparan:</span>
                 <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} className="h-7 text-xs px-2 rounded-lg" style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)" }}>
                   <option value={25}>25</option>
                   <option value={50}>50</option>
@@ -117,7 +117,7 @@ export default function StockListPage() {
             </div>
           </div>
         )}
-        {!isLoading && totalPages === 1 && total > 0 && <div className="px-4 py-2 border-t border-[#f0f2f5] text-xs flex items-center gap-3" style={{ color: "var(--text-secondary)" }}><span>{total.toLocaleString("ms-MY")} item · Halaman 1 daripada 1</span><div className="flex items-center gap-1.5"><span className="text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>Paparan:</span><select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} className="h-7 text-xs px-2 rounded-lg" style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)" }}><option value={25}>25</option><option value={50}>50</option><option value={100}>100</option></select></div></div>}
+        {!isLoading && totalPages === 1 && total > 0 && <div className="px-4 py-2 border-t border-[#f0f2f5] text-xs flex items-center gap-3" style={{ color: "var(--text-secondary)" }}><span>{total.toLocaleString("ms-MY")} item · Halaman 1 daripada 1</span><div className="flex items-center gap-1.5"><span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Paparan:</span><select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} className="h-7 text-xs px-2 rounded-lg" style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)" }}><option value={25}>25</option><option value={50}>50</option><option value={100}>100</option></select></div></div>}
       </CardContent></Card></div>
       <AddItemDialog open={openAdd} onOpenChange={setOpenAdd} />
     </div>

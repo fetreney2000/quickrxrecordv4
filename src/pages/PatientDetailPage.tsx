@@ -230,7 +230,7 @@ export default function PatientDetailPage() {
           <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg flex-shrink-0" style={{ background: "linear-gradient(135deg, #1877f2, #0d5bd4)", boxShadow: "0 4px 12px rgba(24,119,242,0.3)" }}>{getInitials(patient.nama)}</div>
           <div className="min-w-0">
             <h1 className="font-bold leading-tight truncate" style={{ color: "var(--text-primary)", letterSpacing: "-0.01em", fontSize: isMobile ? 18 : 22 }}>{patient.nama}</h1>
-            <p className="text-[13px] font-medium mt-0.5" style={{ color: "var(--text-secondary)" }}>{patient.aktif ? "Aktif" : "Tidak Aktif"} · {patient.nombor_kad_pengenalan ? formatMyKad(patient.nombor_kad_pengenalan) : "Tiada KP"}{patient.nombor_kad_pengenalan && <> · Umur: {formatAge(myKadToDob(patient.nombor_kad_pengenalan))}</>}</p>
+            <p className="text-sm font-medium mt-0.5" style={{ color: "var(--text-secondary)" }}>{patient.aktif ? "Aktif" : "Tidak Aktif"} · {patient.nombor_kad_pengenalan ? formatMyKad(patient.nombor_kad_pengenalan) : "Tiada KP"}{patient.nombor_kad_pengenalan && <> · Umur: {formatAge(myKadToDob(patient.nombor_kad_pengenalan))}</>}</p>
           </div>
         </div>
         <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">

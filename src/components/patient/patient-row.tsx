@@ -44,14 +44,14 @@ export function PatientRow({ patient, index, onClick }: PatientRowProps) {
             {patient.nama?.[0]?.toUpperCase() || "?"}
           </div>
           <span
-            className="text-[13px] font-medium truncate"
+            className="text-sm font-medium truncate"
             style={{ color: "var(--text-primary)" }}
           >
             {patient.nama}
           </span>
         </div>
         <span
-          className="text-[13px] truncate"
+          className="text-sm truncate"
           style={{ color: "var(--text-primary)" }}
         >
           {patient.nombor_kad_pengenalan ? (
@@ -61,7 +61,7 @@ export function PatientRow({ patient, index, onClick }: PatientRowProps) {
           )}
         </span>
         <span
-          className="text-[13px] truncate"
+          className="text-sm truncate"
           style={{ color: "var(--text-primary)" }}
         >
           {patient.nombor_pendaftaran_hospital || (
@@ -69,7 +69,7 @@ export function PatientRow({ patient, index, onClick }: PatientRowProps) {
           )}
         </span>
         <span
-          className="text-[13px] truncate"
+          className="text-sm truncate"
           style={{ color: "var(--text-primary)" }}
         >
           {patient.dokumen_lain || (
@@ -77,7 +77,7 @@ export function PatientRow({ patient, index, onClick }: PatientRowProps) {
           )}
         </span>
         <span
-          className="text-[13px] font-medium tabular-nums"
+          className="text-sm font-medium tabular-nums"
           style={{ color: "var(--text-primary)" }}
         >
           {patient.bilangan_item ?? 0}
@@ -111,13 +111,13 @@ export function PatientRow({ patient, index, onClick }: PatientRowProps) {
         </div>
         <div className="flex-1 min-w-0">
           <p
-            className="text-[14px] font-medium truncate"
+            className="text-sm font-medium truncate"
             style={{ color: "var(--text-primary)" }}
           >
             {patient.nama}
           </p>
           <div
-            className="flex items-center gap-2 text-[12px] truncate"
+            className="flex items-center gap-2 text-xs truncate"
             style={{ color: "var(--text-secondary)" }}
           >
             {patient.nombor_kad_pengenalan && (

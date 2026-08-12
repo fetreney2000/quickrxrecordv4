@@ -54,7 +54,7 @@ export function SuccessState({
             </div>
           </div>
 
-          <h2 className="text-[20px] font-bold text-white mb-2">
+          <h2 className="text-xl font-bold text-white mb-2">
             {title}
           </h2>
 

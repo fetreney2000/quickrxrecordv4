@@ -55,7 +55,7 @@ export function InfoField({
         </p>
         <p
           className={
-            "text-[13px] font-medium mt-0.5 break-words" +
+            "text-sm font-medium mt-0.5 break-words" +
             (mono ? " font-mono font-semibold" : "")
           }
           style={mono ? { color: accent } : { color: "var(--text-primary)" }}

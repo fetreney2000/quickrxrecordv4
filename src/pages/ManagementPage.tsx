@@ -383,12 +383,12 @@ export default function ManagementPage() {
           </div>
           <div className="min-w-0">
             <h1
-              className="truncate text-[20px] font-bold sm:text-[22px]"
+              className="truncate text-xl font-bold sm:text-2xl"
               style={{ color: "var(--text-primary)" }}
             >
               Pengurusan
             </h1>
-            <p className="text-[13px]" style={{ color: "var(--text-secondary)" }}>
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
               Pusat pentadbiran sistem — pengguna, permintaan reset, rujukan
             </p>
           </div>

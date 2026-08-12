@@ -101,8 +101,8 @@ export default function DashboardPage() {
             <Activity className="w-5 h-5" strokeWidth={2.5} />
           </div>
           <div className="min-w-0">
-            <h1 className="truncate text-[20px] font-bold leading-tight sm:text-[22px]" style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}>Selamat Datang, {toTitleCase(profile?.nama ?? "Pengguna")}</h1>
-            <p className="text-[13px] font-medium mt-0.5" style={{ color: "var(--text-secondary)" }}>{roleLabel} — Papan Pemuka</p>
+            <h1 className="truncate text-xl font-bold leading-tight sm:text-2xl" style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}>Selamat Datang, {toTitleCase(profile?.nama ?? "Pengguna")}</h1>
+            <p className="text-sm font-medium mt-0.5" style={{ color: "var(--text-secondary)" }}>{roleLabel} — Papan Pemuka</p>
           </div>
         </div>
         <div className="flex w-full flex-wrap items-center gap-2 md:w-auto md:self-auto">

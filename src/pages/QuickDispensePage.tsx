@@ -297,13 +297,13 @@ export default function QuickDispensePage() {
         </div>
         <div>
           <h1
-            className="text-[20px] font-bold sm:text-[22px]"
+            className="text-xl font-bold sm:text-2xl"
             style={{ color: "var(--text-primary)" }}
           >
             Dispen Pantas
           </h1>
           <p
-            className="text-[12px] font-medium mt-0.5"
+            className="text-xs font-medium mt-0.5"
             style={{ color: "var(--text-secondary)" }}
           >
             Bekal ubat dalam 3 langkah mudah
@@ -328,10 +328,10 @@ export default function QuickDispensePage() {
             <CheckCircle2 className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-[13px] font-bold" style={{ color: "#065f46" }}>
+            <p className="text-sm font-bold" style={{ color: "#065f46" }}>
               Bekalan direkodkan untuk {successPatient}
             </p>
-            <p className="text-[11px]" style={{ color: "#059669" }}>
+            <p className="text-xs" style={{ color: "#059669" }}>
               Sedia untuk pendispensan seterusnya.
             </p>
           </div>
@@ -396,7 +396,7 @@ export default function QuickDispensePage() {
                           <div className="w-6 h-6 rounded-lg flex items-center justify-center text-white text-2xs font-bold" style={{ background: "linear-gradient(135deg, #f0932b, #e07a1f)" }}>
                             {getInitials(p.nama)}
                           </div>
-                          <p className="text-[13px] font-semibold truncate" style={{ color: "var(--text-primary)" }}>{p.nama}</p>
+                          <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{p.nama}</p>
                         </div>
                         {p.nombor_kad_pengenalan && (
                           <p className="text-2xs mt-0.5 ml-8" style={{ color: "var(--text-secondary)" }}>KP: {formatMyKad(p.nombor_kad_pengenalan)}</p>
@@ -415,7 +415,7 @@ export default function QuickDispensePage() {
         <Card>
           <CardContent className="p-4 sm:pt-5">
             <div className="mb-3 flex items-center justify-between gap-2">
-              <h3 className="min-w-0 truncate text-[14px] font-bold" style={{ color: "var(--text-primary)" }}>{selectedPatient.nama}</h3>
+              <h3 className="min-w-0 truncate text-sm font-bold" style={{ color: "var(--text-primary)" }}>{selectedPatient.nama}</h3>
               <Button size="sm" variant="ghost" onClick={() => setSelectedPatient(null)} className="h-11 flex-shrink-0" title="Tukar pesakit"><X className="w-3.5 h-3.5" /> Tukar</Button>
             </div>
             {frequentItems.length > 0 && (
@@ -426,7 +426,7 @@ export default function QuickDispensePage() {
                     const assignment = (assignedItems as any[]).find((a: any) => a.item_id === it.id);
                     return (
                       <button key={it.id} title={"Pilih " + formatItemDisplay(it.item)} onClick={() => assignment && setSelectedItem(assignment)}
-                         className="min-h-11 text-[12px] font-medium px-3 py-1 rounded-full" style={{ background: "var(--bg-accent-blue)", color: "#1877f2", border: "1px solid rgba(24,119,242,0.2)" }}>
+                         className="min-h-11 text-xs font-medium px-3 py-1 rounded-full" style={{ background: "var(--bg-accent-blue)", color: "#1877f2", border: "1px solid rgba(24,119,242,0.2)" }}>
                         {formatItemDisplay(it.item)}
                       </button>
                     );
@@ -461,7 +461,7 @@ export default function QuickDispensePage() {
             <div className="mb-3 flex items-center justify-between gap-2">
               <div className="flex min-w-0 items-center gap-2">
                 <Pill className="w-4 h-4 text-blue-500" />
-                <p className="text-[14px] font-bold truncate" style={{ color: "var(--text-primary)" }}>{formatItemDisplay(selectedItem.item)}</p>
+                <p className="text-sm font-bold truncate" style={{ color: "var(--text-primary)" }}>{formatItemDisplay(selectedItem.item)}</p>
               </div>
               <Button size="sm" variant="ghost" onClick={() => setSelectedItem(null)} className="h-11 flex-shrink-0" title="Tukar item"><X className="w-3.5 h-3.5" /> Tukar</Button>
             </div>
@@ -565,8 +565,8 @@ export default function QuickDispensePage() {
                   <Plus className="w-4 h-4" style={{ color: "#059669" }} />
                 </div>
                 <div>
-                  <p className="text-[14px] font-bold" style={{ color: "var(--text-primary)" }}>{registerSelectedItem ? "Sahkan Pendaftaran" : "Daftar Item Baharu"}</p>
-                  <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>{registerSelectedItem ? `Daftarkan ${formatItemDisplay(registerSelectedItem)} kepada ${selectedPatient?.nama}` : `Pilih item untuk didaftarkan kepada ${selectedPatient?.nama}`}</p>
+                  <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{registerSelectedItem ? "Sahkan Pendaftaran" : "Daftar Item Baharu"}</p>
+                  <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{registerSelectedItem ? `Daftarkan ${formatItemDisplay(registerSelectedItem)} kepada ${selectedPatient?.nama}` : `Pilih item untuk didaftarkan kepada ${selectedPatient?.nama}`}</p>
                 </div>
               </div>
               <button type="button" title="Tutup dialog" onClick={() => { setShowRegisterDialog(false); setRegisterItemSearch(""); setRegisterSelectedItem(null); setRegisterDos(""); }} className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg hover:bg-gray-100">
@@ -619,8 +619,8 @@ export default function QuickDispensePage() {
                 <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.15)" }}>
                   <Pill className="w-4 h-4 flex-shrink-0" style={{ color: "#059669" }} />
                   <div>
-                    <p className="text-[13px] font-bold" style={{ color: "var(--text-primary)" }}>{formatItemDisplay(registerSelectedItem)}</p>
-                    <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>{registerSelectedItem.kod_item}{registerSelectedItem.kekuatan ? ` · ${registerSelectedItem.kekuatan}` : ""}</p>
+                    <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{formatItemDisplay(registerSelectedItem)}</p>
+                    <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{registerSelectedItem.kod_item}{registerSelectedItem.kekuatan ? ` · ${registerSelectedItem.kekuatan}` : ""}</p>
                   </div>
                 </div>
                 <div>

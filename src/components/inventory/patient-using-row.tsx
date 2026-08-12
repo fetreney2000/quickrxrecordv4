@@ -122,17 +122,17 @@ export function PatientUsingRow({ data, index, itemName, itemId }: PatientUsingR
           >
             {patient?.nama?.[0]?.toUpperCase() || "?"}
           </div>
-          <span className="text-[13px] font-medium truncate" style={{ color: "var(--text-primary)" }}>
+          <span className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>
             {patient?.nama || "—"}
           </span>
         </div>
-        <span className="text-[13px] truncate font-mono" style={{ color: "var(--text-secondary)" }}>
+        <span className="text-sm truncate font-mono" style={{ color: "var(--text-secondary)" }}>
           {patient?.nombor_kad_pengenalan ? formatMyKad(patient.nombor_kad_pengenalan) : "—"}
         </span>
-        <span className="text-[13px] font-semibold truncate" style={{ color: "#7c3aed" }}>
+        <span className="text-sm font-semibold truncate" style={{ color: "#7c3aed" }}>
           {data.dos || <em style={{ color: "var(--text-muted)" }}>-</em>}
         </span>
-        <span className="text-[13px]" style={{ color: "var(--text-primary)" }}>
+        <span className="text-sm" style={{ color: "var(--text-primary)" }}>
           {data.last_supply ? (
             <span className="flex flex-col">
               <span>{formatDate(data.last_supply.tarikh)}</span>
@@ -175,8 +175,8 @@ export function PatientUsingRow({ data, index, itemName, itemId }: PatientUsingR
           {patient?.nama?.[0]?.toUpperCase() || "?"}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-medium truncate" style={{ color: "var(--text-primary)" }}>{patient?.nama || "—"}</p>
-          <div className="flex items-center gap-2 text-[12px] mt-0.5 truncate" style={{ color: "var(--text-secondary)" }}>
+          <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{patient?.nama || "—"}</p>
+          <div className="flex items-center gap-2 text-xs mt-0.5 truncate" style={{ color: "var(--text-secondary)" }}>
             {patient?.nombor_kad_pengenalan && <span className="font-mono">{formatMyKad(patient.nombor_kad_pengenalan)}</span>}
             {data.dos && <><span>·</span><span style={{ color: "#7c3aed" }} className="font-semibold">{data.dos}</span></>}
           </div>

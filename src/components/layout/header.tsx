@@ -197,13 +197,13 @@ export function Header() {
                           >
                             <div className="flex items-center gap-2">
                               <User className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
-                              <p className="text-[13px] font-semibold text-foreground truncate">
+                              <p className="text-sm font-semibold text-foreground truncate">
                                 {p.nama}
                               </p>
                             </div>
                             {(p.nombor_kad_pengenalan ||
                               p.nombor_pendaftaran_hospital) && (
-                              <div className="mt-0.5 ml-5.5 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+                              <div className="mt-0.5 ml-5.5 flex flex-wrap gap-2 text-xs text-muted-foreground">
                                 {p.nombor_kad_pengenalan && (
                                   <span>KP: {formatMyKad(p.nombor_kad_pengenalan)}</span>
                                 )}

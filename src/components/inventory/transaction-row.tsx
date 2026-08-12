@@ -26,13 +26,13 @@ export function TransactionRow({ tx, index, baki }: TransactionRowProps) {
           borderBottom: "1px solid var(--border-light)",
         }}
       >
-        <span className="text-[13px]" style={{ color: "var(--text-primary)" }}>
+        <span className="text-sm" style={{ color: "var(--text-primary)" }}>
           {formatDateTime(tx.tarikh)}
         </span>
-        <span className="text-[13px]" style={{ color: "var(--text-primary)" }}>
+        <span className="text-sm" style={{ color: "var(--text-primary)" }}>
           {tx.jenis_label}
         </span>
-        <span className="text-[13px] font-mono" style={{ color: "#7c3aed" }}>
+        <span className="text-sm font-mono" style={{ color: "#7c3aed" }}>
           {tx.kelompok || <em style={{ color: "var(--text-muted)" }}>-</em>}
         </span>
         <div className="flex items-center gap-1.5">
@@ -44,7 +44,7 @@ export function TransactionRow({ tx, index, baki }: TransactionRowProps) {
             <Minus className="w-3.5 h-3.5" style={{ color: "#6b7280" }} />
           )}
           <span
-            className="text-[13px] font-semibold tabular-nums"
+            className="text-sm font-semibold tabular-nums"
             style={{
               color: isUp ? "#16a34a" : isDown ? "#e41e3f" : "#6b7280",
             }}
@@ -52,16 +52,16 @@ export function TransactionRow({ tx, index, baki }: TransactionRowProps) {
             {tx.perubahan_label}
           </span>
         </div>
-        <span className="text-[13px] font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>
+        <span className="text-sm font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>
           {baki}
         </span>
-        <span className="text-[13px]" style={{ color: "var(--text-secondary)" }}>
+        <span className="text-sm" style={{ color: "var(--text-secondary)" }}>
           {tx.catatan || <em style={{ color: "var(--text-muted)" }}>-</em>}
         </span>
-        <span className="text-[13px]" style={{ color: "var(--text-secondary)" }}>
+        <span className="text-sm" style={{ color: "var(--text-secondary)" }}>
           {tx.kakitangan || <em style={{ color: "var(--text-muted)" }}>-</em>}
         </span>
-        <span className="text-[13px]" style={{ color: "var(--text-secondary)" }}>
+        <span className="text-sm" style={{ color: "var(--text-secondary)" }}>
           {tx.pesakit || <em style={{ color: "var(--text-muted)" }}>-</em>}
         </span>
       </div>
@@ -75,7 +75,7 @@ export function TransactionRow({ tx, index, baki }: TransactionRowProps) {
           borderBottom: "1px solid var(--border-light)",
         }}
       >
-        <span className="text-[13px]" style={{ color: "var(--text-primary)" }}>
+        <span className="text-sm" style={{ color: "var(--text-primary)" }}>
           {formatDateTime(tx.tarikh)}
         </span>
         <div className="flex items-center gap-1.5">
@@ -87,7 +87,7 @@ export function TransactionRow({ tx, index, baki }: TransactionRowProps) {
             <Minus className="w-3.5 h-3.5" style={{ color: "#6b7280" }} />
           )}
           <span
-            className="text-[13px] font-semibold tabular-nums"
+            className="text-sm font-semibold tabular-nums"
             style={{
               color: isUp ? "#16a34a" : isDown ? "#e41e3f" : "#6b7280",
             }}
@@ -95,13 +95,13 @@ export function TransactionRow({ tx, index, baki }: TransactionRowProps) {
             {tx.perubahan_label}
           </span>
         </div>
-        <span className="text-[13px] font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>
+        <span className="text-sm font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>
           {baki}
         </span>
-        <span className="text-[13px]" style={{ color: "var(--text-secondary)" }}>
+        <span className="text-sm" style={{ color: "var(--text-secondary)" }}>
           {tx.jenis_label}
         </span>
-        <span className="text-[13px]" style={{ color: "var(--text-secondary)" }}>
+        <span className="text-sm" style={{ color: "var(--text-secondary)" }}>
           {tx.kakitangan || <em style={{ color: "var(--text-muted)" }}>-</em>}
         </span>
       </div>
@@ -131,10 +131,10 @@ export function TransactionRow({ tx, index, baki }: TransactionRowProps) {
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-medium truncate" style={{ color: "var(--text-primary)" }}>
+          <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>
             {formatDateTime(tx.tarikh)}
           </p>
-          <div className="flex items-center gap-2 text-[12px] mt-0.5 truncate" style={{ color: "var(--text-secondary)" }}>
+          <div className="flex items-center gap-2 text-xs mt-0.5 truncate" style={{ color: "var(--text-secondary)" }}>
             <span>{tx.jenis_label}</span>
             <span>·</span>
             <span className="font-semibold" style={{ color: isUp ? "#16a34a" : isDown ? "#e41e3f" : "#6b7280" }}>
@@ -146,7 +146,7 @@ export function TransactionRow({ tx, index, baki }: TransactionRowProps) {
             </span>
           </div>
           {tx.catatan && (
-            <p className="text-[12px] mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>
+            <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>
               {tx.catatan}
             </p>
           )}

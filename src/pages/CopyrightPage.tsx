@@ -48,13 +48,13 @@ export default function CopyrightPage() {
         </button>
         <div>
           <h1
-            className="text-[22px] font-bold leading-tight"
+            className="text-2xl font-bold leading-tight"
             style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}
           >
             Hak Cipta
           </h1>
           <p
-            className="text-[13px] font-medium mt-0.5"
+            className="text-sm font-medium mt-0.5"
             style={{ color: "var(--text-secondary)" }}
           >
             Maklumat pembangun dan notis hak cipta
@@ -86,7 +86,7 @@ export default function CopyrightPage() {
                   QuickRxRecord v4.0
                 </h2>
                 <p
-                  className="text-[13px] font-medium mt-0.5"
+                  className="text-sm font-medium mt-0.5"
                   style={{ color: "var(--text-secondary)" }}
                 >
                   Sistem Pengurusan Inventori dan Pesakit
@@ -169,7 +169,7 @@ function InfoRow({ icon, iconColor, label, value }: InfoRowProps) {
           {label}
         </p>
         <p
-               className="break-words text-[13px] font-semibold"
+               className="break-words text-sm font-semibold"
           style={{ color: "var(--text-primary)" }}
         >
           {value}

@@ -49,15 +49,15 @@ export function StockRow({ item, index, onClick }: StockRowProps) {
           borderBottom: "1px solid var(--border-light)",
         }}
       >
-        <span className="text-[13px] font-mono font-semibold truncate" style={{ color: "#7c3aed" }}>{item.kod_item}</span>
+        <span className="text-sm font-mono font-semibold truncate" style={{ color: "#7c3aed" }}>{item.kod_item}</span>
         <div className="min-w-0">
-          <p className="text-[13px] font-medium truncate" style={{ color: "var(--text-primary)" }}>
+          <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>
             {displayName || item.nama_item}
             {item.item_forms?.nama ? <span style={{ color: "var(--text-secondary)" }}> · {item.item_forms.nama}</span> : null}
           </p>
-          {item.nama_dagangan && <p className="text-[11px] truncate mt-0.5" style={{ color: "var(--text-muted)" }}>{item.nama_dagangan}</p>}
+          {item.nama_dagangan && <p className="text-xs truncate mt-0.5" style={{ color: "var(--text-muted)" }}>{item.nama_dagangan}</p>}
         </div>
-        <span className="text-[13px] font-medium tabular-nums" style={{ color: "var(--text-primary)" }}>
+        <span className="text-sm font-medium tabular-nums" style={{ color: "var(--text-primary)" }}>
           {item.kuota != null ? formatNumber(item.kuota) : <em style={{ color: "var(--text-muted)" }}>-</em>}
         </span>
         <div>
@@ -67,7 +67,7 @@ export function StockRow({ item, index, onClick }: StockRowProps) {
             {formatNumber(stock)}
           </span>
         </div>
-        <span className="text-[13px] font-medium tabular-nums" style={{ color: "var(--text-primary)" }}>
+        <span className="text-sm font-medium tabular-nums" style={{ color: "var(--text-primary)" }}>
           {item.kuota != null ? formatNumber(Math.max(0, item.kuota - (item.patient_item_assignments?.length ?? 0))) : <em style={{ color: "var(--text-muted)" }}>-</em>}
         </span>
       </div>
@@ -91,8 +91,8 @@ export function StockRow({ item, index, onClick }: StockRowProps) {
           <span className="font-mono" style={{ fontSize: 10 }}>{item.kod_item.slice(0, 3).toUpperCase()}</span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-medium truncate" style={{ color: "var(--text-primary)" }}>{displayName || item.nama_item}</p>
-          <div className="flex items-center gap-2 text-[12px] mt-0.5 truncate" style={{ color: "var(--text-secondary)" }}>
+          <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{displayName || item.nama_item}</p>
+          <div className="flex items-center gap-2 text-xs mt-0.5 truncate" style={{ color: "var(--text-secondary)" }}>
             <span className="font-mono font-semibold" style={{ color: "#7c3aed" }}>{item.kod_item}</span>
             {item.nama_dagangan && <span>· {item.nama_dagangan}</span>}
           </div>

@@ -114,7 +114,7 @@ export default function ForgotPasswordPage() {
 
         <div className="text-center mb-6">
           <h2
-            className="text-[20px] font-bold text-white mb-1"
+            className="text-xl font-bold text-white mb-1"
             style={{ letterSpacing: "-0.01em" }}
           >
             Lupa Kata Laluan?
@@ -131,7 +131,7 @@ export default function ForgotPasswordPage() {
           <div className="space-y-1.5">
             <label
               htmlFor="username"
-              className="text-[13px] font-semibold flex items-center gap-2"
+              className="text-sm font-semibold flex items-center gap-2"
               style={{ color: "rgba(255,255,255,0.7)" }}
             >
               <HelpCircle
@@ -191,7 +191,7 @@ export default function ForgotPasswordPage() {
           <div className="text-center pt-2">
             <Link
               to="/login"
-               className="inline-flex min-h-11 items-center gap-1.5 px-2 text-[13px] transition-colors"
+               className="inline-flex min-h-11 items-center gap-1.5 px-2 text-sm transition-colors"
               style={{ color: "rgba(255,255,255,0.4)" }}
               onMouseEnter={(e) =>
                 ((e.currentTarget as HTMLElement).style.color =

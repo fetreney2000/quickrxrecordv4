@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FoldableCard } from "@/components/ui/foldable-card";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatDateTime } from "@/lib/utils";
 import {
   useDoseHistory,
   useSupplyHistory,
@@ -168,7 +168,7 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b" style={{ borderColor: "var(--border-light)" }}>
-                      <SortableHeader label="Tarikh" sortKey="tarikh" currentSort={doseSort} onSort={(k) => { setDosePage(0); toggleSort("dose", k); }} />
+                      <SortableHeader label="Tarikh & Masa" sortKey="tarikh" currentSort={doseSort} onSort={(k) => { setDosePage(0); toggleSort("dose", k); }} />
                       <SortableHeader label="Dos" sortKey="dos" currentSort={doseSort} onSort={(k) => { setDosePage(0); toggleSort("dose", k); }} />
                       <SortableHeader label="Dikemaskini Oleh" sortKey="dikemaskini_oleh" currentSort={doseSort} onSort={(k) => { setDosePage(0); toggleSort("dose", k); }} />
                       <SortableHeader label="Catatan" sortKey="catatan" currentSort={doseSort} onSort={(k) => { setDosePage(0); toggleSort("dose", k); }} />
@@ -177,7 +177,7 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                   <tbody>
                     {pagedDose.map((d) => (
                       <tr key={d.id} className="border-b last:border-b-0" style={{ borderColor: "var(--border-light)" }}>
-                        <td className="px-2 py-1.5" style={{ color: "var(--text-primary)" }}>{formatDate(d.tarikh)}</td>
+                        <td className="px-2 py-1.5" style={{ color: "var(--text-primary)" }}>{formatDateTime(d.tarikh)}</td>
                         <td className="px-2 py-1.5 font-semibold" style={{ color: "#1877f2" }}>{d.dos}</td>
                         <td className="px-2 py-1.5" style={{ color: "var(--text-secondary)" }}>{(d as DoseHistoryWithProfile).dikemaskini_oleh_profile?.nama ?? "—"}</td>
                         <td className="px-2 py-1.5 italic" style={{ color: "var(--text-muted)" }}>{d.catatan || "—"}</td>
@@ -202,7 +202,7 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b" style={{ borderColor: "var(--border-light)" }}>
-                      <SortableHeader label="Tarikh" sortKey="tarikh_dibekal" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
+                      <SortableHeader label="Tarikh & Masa" sortKey="tarikh_dibekal" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       <SortableHeader label="Dos" sortKey="dos" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       <SortableHeader label="Tempoh" sortKey="tempoh_dibekal" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       <SortableHeader label="Kuantiti" sortKey="kuantiti" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
@@ -214,7 +214,7 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                   <tbody>
                     {pagedSupply.map((s) => (
                       <tr key={s.id} className="border-b last:border-b-0" style={{ borderColor: "var(--border-light)" }}>
-                        <td className="px-2 py-1.5" style={{ color: "var(--text-primary)" }}>{formatDate(s.tarikh_dibekal)}</td>
+                        <td className="px-2 py-1.5" style={{ color: "var(--text-primary)" }}>{formatDateTime(s.tarikh_dibekal)}</td>
                         <td className="px-2 py-1.5 font-semibold" style={{ color: "#1877f2" }}>{s.dos}</td>
                         <td className="px-2 py-1.5" style={{ color: "var(--text-secondary)" }}>{s.tempoh_dibekal || "—"}</td>
                         <td className="px-2 py-1.5" style={{ color: "var(--text-primary)" }}>{s.kuantiti}</td>

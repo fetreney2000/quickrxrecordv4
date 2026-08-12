@@ -523,7 +523,7 @@ export default function QuickDispensePage() {
                         <input type="radio" name="batch" checked={selectedBatchId === b.id} onChange={() => setSelectedBatchId(b.id)} style={{ accentColor: "#f59e0b" }} />
                         <div className="flex-1">
                           <p className="font-mono font-semibold" style={{ color: "var(--text-primary)" }}>{b.nombor_kelompok}</p>
-                          <p style={{ color: "var(--text-secondary)" }}>Luput: {b.tarikh_luput} · Stok: {b.kuantiti}</p>
+                          <p style={{ color: "var(--text-secondary)" }}>Luput: {formatDate(b.tarikh_luput)} · Stok: {b.kuantiti}</p>
                         </div>
                       </label>
                     ))}

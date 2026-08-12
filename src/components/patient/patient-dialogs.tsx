@@ -520,9 +520,9 @@ export function SupplyDialog({
         </div>
 
         <form
-          onSubmit={(e) => {
+onSubmit={(e) => {
             e.preventDefault();
-            if (!selectedBatch || kuantiti <= 0 || kuantiti > maxQty) return;
+            if (!selectedBatch || kuantiti < 0 || kuantiti > maxQty) return;
             onSubmit({
               dos: assignment.dos ?? "",
               kuantiti,
@@ -573,11 +573,11 @@ export function SupplyDialog({
               <Label style={labelStyle}>Kuantiti *</Label>
               <Input
                 type="number"
-                min={1}
+                min={0}
                 max={maxQty || undefined}
                 value={kuantiti}
                 onChange={(e) =>
-                  setKuantiti(Math.max(1, parseInt(e.target.value) || 1))
+                  setKuantiti(Math.max(0, parseInt(e.target.value) || 0))
                 }
                 required
                 style={inputBaseStyle}
@@ -663,8 +663,8 @@ export function SupplyDialog({
             Batal
           </Button>
           <Button
-            onClick={() => {
-               if (!selectedBatch || kuantiti <= 0 || kuantiti > maxQty) return;
+onClick={() => {
+               if (!selectedBatch || kuantiti < 0 || kuantiti > maxQty) return;
               onSubmit({
                 dos: assignment.dos ?? "",
                 kuantiti,
@@ -673,7 +673,7 @@ export function SupplyDialog({
                 catatan: catatan.trim(),
               });
             }}
-            disabled={!selectedBatch || kuantiti <= 0 || kuantiti > maxQty || isPending}
+            disabled={!selectedBatch || kuantiti < 0 || kuantiti > maxQty || isPending}
             title="Bekalkan ubat"
           >
             {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}

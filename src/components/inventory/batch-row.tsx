@@ -10,6 +10,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Check, X as XIcon, Edit, Trash2, AlertTriangle, Loader2, Pencil } from "lucide-react";
 import { cn, formatDate, formatNumber, getKLDayStartISO, getTodayStrKL, toDateInputValue } from "@/lib/utils";
+import { DateInput } from "@/components/ui/date-input";
 import type { ItemBatch } from "@/types";
 
 interface BatchRowProps {
@@ -189,10 +190,9 @@ export function BatchRow({
           </div>
         )}
         {editingInfo ? (
-          <input
-            type="date"
+          <DateInput
             value={draftLuput}
-            onChange={(e) => setDraftLuput(e.target.value)}
+            onChange={(v) => setDraftLuput(v)}
             onKeyDown={(e) => { if (e.key === "Enter") handleInfoSubmit(); if (e.key === "Escape") cancelEditInfo(); }}
             className="h-7 text-xs px-2 rounded-lg outline-none w-full"
             style={{
@@ -360,10 +360,9 @@ export function BatchRow({
           )}
           <div className="flex items-center gap-2 mt-0.5 text-[12px] flex-wrap" style={{ color: "var(--text-secondary)" }}>
             {editingInfo ? (
-              <input
-                type="date"
+              <DateInput
                 value={draftLuput}
-                onChange={(e) => setDraftLuput(e.target.value)}
+                onChange={(v) => setDraftLuput(v)}
                 onKeyDown={(e) => { if (e.key === "Enter") handleInfoSubmit(); if (e.key === "Escape") cancelEditInfo(); }}
                 className="h-7 text-xs px-2 rounded-lg outline-none"
                 style={{

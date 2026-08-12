@@ -24,6 +24,7 @@ import {
   FileText,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { DateInput } from "@/components/ui/date-input";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { supabase } from "@/lib/supabase";
 import { addDaysToDateInput, formatDate, formatItemDisplay, getKLDayEndISO, getKLDayStartISO, getTodayStrKL } from "@/lib/utils";
@@ -975,10 +976,9 @@ function TransactionsTab({
             <div className="flex items-end gap-2 rounded-xl px-2.5 py-2" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-light)" }}>
               <label className="flex flex-col gap-1 text-2xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
                 Dari
-              <input
-                type="date"
+<DateInput
                 value={dateFrom}
-                onChange={(e) => onDateFromChange(e.target.value)}
+                onChange={(v) => onDateFromChange(v)}
                   className="h-11 rounded-lg px-2 text-xs font-medium normal-case tracking-normal sm:h-8"
                   style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
               />
@@ -986,11 +986,10 @@ function TransactionsTab({
               <span className="pb-2 text-xs" style={{ color: "var(--text-muted)" }}>-</span>
               <label className="flex flex-col gap-1 text-2xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
                 Hingga
-              <input
-                type="date"
+<DateInput
                 value={dateTo}
                 min={dateFrom || undefined}
-                onChange={(e) => onDateToChange(e.target.value)}
+                onChange={(v) => onDateToChange(v)}
                   className="h-11 rounded-lg px-2 text-xs font-medium normal-case tracking-normal sm:h-8"
                   style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
               />

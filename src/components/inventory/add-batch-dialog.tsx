@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import { Package, AlertTriangle, Loader2, Info } from "lucide-react";
 import { toDateInputValue, fromDateInputValue } from "@/lib/utils";
@@ -197,11 +198,10 @@ export function AddBatchDialog({
               <Label htmlFor="luput" className="mb-1" style={labelStyle}>
                 Tarikh Luput <span style={{ color: "#dc2626" }}>*</span>
               </Label>
-              <Input
+              <DateInput
                 id="luput"
-                type="date"
                 value={form.tarikh_luput}
-                onChange={(e) => updateField("tarikh_luput", e.target.value)}
+                onChange={(v) => updateField("tarikh_luput", v)}
                 required
                 style={inputStyle}
               />

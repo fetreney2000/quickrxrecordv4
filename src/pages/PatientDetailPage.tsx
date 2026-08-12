@@ -249,7 +249,7 @@ export default function PatientDetailPage() {
         <StatCardMini icon={Pill} color="#1877f2" label="Jumlah Item" value={stats.total} />
         <StatCardMini icon={Activity} color="#10b981" label="Item Aktif" value={stats.active} />
         <StatCardMini icon={Users} color="#7c3aed" label="Status" value={patient.aktif ? "Aktif" : "Tidak Aktif"} />
-        <StatCardMini icon={Calendar} color="#f59e0b" label="Tarikh Daftar" value={patient.tarikh_daftar ?? ""} />
+        <StatCardMini icon={Calendar} color="#f59e0b" label="Tarikh Daftar" value={formatDate(patient.tarikh_daftar)} />
       </div>
 
       <div><FoldableCard title={<span className="flex flex-wrap items-center gap-2"><Pill className="w-4 h-4 flex-shrink-0" style={{ color: "#1877f2" }} /> <span>Item Didaftarkan</span><Badge variant="green" className="text-2xs">{stats.active} aktif</Badge>{stats.inactive > 0 && <Badge variant="slate" className="text-2xs">{stats.inactive} tamat</Badge>}</span>}
@@ -280,7 +280,7 @@ function ViewInfo({ patient }: { patient: Patient }) {
       <InfoField icon={User} label="Dokumen Lain" value={patient.dokumen_lain} />
       <InfoField icon={User} label="No. Telefon" value={patient.nombor_telefon ? formatPhone(patient.nombor_telefon) : null} />
     </div>
-    <InfoField icon={User} label="Tarikh Daftar" value={patient.tarikh_daftar ?? ""} />
+    <InfoField icon={User} label="Tarikh Daftar" value={formatDate(patient.tarikh_daftar)} />
     <InfoField icon={User} label="Alamat" value={patient.alamat} block />
     <InfoField icon={User} label="Catatan" value={patient.catatan} block />
   </div>;

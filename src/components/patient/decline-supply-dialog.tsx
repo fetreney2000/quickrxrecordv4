@@ -121,7 +121,6 @@ export function DeclineSupplyDialog({
           <Input
             value={catatan}
             onChange={(e) => setCatatan(e.target.value)}
-            placeholder="Contoh: pesakit masih ada stok untuk 2 minggu"
           />
         </div>
 

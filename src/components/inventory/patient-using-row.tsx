@@ -20,6 +20,8 @@ export interface PatientUsingData {
     tarikh: string;
     qty: number;
   } | null;
+  last_declination: string | null;
+  last_activity: string | null;
 }
 
 interface PatientUsingRowProps {
@@ -48,7 +50,9 @@ function getStatus(data: PatientUsingData): {
   border: string;
   isDefaulter: boolean;
 } {
-  const m = monthsAgo(data.last_supply?.tarikh);
+  // "Aktiviti" terkini = bekalan terakhir ATAU kehadiran "Ubat Tidak Perlu Dibekalkan"
+  const activityTarikh = data.last_activity ?? data.last_supply?.tarikh ?? null;
+  const m = monthsAgo(activityTarikh);
   if (m === null || m >= 3) {
     const label = m === null ? "Tiada Bekalan" : `Tercicir ${m} bln`;
     return {

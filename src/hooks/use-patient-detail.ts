@@ -17,7 +17,11 @@ import type {
   Item,
   ItemForm,
   Profile,
+  SupplyDeclination,
+  SupplyActivityRow,
 } from "@/types";
+
+export type { SupplyActivityRow };
 
 // ============================================================================
 // 1. Single patient
@@ -174,6 +178,131 @@ export function useSupplyHistory(assignmentId: string | null) {
 }
 
 // ============================================================================
+// 4a. "Ubat Tidak Perlu Dibekalkan" (supply_declinations)
+// ============================================================================
+export const SUPPLY_DECLINE_REASONS = [
+  "Masih ada baki ubat di rumah",
+  "Tahan ubat buat sementara",
+  "Tidak perlu bekalan pada masa ini",
+  "Dose semasa belum habis",
+  "Lain-lain",
+];
+
+// Declination history (with recorded-by profile join)
+export interface DeclinationWithProfile extends SupplyDeclination {
+  direkod_oleh_profile: Pick<Profile, "id" | "nama"> | null;
+}
+
+export function useDeclinationHistory(assignmentId: string | null) {
+  return useQuery({
+    queryKey: ["declinations", assignmentId],
+    enabled: !!assignmentId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("supply_declinations")
+        .select(
+          `
+          *,
+          direkod_oleh_profile:profiles!supply_declinations_direkod_oleh_fkey (
+            id,
+            nama
+          )
+        `
+        )
+        .eq("assignment_id", assignmentId!)
+        .order("tarikh", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as unknown as DeclinationWithProfile[];
+    },
+  });
+}
+
+// Unified "Sejarah Bekalan Ubat" = bekalan sebenar + "Ubat Tidak Perlu Dibekalkan",
+// digabung dan diisih mengikut tarikh (terbaru dahulu).
+export function useAssignmentActivity(assignmentId: string | null) {
+  return useQuery({
+    queryKey: ["assignment-activity", assignmentId],
+    enabled: !!assignmentId,
+    queryFn: async () => {
+      const [suppliesQuery, declinationsQuery] = await Promise.all([
+        supabase
+          .from("supply_records")
+          .select(
+            `
+            *,
+            batch:item_batches (id, nombor_kelompok, tarikh_luput),
+            kakitangan_pembekal_profile:profiles!supply_records_kakitangan_pembekal_fkey (id, nama)
+          `
+          )
+          .eq("assignment_id", assignmentId!)
+          .order("tarikh_dibekal", { ascending: false }),
+        supabase
+          .from("supply_declinations")
+          .select(
+            `
+            *,
+            direkod_oleh_profile:profiles!supply_declinations_direkod_oleh_fkey (id, nama)
+          `
+          )
+          .eq("assignment_id", assignmentId!)
+          .order("tarikh", { ascending: false }),
+      ]);
+      if (suppliesQuery.error) throw suppliesQuery.error;
+      if (declinationsQuery.error) throw declinationsQuery.error;
+
+      const supplies: SupplyRecordWithJoins[] = (suppliesQuery.data ?? []) as unknown as SupplyRecordWithJoins[];
+      const declinations: DeclinationWithProfile[] = (declinationsQuery.data ?? []) as unknown as DeclinationWithProfile[];
+
+      const supplyRows: SupplyActivityRow[] = supplies.map((s) => ({
+        kind: "supply",
+        id: s.id,
+        tarikh: s.tarikh_dibekal,
+        laba_tarikh: false,
+        dos: s.dos,
+        tempoh_dibekal: s.tempoh_dibekal,
+        kuantiti: s.kuantiti,
+        kakitangan_pembekal: s.kakitangan_pembekal,
+        kakitangan_pembekal_profile: s.kakitangan_pembekal_profile,
+        catatan: s.catatan_bekalan,
+      }));
+
+      const declinationRows: SupplyActivityRow[] = declinations.map((d) => ({
+        kind: "declination",
+        id: d.id,
+        tarikh: d.tarikh,
+        laba_tarikh: false,
+        sebab: d.sebab,
+        catatan: d.catatan,
+        direkod_oleh_profile: d.direkod_oleh_profile,
+      }));
+
+      return [...supplyRows, ...declinationRows].sort(
+        (a, b) => new Date(b.tarikh).getTime() - new Date(a.tarikh).getTime()
+      ) as SupplyActivityRow[];
+    },
+  });
+}
+
+// Single latest declination for an assignment (for "Rujukan bekalan terakhir" notes)
+export function useLastDeclination(assignmentId: string | null) {
+  return useQuery({
+    queryKey: ["last-declination", assignmentId],
+    enabled: !!assignmentId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("supply_declinations")
+        .select("*")
+        .eq("assignment_id", assignmentId!)
+        .order("tarikh", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data as SupplyDeclination | null;
+    },
+  });
+}
+
+//= ===========================================================================
 // 4b. Latest supply date per assignment (for weeks-since badge)
 // ============================================================================
 export function useLatestSupplyDates(assignmentIds: string[]) {
@@ -676,6 +805,70 @@ export function useUpdateSupplyRecord(patientId: string | undefined) {
     },
     onError: (err: any) => {
       toast.error(err?.message || "Gagal mengemaskini rekod bekalan.");
+    },
+  });
+}
+
+// ============================================================================
+// 8b. "Ubat Tidak Perlu Dibekalkan" (supply declination) mutations
+// ============================================================================
+export function useDeclineSupply(patientId: string | undefined) {
+  const queryClient = useQueryClient();
+  const { profile } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({
+      assignmentId,
+      sebab,
+      catatan,
+    }: {
+      assignmentId: string;
+      sebab: string;
+      catatan?: string;
+    }) => {
+      const { error } = await supabase.from("supply_declinations").insert({
+        assignment_id: assignmentId,
+        tarikh: getNowISOKL(),
+        sebab,
+        catatan: catatan || null,
+        direkod_oleh: profile?.id ?? null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_data, vars) => {
+      toast.success("Rekod \u201cUbat Tidak Perlu Dibekalkan\u201d disimpan.");
+      queryClient.invalidateQueries({ queryKey: ["item-patients"] });
+      queryClient.invalidateQueries({ queryKey: ["assignments", patientId] });
+      queryClient.invalidateQueries({ queryKey: ["assignment-activity", vars.assignmentId] });
+      queryClient.invalidateQueries({ queryKey: ["declinations", vars.assignmentId] });
+      queryClient.invalidateQueries({ queryKey: ["last-declination", vars.assignmentId] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Gagal merekod. Sila cuba lagi.");
+    },
+  });
+}
+
+export function useDeleteDeclination(patientId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ declinationId, assignmentId }: { declinationId: string; assignmentId: string }) => {
+      const { error } = await supabase
+        .from("supply_declinations")
+        .delete()
+        .eq("id", declinationId);
+      if (error) throw error;
+    },
+    onSuccess: (_data, vars) => {
+      toast.success("Rekod dihapuskan.");
+      queryClient.invalidateQueries({ queryKey: ["item-patients"] });
+      queryClient.invalidateQueries({ queryKey: ["assignments", patientId] });
+      queryClient.invalidateQueries({ queryKey: ["assignment-activity", vars.assignmentId] });
+      queryClient.invalidateQueries({ queryKey: ["declinations", vars.assignmentId] });
+      queryClient.invalidateQueries({ queryKey: ["last-declination", vars.assignmentId] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Gagal menghapuskan rekod.");
     },
   });
 }

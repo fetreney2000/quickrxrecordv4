@@ -85,8 +85,8 @@ function getPatientSortVal(p: any, key: string): string | number {
     case "nama": return p.patient?.nama?.toLowerCase() || "";
     case "nokp": return p.patient?.nombor_kad_pengenalan || "";
     case "dos": return p.dos || "";
-    case "last_supply": return p.last_supply?.tarikh || "";
-    case "status": return p.last_supply?.tarikh || "9999-99-99";
+    case "last_supply": return p.last_supply?.tarikh || p.last_activity || "";
+    case "status": return p.last_supply?.tarikh || p.last_activity || "9999-99-99";
     default: return "";
   }
 }
@@ -232,9 +232,10 @@ export default function StockDetailPage() {
         const kp = p.patient?.nombor_kad_pengenalan || "";
         if (!n.includes(term) && !kp.includes(term)) return false;
       }
-      if (defaulterFilter !== "all") {
-        if (!p.last_supply) return cutoffMonths > 0;
-        const lastDate = new Date(`${toDateInputValue(p.last_supply.tarikh)}T00:00:00Z`);
+if (defaulterFilter !== "all") {
+        const activityTarikh = p.last_activity ?? p.last_supply?.tarikh ?? null;
+        if (!activityTarikh) return cutoffMonths > 0;
+        const lastDate = new Date(`${toDateInputValue(activityTarikh)}T00:00:00Z`);
         const monthsAgo =
           (now.getUTCFullYear() - lastDate.getUTCFullYear()) * 12 +
           (now.getUTCMonth() - lastDate.getUTCMonth());

@@ -16,6 +16,7 @@ import {
   Trash2,
   Calendar,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,10 +24,10 @@ import { FoldableCard } from "@/components/ui/foldable-card";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import {
   useDoseHistory,
-  useSupplyHistory,
+  useAssignmentActivity,
   type AssignmentWithItem,
   type DoseHistoryWithProfile,
-  type SupplyRecordWithJoins,
+  type SupplyActivityRow,
 } from "@/hooks/use-patient-detail";
 
 interface AssignmentItemProps {
@@ -36,6 +37,8 @@ interface AssignmentItemProps {
   onSupply: () => void;
   onUpdateDose: () => void;
   onStop: () => void;
+  onDecline: () => void;
+  onDeleteDeclination: (id: string) => void;
   onEditSupply: (s: { id: string; assignment_id: string; dos: string; kuantiti: number; tempoh_dibekal: string | null; catatan_bekalan: string | null; }) => void;
   onDeleteSupply: (id: string) => void;
   canEdit: boolean;
@@ -61,14 +64,14 @@ function SortableHeader({ label, sortKey, currentSort, onSort }: { label: string
 const DOSE_PAGE_SIZE = 20;
 const SUPPLY_PAGE_SIZE = 20;
 
-export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpdateDose, onStop, onEditSupply, onDeleteSupply, canEdit, formsMap, lastSupplyAge }: AssignmentItemProps) {
+export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpdateDose, onStop, onDecline, onDeleteDeclination, onEditSupply, onDeleteSupply, canEdit, formsMap, lastSupplyAge }: AssignmentItemProps) {
   const navigate = useNavigate();
   const [doseSort, setDoseSort] = useState<{ key: string; dir: SortDir } | null>(null);
   const [supplySort, setSupplySort] = useState<{ key: string; dir: SortDir } | null>(null);
   const [dosePage, setDosePage] = useState(0);
   const [supplyPage, setSupplyPage] = useState(0);
   const { data: doseHistory = [], isLoading: doseLoading } = useDoseHistory(expanded ? assignment.id : null);
-  const { data: supplyHistory = [], isLoading: supplyLoading } = useSupplyHistory(expanded ? assignment.id : null);
+  const { data: supplyHistory = [], isLoading: supplyLoading } = useAssignmentActivity(expanded ? assignment.id : null);
   const item = assignment.item;
   const formName = item?.id_bentuk ? formsMap.get(item.id_bentuk) : null;
 
@@ -145,6 +148,7 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <Button size="sm" title="Bekal ubat kepada pesakit" onClick={(e) => { e.stopPropagation(); onSupply(); }} className="h-7 px-2"><Package className="w-3 h-3" /><span className="hidden sm:inline">Bekal</span></Button>
                 <Button size="sm" variant="outline" title="Kemaskini dos" onClick={(e) => { e.stopPropagation(); onUpdateDose(); }} className="h-7 px-2"><Edit className="w-3 h-3" /><span className="hidden sm:inline">Kemaskini Dos</span></Button>
+                <Button size="sm" variant="outline" title="Ubat Tidak Perlu Dibekalkan" onClick={(e) => { e.stopPropagation(); onDecline(); }} className="h-7 px-2" style={{ color: "#f0932b" }}><AlertCircle className="w-3 h-3" /><span className="hidden sm:inline">Tak Perlu Bekal</span></Button>
                 <Button size="sm" variant="outline" title="Tamatkan tugasan item" onClick={(e) => { e.stopPropagation(); onStop(); }} className="h-7 px-2" style={{ color: "#dc2626" }}><X className="w-3 h-3" /><span className="hidden sm:inline">Tamat</span></Button>
               </div>
             )}
@@ -202,25 +206,54 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b" style={{ borderColor: "var(--border-light)" }}>
-                      <SortableHeader label="Tarikh & Masa" sortKey="tarikh_dibekal" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
-                      <SortableHeader label="Dos" sortKey="dos" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
-                      <SortableHeader label="Tempoh" sortKey="tempoh_dibekal" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
+                      <SortableHeader label="Tarikh & Masa" sortKey="tarikh" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
+                      <SortableHeader label="Jenis" sortKey="kind" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       <SortableHeader label="Kuantiti" sortKey="kuantiti" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
-                      <SortableHeader label="Pembekal" sortKey="kakitangan_pembekal" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
-                      <SortableHeader label="Catatan" sortKey="catatan_bekalan" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
+                      <SortableHeader label="Direkod oleh" sortKey="kakitangan_pembekal" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
+                      <SortableHeader label="Catatan" sortKey="catatan" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       {canEdit && <th className="text-left text-xs font-semibold uppercase tracking-wider px-2 py-1.5" style={{ color: "var(--text-secondary)" }}>Tindakan</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {pagedSupply.map((s) => (
-                      <tr key={s.id} className="border-b last:border-b-0" style={{ borderColor: "var(--border-light)" }}>
-                        <td className="px-2 py-1.5" style={{ color: "var(--text-primary)" }}>{formatDateTime(s.tarikh_dibekal)}</td>
-                        <td className="px-2 py-1.5 font-semibold" style={{ color: "#1877f2" }}>{s.dos}</td>
-                        <td className="px-2 py-1.5" style={{ color: "var(--text-secondary)" }}>{s.tempoh_dibekal || "—"}</td>
-                        <td className="px-2 py-1.5" style={{ color: "var(--text-primary)" }}>{s.kuantiti}</td>
-                        <td className="px-2 py-1.5" style={{ color: "var(--text-secondary)" }}>{(s as SupplyRecordWithJoins).kakitangan_pembekal_profile?.nama ?? "—"}</td>
-                        <td className="px-2 py-1.5 italic" style={{ color: "var(--text-muted)" }}>{s.catatan_bekalan || "—"}</td>
-                        {canEdit && <td className="px-2 py-1.5"><div className="flex items-center gap-1"><button title="Edit rekod bekalan" onClick={(e) => { e.stopPropagation(); onEditSupply(s); }} className="hover:opacity-70" style={{ color: "#1877f2" }}><Edit className="w-3 h-3" /></button><button title="Padam rekod bekalan" onClick={(e) => { e.stopPropagation(); onDeleteSupply(s.id); }} className="hover:opacity-70" style={{ color: "#dc2626" }}><Trash2 className="w-3 h-3" /></button></div></td>}
+                    {pagedSupply.map((row) => (
+                      <tr key={row.id} className="border-b last:border-b-0" style={{ borderColor: "var(--border-light)", background: row.kind === "declination" ? "rgba(240,147,43,0.04)" : "transparent" }}>
+                        <td className="px-2 py-1.5" style={{ color: "var(--text-primary)" }}>{formatDateTime(row.tarikh)}</td>
+                        <td className="px-2 py-1.5">
+                          {row.kind === "declination" ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-2xs font-semibold whitespace-nowrap" style={{ background: "rgba(240,147,43,0.12)", color: "#d97706", border: "1px solid rgba(240,147,43,0.25)" }}>
+                              <AlertCircle className="w-3 h-3" /> Ubat Tidak Perlu Dibekalkan
+                            </span>
+                          ) : (
+                            <span className="text-xs font-semibold" style={{ color: "#1877f2" }}>
+                              {row.dos || "Bekalan"}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-2 py-1.5" style={{ color: "var(--text-primary)" }}>
+                          {row.kind === "supply" ? row.kuantiti : "—"}
+                        </td>
+                        <td className="px-2 py-1.5" style={{ color: "var(--text-secondary)" }}>
+                          {row.kind === "supply"
+                            ? row.kakitangan_pembekal_profile?.nama ?? "—"
+                            : row.direkod_oleh_profile?.nama ?? "—"}
+                        </td>
+                        <td className="px-2 py-1.5 italic" style={{ color: "var(--text-muted)" }}>
+                          {row.kind === "declination"
+                            ? <>{row.sebab}{row.catatan ? ` — ${row.catatan}` : ""}</>
+                            : row.catatan || "—"}
+                        </td>
+                        {canEdit && <td className="px-2 py-1.5">
+                          {row.kind === "declination" ? (
+                            <div className="flex items-center gap-1">
+                              <button title="Padam rekod" onClick={(e) => { e.stopPropagation(); onDeleteDeclination(row.id); }} className="hover:opacity-70" style={{ color: "#dc2626" }}><Trash2 className="w-3 h-3" /></button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              <button title="Edit rekod bekalan" onClick={(e) => { e.stopPropagation(); onEditSupply({ id: row.id, assignment_id: assignment.id, dos: row.dos ?? "", kuantiti: row.kuantiti ?? 0, tempoh_dibekal: row.tempoh_dibekal ?? null, catatan_bekalan: row.catatan ?? null }); }} className="hover:opacity-70" style={{ color: "#1877f2" }}><Edit className="w-3 h-3" /></button>
+                              <button title="Padam rekod bekalan" onClick={(e) => { e.stopPropagation(); onDeleteSupply(row.id); }} className="hover:opacity-70" style={{ color: "#dc2626" }}><Trash2 className="w-3 h-3" /></button>
+                            </div>
+                          )}
+                        </td>}
                       </tr>
                     ))}
                   </tbody>

@@ -50,14 +50,17 @@ import {
   useUpdateDose,
   useSupplyMedication,
   useDeleteSupplyRecord,
-  useUpdateSupplyRecord,
+useUpdateSupplyRecord,
   useItemsWithStats,
   useLatestSupplyDates,
   useLatestDoseHistoryDos,
+  useDeclineSupply,
+  useDeleteDeclination,
   type AssignmentWithItem,
 } from "@/hooks/use-patient-detail";
 import { InfoField, StatCardMini } from "@/components/patient/patient-info-helpers";
 import { AssignmentItem } from "@/components/patient/assignment-item";
+import { DeclineSupplyDialog, DeleteDeclinationDialog } from "@/components/patient/decline-supply-dialog";
 import {
   DeactivateDialog,
   AddAssignmentDialog,
@@ -120,6 +123,8 @@ export default function PatientDetailPage() {
   const supplyMut = useSupplyMedication(id);
   const deleteSupplyMut = useDeleteSupplyRecord(id);
   const updateSupplyMut = useUpdateSupplyRecord(id);
+  const declineMut = useDeclineSupply(id);
+  const deleteDeclinationMut = useDeleteDeclination(id);
 
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState<Partial<Patient>>({});
@@ -127,9 +132,11 @@ export default function PatientDetailPage() {
   const [openAddAssignment, setOpenAddAssignment] = useState(false);
   const [openSupply, setOpenSupply] = useState<string | null>(null);
   const [openUpdateDose, setOpenUpdateDose] = useState<string | null>(null);
+  const [openDecline, setOpenDecline] = useState<string | null>(null);
   const [openStopAssign, setOpenStopAssign] = useState<string | null>(null);
   const [editSupplyRecord, setEditSupplyRecord] = useState<{ id: string; assignment_id: string; dos: string; kuantiti: number; tempoh_dibekal: string | null; catatan_bekalan: string | null; } | null>(null);
   const [deleteSupplyId, setDeleteSupplyId] = useState<{ id: string; assignmentId: string; } | null>(null);
+  const [deleteDeclinationId, setDeleteDeclinationId] = useState<{ id: string; assignmentId: string; } | null>(null);
   const [openMerge, setOpenMerge] = useState(false);
   const [assignmentPage, setAssignmentPage] = useState(0);
   const [expandedAssignment, setExpandedAssignment] = useState<string | null>(null);
@@ -255,7 +262,7 @@ export default function PatientDetailPage() {
       <div><FoldableCard title={<span className="flex flex-wrap items-center gap-2"><Pill className="w-4 h-4 flex-shrink-0" style={{ color: "#1877f2" }} /> <span>Item Didaftarkan</span><Badge variant="green" className="text-2xs">{stats.active} aktif</Badge>{stats.inactive > 0 && <Badge variant="slate" className="text-2xs">{stats.inactive} tamat</Badge>}</span>}
         headerExtra={canEdit && patient.aktif ? <Button size="sm" onClick={() => setOpenAddAssignment(true)} style={{ background: "linear-gradient(135deg, #1877f2, #0d5bd4)" }} title="Tambah item baharu untuk pesakit"><Plus className="w-3.5 h-3.5" /> Tambah Item</Button> : null}>
         {assignments.length === 0 ? <div className="flex flex-col items-center justify-center py-12 gap-2" style={{ color: "var(--text-muted)" }}><Pill className="w-10 h-10 opacity-40" /><p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Tiada item didaftarkan</p>{canEdit && patient.aktif && <p className="text-xs">Klik "Tambah Item" untuk mula.</p>}</div> : <>
-          <div className="divide-y divide-[#f0f2f5]">{pagedAssignments.map((a) => <AssignmentItem key={a.id} assignment={a} expanded={expandedAssignment === a.id} onToggle={() => setExpandedAssignment(expandedAssignment === a.id ? null : a.id)} onSupply={() => setOpenSupply(a.id)} onUpdateDose={() => setOpenUpdateDose(a.id)} onStop={() => setOpenStopAssign(a.id)} onEditSupply={(s) => setEditSupplyRecord(s)} onDeleteSupply={(id) => setDeleteSupplyId({ id, assignmentId: a.id })} canEdit={canEdit && patient.aktif} formsMap={formsMap} lastSupplyAge={supplyAgeMap.get(a.id) ?? null} />)}</div>
+          <div className="divide-y divide-[#f0f2f5]">{pagedAssignments.map((a) => <AssignmentItem key={a.id} assignment={a} expanded={expandedAssignment === a.id} onToggle={() => setExpandedAssignment(expandedAssignment === a.id ? null : a.id)} onSupply={() => setOpenSupply(a.id)} onUpdateDose={() => setOpenUpdateDose(a.id)} onStop={() => setOpenStopAssign(a.id)} onDecline={() => setOpenDecline(a.id)} onDeleteDeclination={(id) => setDeleteDeclinationId({ id, assignmentId: a.id })} onEditSupply={(s) => setEditSupplyRecord(s)} onDeleteSupply={(id) => setDeleteSupplyId({ id, assignmentId: a.id })} canEdit={canEdit && patient.aktif} formsMap={formsMap} lastSupplyAge={supplyAgeMap.get(a.id) ?? null} />)}</div>
            {assignmentTotalPages > 1 && <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-[#f0f2f5]"><p className="text-xs" style={{ color: "var(--text-secondary)" }}>Halaman {assignmentPage + 1} daripada {assignmentTotalPages}</p><div className="flex items-center gap-1"><Button variant="outline" size="sm" disabled={assignmentPage === 0} onClick={() => setAssignmentPage((p) => Math.max(0, p - 1))} className="h-11 w-11 p-0 sm:h-8 sm:w-auto sm:px-2" style={{ opacity: assignmentPage === 0 ? 0.4 : 1 }} title="Halaman sebelumnya"><ChevronLeft className="w-3.5 h-3.5" /></Button><Button variant="outline" size="sm" disabled={assignmentPage >= assignmentTotalPages - 1} onClick={() => setAssignmentPage((p) => Math.min(assignmentTotalPages - 1, p + 1))} className="h-11 w-11 p-0 sm:h-8 sm:w-auto sm:px-2" style={{ opacity: assignmentPage >= assignmentTotalPages - 1 ? 0.4 : 1 }} title="Halaman seterusnya"><ChevronRight className="w-3.5 h-3.5" /></Button></div></div>}
         </>}
       </FoldableCard></div>
@@ -267,6 +274,19 @@ export default function PatientDetailPage() {
       <StopAssignmentDialog open={!!openStopAssign} onOpenChange={(o) => !o && setOpenStopAssign(null)} onSubmit={(sebab) => stopAssignment.mutate({ assignmentId: openStopAssign!, sebab }, { onSuccess: () => setOpenStopAssign(null) })} isPending={stopAssignment.isPending} />
       <EditSupplyDialog supply={editSupplyRecord} onClose={() => setEditSupplyRecord(null)} onSubmit={(data) => updateSupplyMut.mutate({ ...data, assignmentId: editSupplyRecord!.assignment_id }, { onSuccess: () => setEditSupplyRecord(null) })} isPending={updateSupplyMut.isPending} />
       <DeleteSupplyDialog target={deleteSupplyId} onClose={() => setDeleteSupplyId(null)} onConfirm={() => deleteSupplyMut.mutate({ supplyId: deleteSupplyId!.id, assignmentId: deleteSupplyId!.assignmentId }, { onSuccess: () => setDeleteSupplyId(null) })} isPending={deleteSupplyMut.isPending} />
+      {openDecline && <DeclineSupplyDialog
+        open={!!openDecline}
+        onOpenChange={(o) => !o && setOpenDecline(null)}
+        assignmentLabel={(() => { const a = assignments.find((x) => x.id === openDecline); return a ? formatItemDisplay(a.item, a.item?.id_bentuk ? formsMap.get(a.item.id_bentuk) : null) : ""; })()}
+        isPending={declineMut.isPending}
+        onSubmit={(sebab, catatan) => declineMut.mutate({ assignmentId: openDecline, sebab, catatan }, { onSuccess: () => setOpenDecline(null) })}
+      />}
+      <DeleteDeclinationDialog
+        open={!!deleteDeclinationId}
+        onClose={() => setDeleteDeclinationId(null)}
+        onConfirm={() => deleteDeclinationMut.mutate({ declinationId: deleteDeclinationId!.id, assignmentId: deleteDeclinationId!.assignmentId }, { onSuccess: () => setDeleteDeclinationId(null) })}
+        isPending={deleteDeclinationMut.isPending}
+      />
       <MergeDialog open={openMerge} onOpenChange={setOpenMerge} primaryPatient={patient} />
     </div>
   );

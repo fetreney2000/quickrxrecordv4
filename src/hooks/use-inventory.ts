@@ -542,6 +542,18 @@ async function batchInQuery<T>(
   return results;
 }
 
+export function computeLastActivity(
+  lastSupplyTarikh: string | null,
+  lastDeclinationTarikh: string | null
+): string | null {
+  if (!lastSupplyTarikh && !lastDeclinationTarikh) return null;
+  if (!lastSupplyTarikh) return lastDeclinationTarikh;
+  if (!lastDeclinationTarikh) return lastSupplyTarikh;
+  return new Date(lastSupplyTarikh).getTime() > new Date(lastDeclinationTarikh).getTime()
+    ? lastSupplyTarikh
+    : lastDeclinationTarikh;
+}
+
 export function useItemPatients(itemId: string | undefined) {
   return useQuery({
     queryKey: ["item-patients", itemId],
@@ -615,6 +627,29 @@ export function useItemPatients(itemId: string | undefined) {
         });
       }
 
+      // "Ubat Tidak Perlu Dibekalkan" (supply_declinations) — dianggap aktiviti terbaru
+      const allDeclinations = assignmentIds.length > 0
+        ? await batchInQuery(
+            assignmentIds,
+            async (batchIds) => {
+              const { data, error } = await supabase
+                .from("supply_declinations")
+                .select("assignment_id, tarikh")
+                .in("assignment_id", batchIds)
+                .order("tarikh", { ascending: false });
+              if (error) throw error;
+              return (data ?? []) as any[];
+            }
+          )
+        : [];
+
+      const lastDeclinationMap = new Map<string, string>();
+      allDeclinations.forEach((d: any) => {
+        if (!lastDeclinationMap.has(d.assignment_id)) {
+          lastDeclinationMap.set(d.assignment_id, d.tarikh);
+        }
+      });
+
       return assignments.map((a: any) => ({
         id: a.id,
         patient_id: a.patient_id,
@@ -622,6 +657,8 @@ export function useItemPatients(itemId: string | undefined) {
         tarikh_mula_guna: a.tarikh_mula_guna,
         patient: a.patient,
         last_supply: lastSupplyMap.get(a.id) ?? null,
+        last_declination: lastDeclinationMap.get(a.id) ?? null,
+        last_activity: computeLastActivity(lastSupplyMap.get(a.id)?.tarikh ?? null, lastDeclinationMap.get(a.id) ?? null),
       }));
     },
     staleTime: 30_000,

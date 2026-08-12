@@ -12,6 +12,7 @@ import {
   ShieldAlert,
   X,
   Plus,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,8 +34,8 @@ import {
   useItemsActive,
   useAddAssignmentInline,
 } from "@/hooks/use-quick-dispense";
-import { useLatestDoseHistoryDos } from "@/hooks/use-patient-detail";
-import { useSupplyHistory } from "@/hooks/use-patient-detail";
+import { useLatestDoseHistoryDos, useSupplyHistory, useDeclineSupply, useLastDeclination } from "@/hooks/use-patient-detail";
+import { DeclineSupplyDialog } from "@/components/patient/decline-supply-dialog";
 import type { Patient } from "@/types";
 
 const inputStyle: React.CSSProperties = {
@@ -79,6 +80,7 @@ export default function QuickDispensePage() {
   const [registerSelectedItem, setRegisterSelectedItem] = useState<any>(null);
   const [registerDos, setRegisterDos] = useState("");
   const [showAddPatient, setShowAddPatient] = useState(false);
+  const [showDeclineDialog, setShowDeclineDialog] = useState(false);
 
   const { data: searchResults = [], isFetching: searching } =
     usePatientSearch(searchQuery);
@@ -117,6 +119,10 @@ export default function QuickDispensePage() {
   );
   const { data: supplyDurations = [] } = useSupplyDurationsList();
   const supplyMut = useQuickSupply(selectedPatient?.id ?? null);
+  const declineMut = useDeclineSupply(selectedPatient?.id);
+  const { data: lastDeclination = null } = useLastDeclination(
+    selectedItem?.assignment_id ?? null
+  );
   const setBreadcrumbTrail = useNavStore((s) => s.setBreadcrumbTrail);
 
   useEffect(() => {
@@ -504,9 +510,15 @@ export default function QuickDispensePage() {
                     />
                   </div>
                 </div>
-              ) : (
+) : (
                 <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
                   Tiada rekod bekalan terdahulu untuk item ini.
+                </p>
+              )}
+              {lastDeclination && (
+                <p className="mt-2 text-xs italic" style={{ color: "var(--text-muted)" }}>
+                  Rekod terakhir: Ubat Tidak Perlu Dibekalkan — {lastDeclination.sebab}
+                  {" "}({formatDate(lastDeclination.tarikh)})
                 </p>
               )}
             </div>
@@ -548,6 +560,11 @@ export default function QuickDispensePage() {
                 style={{ background: canSubmit ? "linear-gradient(135deg, #1877f2, #0d5bd4)" : "var(--text-muted)", color: "white" }}>
                 {supplyMut.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 <Zap className="w-4 h-4 mr-2" /> Bekal {quantity && `(${quantity})`}
+              </Button>
+              <Button type="button" title="Ubat Tidak Perlu Dibekalkan" disabled={!selectedItem || !selectedPatient} onClick={() => setShowDeclineDialog(true)}
+                className="w-full h-12 text-sm font-bold"
+                style={{ background: "rgba(240,147,43,0.10)", color: "#d97706", border: "1px solid rgba(240,147,43,0.25)" }}>
+                <AlertCircle className="w-4 h-4 mr-2" /> Ubat Tidak Perlu Dibekalkan
               </Button>
             </form>
           </CardContent>
@@ -641,6 +658,16 @@ export default function QuickDispensePage() {
         </div>
       )}
       <AddPatientDialog open={showAddPatient} onOpenChange={setShowAddPatient} />
+      <DeclineSupplyDialog
+        open={showDeclineDialog}
+        onOpenChange={setShowDeclineDialog}
+        assignmentLabel={selectedItem ? formatItemDisplay(selectedItem.item) : ""}
+        isPending={declineMut.isPending}
+        onSubmit={(sebab, catatan) => declineMut.mutate(
+          { assignmentId: selectedItem?.assignment_id ?? "", sebab, catatan },
+          { onSuccess: () => setShowDeclineDialog(false) }
+        )}
+      />
     </div>
   );
 }

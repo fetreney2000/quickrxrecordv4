@@ -236,6 +236,39 @@ export interface InventoryTransaction {
 export type Supply = SupplyRecord;
 
 // ============================================================================
+// "Ubat Tidak Perlu Dibekalkan" (supply declination)
+// Rekod bahawa pesakit datang tetapi tidak perlu dibekalkan ubat.
+// Tidak mengurangkan stok, tidak mencipta supply_records, tidak mengubah kuota.
+// ============================================================================
+export interface SupplyDeclination {
+  id: string;
+  assignment_id: string;
+  tarikh: string;
+  sebab: string;
+  catatan: string | null;
+  direkod_oleh: string | null;
+  created_at: string;
+}
+
+// Baris bersatu untuk "Sejarah Bekalan Ubat" (bekalan sebenar + "Tidak Perlu Dibekalkan")
+export interface SupplyActivityRow {
+  kind: "supply" | "declination";
+  id: string;
+  tarikh: string;
+  laba_tarikh: boolean;
+  // Supply sahaja
+  dos?: string | null;
+  tempoh_dibekal?: string | null;
+  kuantiti?: number | null;
+  kakitangan_pembekal?: string | null;
+  kakitangan_pembekal_profile?: { id: string; nama: string } | null;
+  // Declination sahaja
+  sebab?: string | null;
+  catatan?: string | null;
+  direkod_oleh_profile?: { id: string; nama: string } | null;
+}
+
+// ============================================================================
 // Types untuk Header search
 // ============================================================================
 export interface PatientSearchResult {

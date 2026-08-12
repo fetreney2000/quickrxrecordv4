@@ -27,6 +27,7 @@ import {
   useAvailableBatches,
   useSupplyHistory,
   useSupplyDurations,
+  useLastDeclination,
   type AssignmentWithItem,
 } from "@/hooks/use-patient-detail";
 import type { Item } from "@/types";
@@ -430,6 +431,9 @@ export function SupplyDialog({
   const { data: supplyHistory = [], isLoading: supplyHistoryLoading } = useSupplyHistory(
     open ? assignment.id : null
   );
+  const { data: lastDeclination = null } = useLastDeclination(
+    open ? assignment.id : null
+  );
   const selectableBatches = batches.filter(
     (batch) => batch.kuantiti > 0 && batch.dilupuskan !== true
   );
@@ -515,6 +519,12 @@ export function SupplyDialog({
               <ReferenceValue label="Bekalan lepas" value={formatWeeksAgo(daysSinceSupply)} />
               <ReferenceValue label="Baki anggaran" value={formatBalanceDays(balanceDays)} />
             </div>
+          )}
+          {lastDeclination && (
+            <p className="mt-2 text-xs italic" style={{ color: "var(--text-muted)" }}>
+              Rekod terakhir: Ubat Tidak Perlu Dibekalkan — {lastDeclination.sebab}
+              {" "}({formatDate(lastDeclination.tarikh)})
+            </p>
           )}
           <p className="mt-2 text-xs italic" style={{ color: "var(--text-muted)" }}>
             Maklumat ini untuk rujukan sahaja dan bukan kiraan stok sebenar.

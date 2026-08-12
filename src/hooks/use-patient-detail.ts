@@ -409,7 +409,7 @@ export function useAddAssignment(patientId: string | undefined) {
       if (assignment && data.dos) {
         await supabase.from("dose_history").insert({
           assignment_id: assignment.id,
-          tarikh: today,
+          tarikh: getNowISOKL(),
           dos: data.dos,
           aktif: true,
           catatan: "Bekalan kali pertama",
@@ -480,7 +480,6 @@ export function useUpdateDose(patientId: string | undefined) {
       dos: string;
       catatan: string;
     }) => {
-      const today = getTodayStrKL();
       // 1. Update assignment
       const { error: updateError } = await supabase
         .from("patient_item_assignments")
@@ -492,7 +491,7 @@ export function useUpdateDose(patientId: string | undefined) {
         .from("dose_history")
         .insert({
           assignment_id: assignmentId,
-          tarikh: today,
+          tarikh: getNowISOKL(),
           dos,
           aktif: true,
           catatan: catatan || null,

@@ -418,7 +418,7 @@ export function SupplyDialog({
   }) => void;
   isPending: boolean;
 }) {
-  const [kuantiti, setKuantiti] = useState(1);
+  const [kuantiti, setKuantiti] = useState("");
   const [tempohNilai, setTempohNilai] = useState("");
   const [tempohUnit, setTempohUnit] = useState("");
   const [batchId, setBatchId] = useState<string | null>(null);
@@ -452,7 +452,7 @@ export function SupplyDialog({
       setTempohUnit(durations[0]?.nama ?? "");
     }
     if (!open) {
-      setKuantiti(1);
+      setKuantiti("");
       setTempohNilai("");
       setTempohUnit("");
       setBatchId(null);
@@ -463,6 +463,8 @@ export function SupplyDialog({
 
   const selectedBatch = selectableBatches.find((b) => b.id === batchId);
   const maxQty = selectedBatch?.kuantiti ?? 0;
+  const qty = parseInt(kuantiti, 10);
+  const qtyOutOfRange = Number.isNaN(qty) || qty < 0 || qty > maxQty;
   const latestSupply = supplyHistory[0];
   const latestSupplyDays = latestSupply ? parseDurationDays(latestSupply.tempoh_dibekal) : null;
   const daysSinceSupply = latestSupply ? calendarDaysSince(latestSupply.tarikh_dibekal) : null;
@@ -522,10 +524,10 @@ export function SupplyDialog({
         <form
 onSubmit={(e) => {
             e.preventDefault();
-            if (!selectedBatch || kuantiti < 0 || kuantiti > maxQty) return;
+            if (!selectedBatch || qtyOutOfRange) return;
             onSubmit({
               dos: assignment.dos ?? "",
-              kuantiti,
+              kuantiti: qty,
               tempoh: tempoh.trim(),
                batchId: batchId!,
               catatan: catatan.trim(),
@@ -549,6 +551,8 @@ onSubmit={(e) => {
                 <Input
                   value={tempohNilai}
                   onChange={(e) => setTempohNilai(e.target.value)}
+                  onFocus={(e) => e.target.select()}
+                  title="Tempoh bekalan"
                   style={{ ...inputBaseStyle, flex: 1 }}
                 />
                 <select
@@ -576,9 +580,8 @@ onSubmit={(e) => {
                 min={0}
                 max={maxQty || undefined}
                 value={kuantiti}
-                onChange={(e) =>
-                  setKuantiti(Math.max(0, parseInt(e.target.value) || 0))
-                }
+                onChange={(e) => setKuantiti(e.target.value)}
+                onFocus={(e) => e.target.select()}
                 required
                 style={inputBaseStyle}
               />
@@ -636,7 +639,7 @@ onSubmit={(e) => {
                 ))}
               </div>
             )}
-            {maxQty > 0 && kuantiti > maxQty && (
+            {maxQty > 0 && kuantiti.trim() !== "" && qty > maxQty && (
               <p className="text-2xs" style={{ color: "#dc2626" }}>
                 Kuantiti melebihi stok tersedia ({maxQty}).
               </p>
@@ -664,16 +667,16 @@ onSubmit={(e) => {
           </Button>
           <Button
 onClick={() => {
-               if (!selectedBatch || kuantiti < 0 || kuantiti > maxQty) return;
+               if (!selectedBatch || qtyOutOfRange) return;
               onSubmit({
                 dos: assignment.dos ?? "",
-                kuantiti,
+                kuantiti: qty,
                 tempoh: tempoh.trim(),
                  batchId: batchId!,
                 catatan: catatan.trim(),
               });
             }}
-            disabled={!selectedBatch || kuantiti < 0 || kuantiti > maxQty || isPending}
+            disabled={!selectedBatch || qtyOutOfRange || isPending}
             title="Bekalkan ubat"
           >
             {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}

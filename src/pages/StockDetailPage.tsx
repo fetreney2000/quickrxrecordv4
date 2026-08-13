@@ -27,6 +27,7 @@ import {
   Loader2,
   Inbox,
   RotateCcw,
+  Trash2,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavStore } from "@/lib/nav-store";
+import { supabase } from "@/lib/supabase";
 import {
   formatDate,
   formatItemDisplay,
@@ -56,6 +58,7 @@ import {
   useAddBatch,
   useUpdateBatch,
   useUpdateItem,
+  useDeleteItem,
   useItemForms,
   useItemCategories,
   useItemPatients,
@@ -70,6 +73,7 @@ import { SortIcon } from "@/components/patient/sort-icon";
 import type { SortDir } from "@/hooks/use-patients";
 import { AddBatchDialog } from "@/components/inventory/add-batch-dialog";
 import { BatchAdjustmentDialog } from "@/components/inventory/batch-adjustment-dialog";
+import { DeleteItemDialog } from "@/components/inventory/delete-item-dialog";
 import { BatchRow } from "@/components/inventory/batch-row";
 import { PatientUsingRow } from "@/components/inventory/patient-using-row";
 import { TransactionRow } from "@/components/inventory/transaction-row";
@@ -173,6 +177,7 @@ export default function StockDetailPage() {
 
   const updateItem = useUpdateItem(id);
   const updateBatch = useUpdateBatch(id);
+  const deleteItem = useDeleteItem();
 
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState<Partial<Item>>({});
@@ -183,6 +188,9 @@ export default function StockDetailPage() {
     batch: ItemBatch;
     newKuantiti?: number;
   } | null>(null);
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteMode, setDeleteMode] = useState<"deleted" | "deactivated">("deactivated");
 
   const [batchPage, setBatchPage] = useState(0);
   const [patientPage, setPatientPage] = useState(0);
@@ -398,6 +406,26 @@ if (defaulterFilter !== "all") {
 
   const handleUpdateBatch = (batchId: string, nombor_kelompok: string, tarikh_luput: string) => {
     updateBatch.mutate({ batchId, nombor_kelompok, tarikh_luput });
+  };
+
+  const resolveDeleteMode = async () => {
+    if (!id) return;
+    const { count } = await supabase
+      .from("patient_item_assignments")
+      .select("id", { count: "exact", head: true })
+      .eq("item_id", id);
+    setDeleteMode((count ?? 0) > 0 ? "deactivated" : "deleted");
+    setDeleteOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!id) return;
+    deleteItem.mutate(id, {
+      onSuccess: () => {
+        setDeleteOpen(false);
+        navigate("/stok");
+      },
+    });
   };
 
   const togglePatientSort = useCallback((key: string) => {
@@ -634,7 +662,7 @@ if (defaulterFilter !== "all") {
       {/* 1. MAKLUMAT ITEM */}
       <div>
           <FoldableCard title={<span className="flex min-w-0 items-center gap-2"><Pill className="w-4 h-4 flex-shrink-0" style={{ color: "#7c3aed" }} /> <span className="truncate">Maklumat Item</span></span>}
-           headerExtra={canEditItem && !editMode && item.aktif ? <Button size="sm" variant="outline" onClick={startEdit} title="Edit maklumat item" className="min-h-11 sm:min-h-0"><Edit className="w-3.5 h-3.5" /> Edit</Button> : editMode ? <div className="flex items-center gap-2"><Button size="sm" variant="outline" onClick={cancelEdit} title="Batal edit" className="min-h-11 sm:min-h-0">Batal</Button><Button size="sm" onClick={saveEdit} disabled={updateItem.isPending} title="Simpan perubahan" className="min-h-11 sm:min-h-0" style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}>{updateItem.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Simpan</Button></div> : null}
+           headerExtra={canEditItem && !editMode && item.aktif ? <div className="flex items-center gap-2"><Button size="sm" variant="outline" onClick={startEdit} title="Edit maklumat item" className="min-h-11 sm:min-h-0"><Edit className="w-3.5 h-3.5" /> Edit</Button><Button size="sm" variant="outline" onClick={resolveDeleteMode} title="Padam item" disabled={deleteItem.isPending} className="min-h-11 sm:min-h-0" style={{ color: "#dc2626" }}><Trash2 className="w-3.5 h-3.5" /> Padam</Button></div> : editMode ? <div className="flex items-center gap-2"><Button size="sm" variant="outline" onClick={cancelEdit} title="Batal edit" className="min-h-11 sm:min-h-0">Batal</Button><Button size="sm" onClick={saveEdit} disabled={updateItem.isPending} title="Simpan perubahan" className="min-h-11 sm:min-h-0" style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}>{updateItem.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Simpan</Button></div> : null}
         >
           <div className="pt-3">
             {editMode ? <ItemEditForm editData={editData} setEditData={setEditData} forms={forms} categories={categories} /> : <>
@@ -741,6 +769,7 @@ if (defaulterFilter !== "all") {
       {id && <>
         <AddBatchDialog open={openAddBatch} onOpenChange={setOpenAddBatch} itemId={id} />
         <BatchAdjustmentDialog open={!!adjustDialog} onOpenChange={(o) => !o && setAdjustDialog(null)} actionType={adjustDialog?.type ?? "adjust"} batch={adjustDialog?.batch ?? null} newKuantiti={adjustDialog?.newKuantiti} itemId={id} />
+        <DeleteItemDialog open={deleteOpen} onClose={() => setDeleteOpen(false)} onConfirm={handleConfirmDelete} isPending={deleteItem.isPending} mode={deleteMode} itemLabel={item?.nama_item ?? ""} />
       </>}
     </div>
   );

@@ -364,8 +364,33 @@ export function useUpdateItem(id: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ["item", id] });
       queryClient.invalidateQueries({ queryKey: ["items"] });
     },
-    onError: (error: Error) => {
+onError: (error: Error) => {
       toast.error(error.message || "Gagal mengemaskini item.");
+    },
+  });
+}
+
+export function useDeleteItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (itemId: string) => {
+      const { data, error } = await supabase.rpc("delete_item", {
+        p_item_id: itemId,
+      });
+      if (error) throw error;
+      return data as "deleted" | "deactivated";
+    },
+    onSuccess: (status, itemId) => {
+      toast.success(
+        status === "deleted"
+          ? "Item telah dipadam secara kekal."
+          : "Item ditetapkan sebagai tidak aktif. Sejarah disimpan."
+      );
+      queryClient.invalidateQueries({ queryKey: ["items"] });
+      queryClient.removeQueries({ queryKey: ["item", itemId] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Gagal memadam item.");
     },
   });
 }

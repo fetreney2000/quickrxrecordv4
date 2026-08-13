@@ -208,6 +208,7 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                     <tr className="border-b" style={{ borderColor: "var(--border-light)" }}>
                       <SortableHeader label="Tarikh & Masa" sortKey="tarikh" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       <SortableHeader label="Jenis" sortKey="kind" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
+                      <SortableHeader label="Dos" sortKey="dos" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       <SortableHeader label="Kuantiti" sortKey="kuantiti" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       <th className="text-left text-xs font-semibold uppercase tracking-wider px-2 py-1.5" style={{ color: "var(--text-secondary)" }}>Tempoh</th>
                       <SortableHeader label="Direkod oleh" sortKey="kakitangan_pembekal" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
@@ -225,10 +226,13 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                               <AlertCircle className="w-3 h-3" /> Ubat Tidak Perlu Dibekalkan
                             </span>
                           ) : (
-                            <span className="text-xs font-semibold" style={{ color: "#1877f2" }}>
-                              {row.dos || "Bekalan"}
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-2xs font-semibold whitespace-nowrap" style={{ background: "rgba(24,119,242,0.10)", color: "#1877f2", border: "1px solid rgba(24,119,242,0.2)" }}>
+                              Bekalan
                             </span>
                           )}
+                        </td>
+                        <td className="px-2 py-1.5 font-semibold" style={{ color: "#1877f2" }}>
+                          {row.kind === "supply" ? (row.dos || "—") : "—"}
                         </td>
                         <td className="px-2 py-1.5" style={{ color: "var(--text-primary)" }}>
                           {row.kind === "supply" ? row.kuantiti : "—"}

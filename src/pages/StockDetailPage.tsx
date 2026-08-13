@@ -333,19 +333,6 @@ if (defaulterFilter !== "all") {
   const patientTotalPages = Math.max(1, Math.ceil(sortedPatients.length / PATIENT_PAGE_SIZE));
   const txTotalPages = Math.max(1, Math.ceil(sortedTransactions.length / TX_PAGE_SIZE));
 
-  const bakiMap = useMemo(() => {
-    const map = new Map<string, number>();
-    const asc = [...sortedTransactions].sort((a, b) =>
-      new Date(a.tarikh).getTime() - new Date(b.tarikh).getTime()
-    );
-    let balance = 0;
-    for (const tx of asc) {
-      balance += tx.perubahan;
-      map.set(tx.id, Math.max(0, balance));
-    }
-    return map;
-  }, [sortedTransactions]);
-
   const startEdit = () => {
     if (!item) return;
     setEditData({
@@ -487,7 +474,7 @@ if (defaulterFilter !== "all") {
       });
       headerRow.height = 22;
       filteredTransactions.forEach((tx, i) => {
-        const baki = bakiMap.get(tx.id) ?? 0;
+        const baki = tx.baki != null ? tx.baki : "—";
         const row = ws.addRow([formatDate(tx.tarikh), tx.jenis_label, tx.kelompok, tx.perubahan_label, baki, tx.catatan || "", tx.kakitangan || "", tx.pesakit || ""]);
         if (i % 2 === 0) {
           row.eachCell((cell) => { cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF9FAFB" } }; });
@@ -544,7 +531,7 @@ if (defaulterFilter !== "all") {
       doc.setFont("helvetica", "italic");
        doc.text(`Dijana pada ${new Date().toLocaleString(KL_LOCALE, { timeZone: KL_TIMEZONE })} · ${filteredTransactions.length} rekod`, 14, 28);
       const tableData = filteredTransactions.map((tx) => {
-        const baki = bakiMap.get(tx.id) ?? 0;
+        const baki = tx.baki != null ? tx.baki : "—";
         return [formatDate(tx.tarikh), tx.jenis_label, tx.kelompok, tx.perubahan_label, String(baki), tx.catatan || "", tx.kakitangan || "", tx.pesakit || ""];
       });
       autoTable(doc, {
@@ -760,7 +747,7 @@ if (defaulterFilter !== "all") {
               <button type="button" onClick={() => toggleTxSort("kakitangan")} title="Urut mengikut Kakitangan" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "kakitangan" ? "#7c3aed" : "var(--text-secondary)" }}>Kakitangan <SortIcon active={txSort?.key === "kakitangan"} dir={txSort?.dir ?? "asc"} /></button>
               <button type="button" onClick={() => toggleTxSort("pesakit")} title="Urut mengikut Pesakit" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: txSort?.key === "pesakit" ? "#7c3aed" : "var(--text-secondary)" }}>Pesakit <SortIcon active={txSort?.key === "pesakit"} dir={txSort?.dir ?? "asc"} /></button>
             </div>
-            {pagedTransactions.map((tx, idx) => <TransactionRow key={tx.id} tx={tx} index={idx} baki={bakiMap.get(tx.id) ?? 0} />)}
+            {pagedTransactions.map((tx, idx) => <TransactionRow key={tx.id} tx={tx} index={idx} baki={tx.baki} />)}
             {txTotalPages > 1 && <Pagination page={txPage} totalPages={txTotalPages} onChange={setTxPage} totalCount={filteredTransactions.length} itemLabel="transaksi" />}
           </>}
         </FoldableCard>

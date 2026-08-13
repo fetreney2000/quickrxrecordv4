@@ -665,37 +665,21 @@ export function useSupplyMedication(patientId: string | undefined) {
       tempoh: string;
       batchId: string;
       catatan: string;
-      itemId: string;
+itemId: string;
     }) => {
-      // 1. Cuba panggil API endpoint (Supabase Edge Function)
-      // 2. Fallback ke Supabase client langsung
-      try {
-        const res = await fetch("/api/supply", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            assignment_id: data.assignmentId,
-            dos: data.dos,
-            kuantiti: data.kuantiti,
-            tempoh_dibekal: data.tempoh,
-            batch_id: data.batchId,
-            kakitangan_pembekal: profile?.id,
-            catatan_bekalan: data.catatan,
-          }),
-        });
-        if (res.ok) {
-          return await res.json();
-        }
-        // If 404 or other, fallback to direct
-        if (res.status !== 404) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err?.error || "Gagal bekal ubat.");
-        }
-      } catch {
-        // Network error — fallback
-      }
+      // 1. Cuba RPC process_supply (atomik + jurnal baki)
+      const { data: rpcData, error: rpcError } = await supabase.rpc("process_supply", {
+        p_assignment_id: data.assignmentId,
+        p_dos: data.dos,
+        p_tempoh_dibekal: data.tempoh,
+        p_kuantiti: data.kuantiti,
+        p_batch_id: data.batchId,
+        p_kakitangan_pembekal: profile?.id ?? null,
+        p_catatan_bekalan: data.catatan ?? null,
+      });
+      if (!rpcError) return { success: true, id: (rpcData as string) ?? null };
 
-      // Fallback: direct Supabase call
+      // 2. Fallback: DB belum dinaik taraf ke migrasi 018 — direct Supabase
       // 1. Decrement batch
       const { data: batch, error: bErr } = await supabase
         .from("item_batches")
@@ -750,6 +734,7 @@ export function useSupplyMedication(patientId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ["assignment-activity", vars.assignmentId] });
       queryClient.invalidateQueries({ queryKey: ["latest-supply-dates"] });
       queryClient.invalidateQueries({ queryKey: ["batches", vars.itemId] });
+      queryClient.invalidateQueries({ queryKey: ["transaction-history", vars.itemId] });
     },
     onError: (err: any) => {
       toast.error(err?.message || "Gagal membekalkan ubat.");

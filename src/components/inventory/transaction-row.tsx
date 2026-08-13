@@ -8,7 +8,7 @@ import type { CombinedTransaction } from "@/hooks/use-inventory";
 interface TransactionRowProps {
   tx: CombinedTransaction;
   index: number;
-  baki: number;
+  baki: number | null;
 }
 
 export function TransactionRow({ tx, index, baki }: TransactionRowProps) {
@@ -53,7 +53,7 @@ export function TransactionRow({ tx, index, baki }: TransactionRowProps) {
           </span>
         </div>
         <span className="text-sm font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>
-          {baki}
+          {baki == null ? "—" : baki}
         </span>
         <span className="text-sm" style={{ color: "var(--text-secondary)" }}>
           {tx.catatan || <em style={{ color: "var(--text-muted)" }}>-</em>}
@@ -96,7 +96,7 @@ export function TransactionRow({ tx, index, baki }: TransactionRowProps) {
           </span>
         </div>
         <span className="text-sm font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>
-          {baki}
+          {baki == null ? "—" : baki}
         </span>
         <span className="text-sm" style={{ color: "var(--text-secondary)" }}>
           {tx.jenis_label}
@@ -142,7 +142,7 @@ export function TransactionRow({ tx, index, baki }: TransactionRowProps) {
             </span>
             <span>·</span>
             <span className="font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>
-              Baki: {baki}
+              Baki: {baki == null ? "—" : baki}
             </span>
           </div>
           {tx.catatan && (

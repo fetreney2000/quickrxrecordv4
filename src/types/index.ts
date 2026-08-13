@@ -226,6 +226,8 @@ export interface InventoryTransaction {
   rujukan_type: string | null;
   catatan: string | null;
   created_at: string;
+  /** Baki stok item selepas pergerakan ini. NULL untuk baris sebelum 2026-08-11. */
+  baki?: number | null;
 }
 
 // ============================================================================

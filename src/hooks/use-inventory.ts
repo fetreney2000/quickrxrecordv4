@@ -36,7 +36,7 @@ export function useUpdateBatchQuantity(itemId: string | undefined) {
       newKuantiti: number;
       reason?: string;
     }) => {
-      if (data.reason === "Pelupusan Stok") {
+if (data.reason === "Pelupusan Stok") {
         const { error } = await supabase.rpc("process_batch_disposal", {
           p_batch_id: data.batchId,
           p_adjusted_by: profile?.id ?? null,
@@ -45,6 +45,7 @@ export function useUpdateBatchQuantity(itemId: string | undefined) {
         if (!error) return;
         if (!error.message?.includes("Could not find the function")) throw error;
 
+        // Fallback: DB belum dinaik taraf ke migrasi 018
         const { data: batch, error: batchError } = await supabase
           .from("item_batches")
           .select("item_id, kuantiti, dilupuskan")
@@ -67,20 +68,18 @@ export function useUpdateBatchQuantity(itemId: string | undefined) {
           adjusted_by: profile?.id ?? null,
         });
         if (adjustmentError) throw adjustmentError;
-        if (batch.kuantiti > 0) {
-          const { error: transactionError } = await supabase.from("inventory_transactions").insert({
-            item_id: batch.item_id,
-            batch_id: data.batchId,
-            jenis: "keluar",
-            kuantiti: batch.kuantiti,
-            rujukan_id: data.batchId,
-            rujukan_type: "batch_disposal",
-            catatan: data.reason,
-          });
-          if (transactionError) throw transactionError;
-        }
         return;
       }
+      const { error: rpcErr } = await supabase.rpc("record_batch_adjustment", {
+        p_batch_id: data.batchId,
+        p_new_kuantiti: data.newKuantiti,
+        p_reason: data.reason ?? null,
+        p_adjusted_by: profile?.id ?? null,
+      });
+      if (!rpcErr) return;
+      if (!rpcErr.message?.includes("Could not find the function")) throw rpcErr;
+
+      // Fallback: DB belum dinaik taraf ke migrasi 018
       const { data: existing, error: getErr } = await supabase
         .from("item_batches")
         .select("kuantiti, dilupuskan")
@@ -424,6 +423,17 @@ export function useAddBatch(itemId: string | undefined) {
       tarikh_luput: string;
       kuantiti: number;
     }) => {
+      const { error: addErr } = await supabase.rpc("record_batch_addition", {
+        p_item_id: itemId!,
+        p_nombor_kelompok: batchData.nombor_kelompok,
+        p_tarikh_luput: batchData.tarikh_luput,
+        p_kuantiti: batchData.kuantiti,
+        p_added_by: profile?.id ?? null,
+      });
+      if (!addErr) return;
+      if (!addErr.message?.includes("Could not find the function")) throw addErr;
+
+      // Fallback: DB belum dinaik taraf ke migrasi 018
       const { data: existing, error: findError } = await supabase
         .from("item_batches")
         .select("id, item_id, kuantiti, dilupuskan")
@@ -466,52 +476,6 @@ export function useAddBatch(itemId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ["batches", itemId] });
       queryClient.invalidateQueries({ queryKey: ["items"] });
       queryClient.invalidateQueries({ queryKey: ["transaction-history", itemId] });
-    },
-  });
-}
-
-export function useBatchAdjust(itemId: string | undefined) {
-  const queryClient = useQueryClient();
-  const { profile } = useAuth();
-  return useMutation({
-    mutationFn: async (data: {
-      batchId: string;
-      newKuantiti: number;
-      reason?: string;
-    }) => {
-      // Get existing batch
-      const { data: existing, error: getErr } = await supabase
-        .from("item_batches")
-        .select("kuantiti")
-        .eq("id", data.batchId)
-        .single();
-      if (getErr) throw getErr;
-      if (!existing) throw new Error("Kelompok tidak dijumpai.");
-
-      const { error: updErr } = await supabase
-        .from("item_batches")
-        .update({ kuantiti: data.newKuantiti })
-        .eq("id", data.batchId);
-      if (updErr) throw updErr;
-
-      const change = data.newKuantiti - existing.kuantiti;
-      await supabase.from("batch_adjustments").insert({
-        batch_id: data.batchId,
-        previous_kuantiti: existing.kuantiti,
-        new_kuantiti: data.newKuantiti,
-        change,
-        reason: data.reason,
-        adjusted_by: profile?.id ?? null,
-      });
-    },
-    onSuccess: () => {
-      toast.success("Kuantiti kelompok dikemaskini.");
-      queryClient.invalidateQueries({ queryKey: ["batches", itemId] });
-      queryClient.invalidateQueries({ queryKey: ["items"] });
-      queryClient.invalidateQueries({ queryKey: ["transaction-history", itemId] });
-    },
-    onError: (err: any) => {
-      toast.error(err?.message || "Gagal mengemaskini kuantiti.");
     },
   });
 }
@@ -700,162 +664,179 @@ export function useItemTransactionHistory(itemId: string | undefined) {
     queryKey: ["transaction-history", itemId],
     enabled: !!itemId,
     queryFn: async () => {
-      // 1. Get assignment IDs for this item (both active and inactive)
-      const { data: itemAssignments } = await supabase
-        .from("patient_item_assignments")
-        .select("id")
-        .eq("item_id", itemId);
-      const assignmentIds = (itemAssignments ?? []).map((a: any) => a.id);
-
-      // 2. Fetch supply records for those assignments (batched to avoid URL limits)
-      const supplyRecords = assignmentIds.length > 0
-        ? await batchInQuery<any>(assignmentIds, async (batchIds) => {
-            const { data, error } = await supabase
-              .from("supply_records")
-              .select(`
-                id,
-                tarikh_dibekal,
-                dos,
-                kuantiti,
-                batch_id,
-                catatan_bekalan,
-                assignment:patient_item_assignments!assignment_id(
-                  item_id,
-                  patient:patients!patient_id(nama),
-                  item:items!item_id(nama_item)
-                ),
-                batch:item_batches!batch_id(nombor_kelompok),
-                staff:profiles!kakitangan_pembekal(nama)
-              `)
-              .in("assignment_id", batchIds)
-              .order("tarikh_dibekal", { ascending: false })
-              .limit(500);
-            if (error) throw error;
-            return data ?? [];
-          })
-        : [];
-
-      // 3. Get batch IDs for this item
-      const { data: itemBatches } = await supabase
-        .from("item_batches")
-        .select("id")
-        .eq("item_id", itemId);
-      const batchIds = (itemBatches ?? []).map((b: any) => b.id);
-
-      // 4. Fetch batch adjustments for those batches (batched to avoid URL limits)
-      const adjustments = batchIds.length > 0
-        ? await batchInQuery<any>(batchIds, async (batchIdsChunk) => {
-            const { data, error } = await supabase
-              .from("batch_adjustments")
-              .select(`
-                id,
-                created_at,
-                previous_kuantiti,
-                new_kuantiti,
-                change,
-                reason,
-                batch:item_batches!batch_id(
-                  nombor_kelompok,
-                  item_id
-                ),
-                staff:profiles!adjusted_by(nama)
-              `)
-              .in("batch_id", batchIdsChunk)
-              .order("created_at", { ascending: false })
-              .limit(500);
-            if (error) throw error;
-            return data ?? [];
-          })
-        : [];
-
-      const { data: inventoryTransactions, error: transactionError } = await supabase
+      // 1. Baca jurnal tunggal (inventory_transactions) utk item ini
+      const { data: ledgerRows, error: ledgerError } = await supabase
         .from("inventory_transactions")
-        .select("id, created_at, batch_id, jenis, kuantiti, catatan, rujukan_type, batch:item_batches!batch_id(nombor_kelompok)")
+        .select(`
+          id,
+          created_at,
+          batch_id,
+          jenis,
+          kuantiti,
+          baki,
+          rujukan_id,
+          rujukan_type,
+          catatan,
+          batch:item_batches!batch_id(nombor_kelompok)
+        `)
         .eq("item_id", itemId)
-        .neq("rujukan_type", "supply")
-        .neq("rujukan_type", "batch_disposal")
-        .neq("rujukan_type", "migration_initial_stock")
         .order("created_at", { ascending: false })
-        .limit(500);
-      if (transactionError) throw transactionError;
+        .limit(5000);
+      if (ledgerError) throw ledgerError;
+      const rows = (ledgerRows ?? []) as any[];
 
-      const additionBatchIds = ((inventoryTransactions ?? []) as any[])
-        .filter((tx) => tx.rujukan_type === "batch_addition")
-        .map((tx) => tx.batch_id)
-        .filter(Boolean);
-      const additionStaffMap = new Map<string, string>();
-      if (additionBatchIds.length > 0) {
-        const { data: additions, error: additionsError } = await supabase
-          .from("batch_additions")
-          .select("batch_id, added_by")
-          .in("batch_id", additionBatchIds);
-        if (additionsError) throw additionsError;
-        const staffIds = (additions ?? []).map((addition: any) => addition.added_by).filter(Boolean);
-        const staffMap = new Map<string, string>();
-        if (staffIds.length > 0) {
-          const { data: staff, error: staffError } = await supabase
-            .from("profiles")
-            .select("id, nama")
-            .in("id", staffIds);
-          if (staffError) throw staffError;
-          (staff ?? []).forEach((person: any) => staffMap.set(person.id, person.nama));
-        }
-        (additions ?? []).forEach((addition: any) => {
-          const name = addition.added_by ? staffMap.get(addition.added_by) : undefined;
-          if (name) additionStaffMap.set(addition.batch_id, name);
+      // 2. Kumpulkan id rujukan mengikut jenis utk lookup terperinci (batched)
+      const supplyIds = rows
+        .filter((r) => r.rujukan_type === "supply" && r.rujukan_id)
+        .map((r) => r.rujukan_id);
+      const additionIds = rows
+        .filter((r) => r.rujukan_type === "batch_addition" && r.rujukan_id)
+        .map((r) => r.rujukan_id);
+      const adjustmentIds = rows
+        .filter((r) => r.rujukan_type === "adjustment" && r.rujukan_id)
+        .map((r) => r.rujukan_id);
+
+      // 2a. supply → pesakit + kakitangan_pembekal
+      const supplyDetailMap = new Map<string, { pesakit: string | null; kakitangan: string | null; catatan: string | null }>();
+      if (supplyIds.length > 0) {
+        const supplies = await batchInQuery<any>(supplyIds, async (batchIds) => {
+          const { data, error } = await supabase
+            .from("supply_records")
+            .select(`
+              id,
+              catatan_bekalan,
+              kakitangan_pembekal,
+              assignment:patient_item_assignments!assignment_id(
+                patient:patients!patient_id(nama)
+              ),
+              staff:profiles!kakitangan_pembekal(nama)
+            `)
+            .in("id", batchIds);
+          if (error) throw error;
+          return (data ?? []) as any[];
+        });
+        supplies.forEach((s: any) => {
+          supplyDetailMap.set(s.id, {
+            pesakit: s.assignment?.patient?.nama ?? null,
+            kakitangan: s.staff?.nama ?? null,
+            catatan: s.catatan_bekalan ?? null,
+          });
         });
       }
 
-      // Combine both into CombinedTransaction array
+      // 2b. batch_addition → kakitangan (batch_additions → profiles)
+      const additionStaffMap = new Map<string, string>();
+      if (additionIds.length > 0) {
+        const additions = await batchInQuery<any>(additionIds, async (batchIds) => {
+          const { data, error } = await supabase
+            .from("batch_additions")
+            .select("id, added_by")
+            .in("id", batchIds);
+          if (error) throw error;
+          return (data ?? []) as any[];
+        });
+        const flagIds = [...new Set((additions ?? []).map((a: any) => a.added_by).filter(Boolean))];
+        const staffMap = new Map<string, string>();
+        if (flagIds.length > 0) {
+          const { data: staff, error: staffError } = await supabase
+            .from("profiles")
+            .select("id, nama")
+            .in("id", flagIds);
+          if (staffError) throw staffError;
+          (staff ?? []).forEach((person: any) => staffMap.set(person.id, person.nama));
+        }
+        (additions ?? []).forEach((a: any) => {
+          if (a.added_by) additionStaffMap.set(a.id, staffMap.get(a.added_by) ?? "");
+        });
+      }
+
+      // 2c. adjustment & batch_disposal → kakitangan + catatan (batch_adjustments → profiles)
+      const adjustmentDetailMap = new Map<string, { kakitangan: string | null; catatan: string | null }>();
+      if (adjustmentIds.length > 0) {
+        const adjustments = await batchInQuery<any>(adjustmentIds, async (batchIds) => {
+          const { data, error } = await supabase
+            .from("batch_adjustments")
+            .select("id, reason, adjusted_by, change")
+            .in("id", batchIds);
+          if (error) throw error;
+          return (data ?? []) as any[];
+        });
+        const flagIds = [...new Set((adjustments ?? []).map((a: any) => a.adjusted_by).filter(Boolean))];
+        const staffMap = new Map<string, string>();
+        if (flagIds.length > 0) {
+          const { data: staff, error: staffError } = await supabase
+            .from("profiles")
+            .select("id, nama")
+            .in("id", flagIds);
+          if (staffError) throw staffError;
+          (staff ?? []).forEach((person: any) => staffMap.set(person.id, person.nama));
+        }
+        (adjustments ?? []).forEach((a: any) => {
+          adjustmentDetailMap.set(a.id, {
+            kakitangan: a.adjusted_by ? staffMap.get(a.adjusted_by) ?? null : null,
+            catatan: a.reason ?? null,
+          });
+        });
+      }
+
+      // 3. Bina baris CombinedTransaction dari jurnal
       const combined: CombinedTransaction[] = [];
 
-      ((supplyRecords ?? []) as any[]).forEach((sr) => {
-        combined.push({
-          id: sr.id,
-          tarikh: sr.tarikh_dibekal,
-          jenis: "bekalan",
-          jenis_label: "Bekalan",
-          kelompok: sr.batch?.nombor_kelompok ?? null,
-          perubahan: -sr.kuantiti,
-          perubahan_label: `-${sr.kuantiti}`,
-          catatan: sr.catatan_bekalan ?? null,
-          kakitangan: sr.staff?.nama ?? null,
-          pesakit: sr.assignment?.patient?.nama ?? null,
-        });
-      });
+      (rows as any[]).forEach((tx) => {
+        const rujukanType = tx.rujukan_type;
+        let jenis: CombinedTransaction["jenis"] = "pelarasan";
+        let jenis_label = "Pelarasan";
+        let perubahan: number;
+        let catatan: string | null = tx.catatan ?? null;
+        let kakitangan: string | null = null;
+        let pesakit: string | null = null;
 
-      ((adjustments ?? []) as any[]).forEach((adj) => {
-        const isUp = adj.change > 0;
-        combined.push({
-          id: `adj-${adj.id}`,
-          tarikh: adj.created_at,
-          jenis: "pelarasan",
-          jenis_label: isUp ? "Penambahan" : "Pelupusan",
-          kelompok: adj.batch?.nombor_kelompok ?? null,
-          perubahan: adj.change,
-          perubahan_label: isUp ? `+${adj.change}` : `${adj.change}`,
-          catatan: adj.reason ?? null,
-          kakitangan: adj.staff?.nama ?? null,
-          pesakit: null,
-        });
-      });
+        if (rujukanType === "supply") {
+          jenis = "bekalan";
+          jenis_label = "Bekalan";
+          perubahan = -tx.kuantiti;
+          const detail = supplyDetailMap.get(tx.rujukan_id);
+          catatan = detail?.catatan ?? tx.catatan ?? null;
+          kakitangan = detail?.kakitangan ?? null;
+          pesakit = detail?.pesakit ?? null;
+        } else if (rujukanType === "batch_addition") {
+          jenis = "pelarasan";
+          jenis_label = "Penambahan";
+          perubahan = tx.kuantiti;
+          kakitangan = additionStaffMap.get(tx.rujukan_id) ?? null;
+        } else if (rujukanType === "batch_disposal") {
+          jenis = "pelarasan";
+          jenis_label = "Pelupusan";
+          perubahan = -tx.kuantiti;
+          const detail = adjustmentDetailMap.get(tx.rujukan_id);
+          kakitangan = detail?.kakitangan ?? null;
+          catatan = detail?.catatan ?? tx.catatan ?? null;
+        } else {
+          // adjustment (pelarasan naik/turun)
+          jenis = "pelarasan";
+          jenis_label = tx.jenis === "masuk" ? "Penambahan" : "Pelupusan";
+          perubahan = tx.jenis === "masuk" ? tx.kuantiti : -tx.kuantiti;
+          const detail = adjustmentDetailMap.get(tx.rujukan_id);
+          kakitangan = detail?.kakitangan ?? null;
+          catatan = detail?.catatan ?? tx.catatan ?? null;
+        }
 
-      ((inventoryTransactions ?? []) as any[]).forEach((tx) => {
         combined.push({
-          id: `inv-${tx.id}`,
+          id: tx.id,
           tarikh: tx.created_at,
-          jenis: "pelarasan",
-          jenis_label: tx.jenis === "masuk" ? "Penambahan" : "Pelupusan",
+          jenis,
+          jenis_label,
           kelompok: tx.batch?.nombor_kelompok ?? null,
-          perubahan: tx.jenis === "masuk" ? tx.kuantiti : -tx.kuantiti,
-          perubahan_label: tx.jenis === "masuk" ? `+${tx.kuantiti}` : `-${tx.kuantiti}`,
-          catatan: tx.catatan ?? null,
-          kakitangan: tx.rujukan_type === "batch_addition" ? additionStaffMap.get(tx.batch_id) ?? null : null,
-          pesakit: null,
+          perubahan,
+          perubahan_label: `${perubahan > 0 ? "+" : ""}${perubahan}`,
+          catatan,
+          kakitangan,
+          pesakit,
+          baki: tx.baki != null ? (tx.baki as number) : null,
         });
       });
 
-      // Sort by date descending
+      // Susun mengikut tarikh menurun
       combined.sort(
         (a, b) => new Date(b.tarikh).getTime() - new Date(a.tarikh).getTime()
       );
@@ -877,6 +858,8 @@ export interface CombinedTransaction {
   catatan: string | null;
   kakitangan: string | null;
   pesakit: string | null;
+  /** Baki stok item selepas pergerakan. NULL utk baris sebelum 2026-08-11. */
+  baki: number | null;
 }
 
 // ============================================================================

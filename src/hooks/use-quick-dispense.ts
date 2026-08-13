@@ -202,7 +202,7 @@ export function useQuickSupply(patientId: string | null) {
   const { profile } = useAuth();
 
   return useMutation({
-    mutationFn: async (data: {
+mutationFn: async (data: {
       assignmentId: string;
       itemId: string;
       dos: string;
@@ -211,31 +211,19 @@ export function useQuickSupply(patientId: string | null) {
       batchId: string;
       catatan: string;
     }) => {
-      // 1. Try Edge Function
-      try {
-        const res = await fetch("/api/supply", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            assignment_id: data.assignmentId,
-            dos: data.dos,
-            kuantiti: data.kuantiti,
-            tempoh_dibekal: data.tempoh,
-            batch_id: data.batchId,
-            kakitangan_pembekal: profile?.id,
-            catatan_bekalan: data.catatan,
-          }),
-        });
-        if (res.ok) return await res.json();
-        if (res.status !== 404) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err?.error || "Gagal bekal.");
-        }
-      } catch {
-        // Network error — fallback
-      }
+      // 1. Cuba RPC process_supply (atomik + jurnal baki)
+      const { data: rpcData, error: rpcError } = await supabase.rpc("process_supply", {
+        p_assignment_id: data.assignmentId,
+        p_dos: data.dos,
+        p_tempoh_dibekal: data.tempoh,
+        p_kuantiti: data.kuantiti,
+        p_batch_id: data.batchId,
+        p_kakitangan_pembekal: profile?.id ?? null,
+        p_catatan_bekalan: data.catatan ?? null,
+      });
+      if (!rpcError) return { success: true, id: (rpcData as string) ?? null };
 
-      // 2. Fallback: direct supabase
+      // 2. Fallback: DB belum dinaik taraf ke migrasi 018 — direct supabase
       const { data: batch, error: bErr } = await supabase
         .from("item_batches")
         .select("kuantiti, dilupuskan")

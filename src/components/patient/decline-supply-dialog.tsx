@@ -17,7 +17,29 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { SUPPLY_DECLINE_REASONS } from "@/hooks/use-patient-detail";
+import {
+  SUPPLY_DECLINE_REASONS,
+  useSupplyDurations,
+} from "@/hooks/use-patient-detail";
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 600,
+  color: "var(--text-secondary)",
+  marginBottom: 6,
+  display: "block",
+};
+const inputBaseStyle: React.CSSProperties = {
+  background: "var(--card)",
+  border: "1px solid var(--border)",
+  borderRadius: 10,
+  fontSize: 13,
+  fontWeight: 500,
+  color: "var(--text-primary)",
+  height: 40,
+  padding: "0 12px",
+  outline: "none",
+};
 
 export function DeclineSupplyDialog({
   open,
@@ -30,17 +52,28 @@ export function DeclineSupplyDialog({
   onOpenChange: (o: boolean) => void;
   assignmentLabel: string;
   isPending: boolean;
-  onSubmit: (sebab: string, catatan: string) => void;
+  onSubmit: (sebab: string, catatan: string, tempoh: string) => void;
 }) {
   const [sebab, setSebab] = useState<string>(SUPPLY_DECLINE_REASONS[0]);
+  const [tempohNilai, setTempohNilai] = useState("");
+  const [tempohUnit, setTempohUnit] = useState("");
   const [catatan, setCatatan] = useState("");
+
+  const { data: durations = [] } = useSupplyDurations();
+
+  const tempoh = tempohNilai.trim()
+    ? `${tempohNilai.trim()} ${tempohUnit}`.trim()
+    : "";
 
   useEffect(() => {
     if (open) {
       setSebab(SUPPLY_DECLINE_REASONS[0]);
+      setTempohNilai("");
+      setTempohUnit(durations[0]?.nama ?? "");
       setCatatan("");
     }
-  }, [open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, durations.length]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -107,15 +140,38 @@ export function DeclineSupplyDialog({
         </div>
 
         <div className="mt-3">
-          <Label
-            style={{
-              fontSize: 12,
-              fontWeight: 600,
-              color: "var(--text-secondary)",
-              marginBottom: 6,
-              display: "block",
-            }}
-          >
+          <Label style={labelStyle}>
+            Tempoh sepatutnya dibekal
+          </Label>
+          <div className="flex gap-1.5">
+            <Input
+              value={tempohNilai}
+              onChange={(e) => setTempohNilai(e.target.value)}
+              onFocus={(e) => e.target.select()}
+              title="Tempoh sepatutnya dibekal"
+              style={{ ...inputBaseStyle, flex: 1 }}
+            />
+            <select
+              value={tempohUnit}
+              onChange={(e) => setTempohUnit(e.target.value)}
+              style={{
+                ...inputBaseStyle,
+                width: "auto",
+                minWidth: 90,
+                appearance: "auto",
+              }}
+            >
+              {durations.map((d) => (
+                <option key={d.id} value={d.nama}>
+                  {d.nama}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="mt-3">
+          <Label style={labelStyle}>
             Catatan (pilihan)
           </Label>
           <Input
@@ -130,7 +186,7 @@ export function DeclineSupplyDialog({
           </Button>
           <Button
             onClick={() => {
-              if (sebab.trim()) onSubmit(sebab.trim(), catatan.trim());
+              if (sebab.trim()) onSubmit(sebab.trim(), catatan.trim(), tempoh);
             }}
             disabled={isPending}
             style={{ background: "linear-gradient(135deg, #f0932b, #e07a1f)" }}

@@ -245,6 +245,7 @@ export interface SupplyDeclination {
   assignment_id: string;
   tarikh: string;
   sebab: string;
+  tempoh: string | null;
   catatan: string | null;
   direkod_oleh: string | null;
   created_at: string;
@@ -264,6 +265,7 @@ export interface SupplyActivityRow {
   kakitangan_pembekal_profile?: { id: string; nama: string } | null;
   // Declination sahaja
   sebab?: string | null;
+  tempoh?: string | null;
   catatan?: string | null;
   direkod_oleh_profile?: { id: string; nama: string } | null;
 }

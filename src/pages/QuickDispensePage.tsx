@@ -663,8 +663,8 @@ export default function QuickDispensePage() {
         onOpenChange={setShowDeclineDialog}
         assignmentLabel={selectedItem ? formatItemDisplay(selectedItem.item) : ""}
         isPending={declineMut.isPending}
-        onSubmit={(sebab, catatan) => declineMut.mutate(
-          { assignmentId: selectedItem?.assignment_id ?? "", sebab, catatan },
+        onSubmit={(sebab, catatan, tempoh) => declineMut.mutate(
+          { assignmentId: selectedItem?.assignment_id ?? "", sebab, tempoh, catatan },
           { onSuccess: () => setShowDeclineDialog(false) }
         )}
       />

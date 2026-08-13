@@ -30,6 +30,7 @@ export function usePatient(id: string | undefined) {
   return useQuery({
     queryKey: ["patient", id],
     enabled: !!id,
+    staleTime: 5000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("patients")
@@ -56,6 +57,7 @@ export function usePatientAssignments(id: string | undefined) {
   return useQuery({
     queryKey: ["assignments", id],
     enabled: !!id,
+    staleTime: 5000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("patient_item_assignments")
@@ -98,6 +100,7 @@ export function usePatientAssignments(id: string | undefined) {
 export function useItemForms() {
   return useQuery({
     queryKey: ["item_forms"],
+    staleTime: 5000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("item_forms")
@@ -120,6 +123,7 @@ export function useDoseHistory(assignmentId: string | null) {
   return useQuery({
     queryKey: ["dose-history", assignmentId],
     enabled: !!assignmentId,
+    staleTime: 5000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("dose_history")
@@ -152,6 +156,7 @@ export function useSupplyHistory(assignmentId: string | null) {
   return useQuery({
     queryKey: ["supply-history", assignmentId],
     enabled: !!assignmentId,
+    staleTime: 5000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("supply_records")
@@ -184,7 +189,6 @@ export const SUPPLY_DECLINE_REASONS = [
   "Masih ada baki ubat di rumah",
   "Tahan ubat buat sementara",
   "Tidak perlu bekalan pada masa ini",
-  "Dose semasa belum habis",
   "Lain-lain",
 ];
 
@@ -197,6 +201,7 @@ export function useDeclinationHistory(assignmentId: string | null) {
   return useQuery({
     queryKey: ["declinations", assignmentId],
     enabled: !!assignmentId,
+    staleTime: 5000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("supply_declinations")
@@ -223,6 +228,7 @@ export function useAssignmentActivity(assignmentId: string | null) {
   return useQuery({
     queryKey: ["assignment-activity", assignmentId],
     enabled: !!assignmentId,
+    staleTime: 5000,
     queryFn: async () => {
       const [suppliesQuery, declinationsQuery] = await Promise.all([
         supabase
@@ -272,6 +278,7 @@ export function useAssignmentActivity(assignmentId: string | null) {
         tarikh: d.tarikh,
         laba_tarikh: false,
         sebab: d.sebab,
+        tempoh: d.tempoh,
         catatan: d.catatan,
         direkod_oleh_profile: d.direkod_oleh_profile,
       }));
@@ -288,6 +295,7 @@ export function useLastDeclination(assignmentId: string | null) {
   return useQuery({
     queryKey: ["last-declination", assignmentId],
     enabled: !!assignmentId,
+    staleTime: 5000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("supply_declinations")
@@ -309,6 +317,7 @@ export function useLatestSupplyDates(assignmentIds: string[]) {
   return useQuery({
     queryKey: ["latest-supply-dates", assignmentIds],
     enabled: assignmentIds.length > 0,
+    staleTime: 5000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("supply_records")
@@ -334,6 +343,7 @@ export function useLatestDoseHistoryDos(assignmentIds: string[]) {
   return useQuery({
     queryKey: ["latest-dose-history-dos", assignmentIds],
     enabled: assignmentIds.length > 0,
+    staleTime: 5000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("dose_history")
@@ -360,6 +370,7 @@ export function useAvailableBatches(itemId: string | null) {
   return useQuery({
     queryKey: ["batches", itemId],
     enabled: !!itemId,
+    staleTime: 5000,
     queryFn: async () => {
       const today = getTodayStrKL();
       const { data, error } = await supabase
@@ -382,6 +393,7 @@ export function useAvailableBatches(itemId: string | null) {
 export function useSupplyDurations() {
   return useQuery({
     queryKey: ["supply_durations"],
+    staleTime: 5000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("supply_durations")
@@ -399,6 +411,7 @@ export function useSupplyDurations() {
 export function useItemsWithStats() {
   return useQuery({
     queryKey: ["items-with-stats"],
+    staleTime: 5000,
     queryFn: async () => {
       const { data: counts, error: countErr } = await supabase.rpc(
         "count_active_assignments"
@@ -734,6 +747,8 @@ export function useSupplyMedication(patientId: string | undefined) {
       toast.success("Ubat berjaya dibekalkan.");
       queryClient.invalidateQueries({ queryKey: ["assignments", patientId] });
       queryClient.invalidateQueries({ queryKey: ["supply-history", vars.assignmentId] });
+      queryClient.invalidateQueries({ queryKey: ["assignment-activity", vars.assignmentId] });
+      queryClient.invalidateQueries({ queryKey: ["latest-supply-dates"] });
       queryClient.invalidateQueries({ queryKey: ["batches", vars.itemId] });
     },
     onError: (err: any) => {
@@ -762,6 +777,8 @@ export function useDeleteSupplyRecord(patientId: string | undefined) {
       toast.success("Rekod bekalan dipadam.");
       queryClient.invalidateQueries({ queryKey: ["assignments", patientId] });
       queryClient.invalidateQueries({ queryKey: ["supply-history", vars.assignmentId] });
+      queryClient.invalidateQueries({ queryKey: ["assignment-activity", vars.assignmentId] });
+      queryClient.invalidateQueries({ queryKey: ["latest-supply-dates"] });
     },
     onError: (err: any) => {
       toast.error(err?.message || "Gagal memadam rekod bekalan.");
@@ -802,6 +819,8 @@ export function useUpdateSupplyRecord(patientId: string | undefined) {
       toast.success("Rekod bekalan dikemaskini.");
       queryClient.invalidateQueries({ queryKey: ["assignments", patientId] });
       queryClient.invalidateQueries({ queryKey: ["supply-history", vars.assignmentId] });
+      queryClient.invalidateQueries({ queryKey: ["assignment-activity", vars.assignmentId] });
+      queryClient.invalidateQueries({ queryKey: ["latest-supply-dates"] });
     },
     onError: (err: any) => {
       toast.error(err?.message || "Gagal mengemaskini rekod bekalan.");
@@ -820,16 +839,19 @@ export function useDeclineSupply(patientId: string | undefined) {
     mutationFn: async ({
       assignmentId,
       sebab,
+      tempoh,
       catatan,
     }: {
       assignmentId: string;
       sebab: string;
+      tempoh?: string;
       catatan?: string;
     }) => {
       const { error } = await supabase.from("supply_declinations").insert({
         assignment_id: assignmentId,
         tarikh: getNowISOKL(),
         sebab,
+        tempoh: tempoh || null,
         catatan: catatan || null,
         direkod_oleh: profile?.id ?? null,
       });

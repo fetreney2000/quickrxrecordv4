@@ -239,7 +239,7 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                         </td>
                         <td className="px-2 py-1.5 italic" style={{ color: "var(--text-muted)" }}>
                           {row.kind === "declination"
-                            ? <>{row.sebab}{row.catatan ? ` — ${row.catatan}` : ""}</>
+                            ? <>{row.sebab}{row.tempoh ? ` · Tempoh: ${row.tempoh}` : ""}{row.catatan ? ` — ${row.catatan}` : ""}</>
                             : row.catatan || "—"}
                         </td>
                         {canEdit && <td className="px-2 py-1.5">

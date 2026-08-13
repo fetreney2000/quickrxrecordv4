@@ -279,7 +279,7 @@ export default function PatientDetailPage() {
         onOpenChange={(o) => !o && setOpenDecline(null)}
         assignmentLabel={(() => { const a = assignments.find((x) => x.id === openDecline); return a ? formatItemDisplay(a.item, a.item?.id_bentuk ? formsMap.get(a.item.id_bentuk) : null) : ""; })()}
         isPending={declineMut.isPending}
-        onSubmit={(sebab, catatan) => declineMut.mutate({ assignmentId: openDecline, sebab, catatan }, { onSuccess: () => setOpenDecline(null) })}
+        onSubmit={(sebab, catatan, tempoh) => declineMut.mutate({ assignmentId: openDecline, sebab, tempoh, catatan }, { onSuccess: () => setOpenDecline(null) })}
       />}
       <DeleteDeclinationDialog
         open={!!deleteDeclinationId}

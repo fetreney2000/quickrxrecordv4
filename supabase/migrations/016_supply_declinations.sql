@@ -21,10 +21,14 @@ CREATE TABLE IF NOT EXISTS supply_declinations (
   assignment_id UUID NOT NULL REFERENCES patient_item_assignments(id) ON DELETE CASCADE,
   tarikh        TIMESTAMPTZ NOT NULL DEFAULT now(),
   sebab         TEXT NOT NULL,               -- sebab "Ubat Tidak Perlu Dibekalkan"
+  tempoh        TEXT,                        -- tempoh sepatutnya dibekal (cth: "30 Hari")
   catatan       TEXT,
   direkod_oleh  UUID REFERENCES profiles(id) ON DELETE SET NULL,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Pastikan lajur tempoh wujud walaupun jadual sedia ada (idempoten)
+ALTER TABLE supply_declinations ADD COLUMN IF NOT EXISTS tempoh TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_supply_declinations_assignment ON supply_declinations(assignment_id);
 CREATE INDEX IF NOT EXISTS idx_supply_declinations_tarikh ON supply_declinations(tarikh);

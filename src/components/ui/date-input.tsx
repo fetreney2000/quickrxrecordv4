@@ -1,94 +1,100 @@
 import * as React from "react";
+import { format } from "date-fns";
+import { CalendarIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 /**
- * DateInput — Input tarikh yang sentiasa memaparkan dan menerima format
- * dd/mm/yyyy tanpa mengira tetapan bahasa/rantau peranti pengguna.
- *
- * Nilai komponen (`value`/`onChange`) kekal dalam format YYYY-MM-DD supaya
- * serasi dengan pengguna sedia ada; hanya paparan dan input menjadi dd/mm/yyyy.
+ * DateInput — Pemilih tarikh (kalendar shadcn) dengan kontrak
+ * `value` bertype YYYY-MM-DD / `onChange(value: string)` (masih YYYY-MM-DD),
+ * serasi dengan komponen lama untuk semua kedudukan penggunaan sedia ada.
  */
 export interface DateInputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type" | "value" | "onChange"> {
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange"> {
   value: string; // YYYY-MM-DD
   onChange: (value: string) => void; // selalu YYYY-MM-DD
+  /** Placeholder paparan (lalai "Pilih tarikh"). */
+  placeholder?: string;
 }
 
-/** Tukar YYYY-MM-DD kepada paparan dd/mm/yyyy. */
-function formatToDisplay(value: string): string {
-  if (!value) return "";
-  const [y, m, d] = value.split("-");
-  if (!y || !m || !d) return "";
-  return `${d}/${m}/${y}`;
-}
+const toDateFromISO = (v: string): Date | undefined => {
+  if (!v) return undefined;
+  const d = new Date(`${v}T12:00:00`);
+  return Number.isNaN(d.getTime()) ? undefined : d;
+};
 
-/** Tukar teks dd/mm/yyyy kepada YYYY-MM-DD (hanya jika lengkap dan sah). */
-function displayToValue(text: string): string {
-  const parts = text.split("/");
-  if (parts.length !== 3) return "";
-  const [d, m, y] = parts;
-  if (d.length !== 2 || m.length !== 2 || y.length !== 4) return "";
-  const dd = parseInt(d, 10);
-  const mm = parseInt(m, 10);
-  const yy = parseInt(y, 10);
-  if (mm < 1 || mm > 12) return "";
-  if (dd < 1 || dd > 31) return "";
-  if (yy < 1000 || yy > 9999) return "";
-  return `${yy}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
-}
-
-/** Topeng input: hanya digit, auto-sisipkan "/" pada kedudukan 2 dan 4. */
-function maskInput(raw: string): string {
-  const digits = raw.replace(/\D/g, "").slice(0, 8);
-  let out = "";
-  for (let i = 0; i < digits.length; i++) {
-    if (i === 2 || i === 4) out += "/";
-    out += digits[i];
-  }
-  return out;
-}
+const isoFromDate = (d: Date | undefined): string => {
+  if (!d) return "";
+  return format(d, "yyyy-MM-dd");
+};
 
 export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
-  ({ value, onChange, className, onFocus, onBlur, ...props }, ref) => {
-    const [text, setText] = React.useState(() => formatToDisplay(value));
-    const focused = React.useRef(false);
+  (
+    { value, onChange, className, placeholder, min, max, disabled, ...props },
+    ref
+  ) => {
+    const [open, setOpen] = React.useState(false);
+    const selected = toDateFromISO(value);
+    const minDate = min ? toDateFromISO(String(min)) : undefined;
+    const maxDate = max ? toDateFromISO(String(max)) : undefined;
 
-    React.useEffect(() => {
-      if (!focused.current) setText(formatToDisplay(value));
-    }, [value]);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const masked = maskInput(e.target.value);
-      setText(masked);
-      const next = displayToValue(masked);
-      if (next !== value) onChange(next);
-    };
-
-    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-      focused.current = true;
-      onFocus?.(e);
-    };
-
-    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-      focused.current = false;
-      setText(formatToDisplay(value));
-      onBlur?.(e);
+    const handleSelect = (d: Date | undefined) => {
+      onChange(isoFromDate(d));
+      setOpen(false);
     };
 
     return (
-      <input
-        ref={ref}
-        type="text"
-        inputMode="numeric"
-        autoComplete="off"
-        placeholder={props.placeholder ?? "dd/mm/yyyy"}
-        value={text}
-        onChange={handleChange}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        className={cn("tabular-nums", className)}
-        {...props}
-      />
+      <div className={cn("relative", className)}>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Input
+              ref={ref}
+              readOnly
+              disabled={disabled}
+              value={selected ? format(selected, "dd/MM/yyyy") : ""}
+              placeholder={placeholder ?? "Pilih tarikh"}
+              className="cursor-pointer pr-8"
+              onClick={() => setOpen(true)}
+              {...props}
+            />
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            {value && (
+              <div className="flex items-center justify-between border-b border-border px-3 py-2">
+                <span className="text-xs font-medium text-muted-foreground">
+                  {selected ? format(selected, "EEEE, dd MMM yyyy") : ""}
+                </span>
+                <button
+                  type="button"
+                  title="Kosongkan tarikh"
+                  onClick={() => {
+                    onChange("");
+                    setOpen(false);
+                  }}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" /> Kosong
+                </button>
+              </div>
+            )}
+            <Calendar
+              mode="single"
+              selected={selected}
+              onSelect={handleSelect}
+              fromDate={minDate}
+              toDate={maxDate}
+              autoFocus
+            />
+          </PopoverContent>
+        </Popover>
+        <CalendarIcon className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      </div>
     );
   }
 );

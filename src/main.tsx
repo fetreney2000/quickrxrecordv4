@@ -4,6 +4,7 @@ import { registerSW } from "virtual:pwa-register";
 import { toast } from "sonner";
 import App from "./App";
 import { ThemeProvider } from "@/lib/theme-provider";
+import "react-day-picker/style.css";
 import "./index.css";
 
 // How long to wait before auto-reloading onto the new version.

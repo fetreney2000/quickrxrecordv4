@@ -222,8 +222,8 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                         <td className="px-2 py-1.5" style={{ color: "var(--text-primary)" }}>{formatDateTime(row.tarikh)}</td>
                         <td className="px-2 py-1.5">
                           {row.kind === "declination" ? (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-2xs font-semibold whitespace-nowrap" style={{ background: "rgba(240,147,43,0.12)", color: "#d97706", border: "1px solid rgba(240,147,43,0.25)" }}>
-                              <AlertCircle className="w-3 h-3" /> Ubat Tidak Perlu Dibekalkan
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-2xs font-semibold whitespace-nowrap" title="Ubat Tidak Perlu Dibekalkan" style={{ background: "rgba(240,147,43,0.12)", color: "#d97706", border: "1px solid rgba(240,147,43,0.25)" }}>
+                              <AlertCircle className="w-3 h-3" /> Tak Dibekal
                             </span>
                           ) : (
                             <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-2xs font-semibold whitespace-nowrap" style={{ background: "rgba(24,119,242,0.10)", color: "#1877f2", border: "1px solid rgba(24,119,242,0.2)" }}>

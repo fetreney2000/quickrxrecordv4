@@ -209,6 +209,7 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                       <SortableHeader label="Tarikh & Masa" sortKey="tarikh" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       <SortableHeader label="Jenis" sortKey="kind" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       <SortableHeader label="Kuantiti" sortKey="kuantiti" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
+                      <th className="text-left text-xs font-semibold uppercase tracking-wider px-2 py-1.5" style={{ color: "var(--text-secondary)" }}>Tempoh</th>
                       <SortableHeader label="Direkod oleh" sortKey="kakitangan_pembekal" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       <SortableHeader label="Catatan" sortKey="catatan" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       {canEdit && <th className="text-left text-xs font-semibold uppercase tracking-wider px-2 py-1.5" style={{ color: "var(--text-secondary)" }}>Tindakan</th>}
@@ -233,13 +234,20 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                           {row.kind === "supply" ? row.kuantiti : "—"}
                         </td>
                         <td className="px-2 py-1.5" style={{ color: "var(--text-secondary)" }}>
+                          {row.kind === "supply" && row.tempoh_dibekal
+                            ? row.tempoh_dibekal
+                            : row.kind === "declination" && row.tempoh
+                            ? row.tempoh
+                            : "—"}
+                        </td>
+                        <td className="px-2 py-1.5" style={{ color: "var(--text-secondary)" }}>
                           {row.kind === "supply"
                             ? row.kakitangan_pembekal_profile?.nama ?? "—"
                             : row.direkod_oleh_profile?.nama ?? "—"}
                         </td>
                         <td className="px-2 py-1.5 italic" style={{ color: "var(--text-muted)" }}>
                           {row.kind === "declination"
-                            ? <>{row.sebab}{row.tempoh ? ` · Tempoh: ${row.tempoh}` : ""}{row.catatan ? ` — ${row.catatan}` : ""}</>
+                            ? <>{row.sebab}{row.catatan ? ` — ${row.catatan}` : ""}</>
                             : row.catatan || "—"}
                         </td>
                         {canEdit && <td className="px-2 py-1.5">

@@ -343,7 +343,23 @@ DECLARE
   v_current_stock BIGINT;
   v_prev_item UUID := NULL;
 BEGIN
+  -- (a0) Buang baris 'adjustment' yang tercipta pendua oleh backfill sebelum ini
+  --      utk stok awal migrasi (yang diwakili oleh rujukan_type='migration_initial_stock').
+  --      Menjadikan fungsi ini idempotent dan membersihkan data sedia ada.
+  DELETE FROM inventory_transactions it
+  WHERE it.rujukan_type = 'adjustment'
+    AND it.catatan = 'Stok awal migrasi SRQ.db3'
+    AND EXISTS (
+      SELECT 1 FROM inventory_transactions it2
+      WHERE it2.batch_id = it.batch_id
+        AND it2.rujukan_type = 'migration_initial_stock'
+    );
+
   -- (a) Masukkan jurnal yang hilang utk batch_adjustments bukan pelupusan
+  --     Stok awal migrasi sudah wujud sebagai baris
+  --     rujukan_type='migration_initial_stock' (rujukan_id = batch.id), jadi
+  --     jangan cipta baris 'adjustment' pendua untuk batch_adjustments yang
+  --     berkorespon dengannya.
   FOR v_item IN
     SELECT ba.id AS adjustment_id, ba.batch_id, ba.change, ba.previous_kuantiti,
            ba.new_kuantiti, ba.reason, ba.adjusted_by, ba.created_at,
@@ -354,6 +370,11 @@ BEGIN
       SELECT 1 FROM inventory_transactions it
       WHERE it.rujukan_type IN ('adjustment', 'batch_disposal')
         AND it.rujukan_id = ba.id
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM inventory_transactions it2
+      WHERE it2.batch_id = b.id
+        AND it2.rujukan_type = 'migration_initial_stock'
     )
   LOOP
     v_change := ABS(v_item.change);

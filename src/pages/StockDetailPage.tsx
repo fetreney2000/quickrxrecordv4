@@ -269,11 +269,16 @@ if (defaulterFilter !== "all") {
   }, [transactions, filterDateFrom, filterDateTo, filterPatient, filterStaff, filterTxType]);
 
   const txStats = useMemo(() => {
-    const total = filteredTransactions.length;
+    // Rekod sebelum 11 Ogos 2026 ialah data warisan — jangan dikira.
+    const cutoff = new Date("2026-08-11T00:00:00Z").getTime();
+    const current = filteredTransactions.filter(
+      (t) => new Date(t.tarikh).getTime() >= cutoff
+    );
+    const total = current.length;
     let inQty = 0;
     let outQty = 0;
     const patientSet = new Set<string>();
-    filteredTransactions.forEach((t) => {
+    current.forEach((t) => {
       if (t.perubahan > 0) inQty += t.perubahan;
       else outQty += Math.abs(t.perubahan);
       if (t.pesakit) patientSet.add(t.pesakit);

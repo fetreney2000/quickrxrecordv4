@@ -468,7 +468,7 @@ export function SupplyDialog({
   const selectedBatch = selectableBatches.find((b) => b.id === batchId);
   const maxQty = selectedBatch?.kuantiti ?? 0;
   const qty = parseInt(kuantiti, 10);
-  const qtyOutOfRange = Number.isNaN(qty) || qty < 0 || qty > maxQty;
+  const qtyOutOfRange = Number.isNaN(qty) || qty <= 0 || qty > maxQty;
   const latestSupply = supplyHistory[0];
   const latestSupplyDays = latestSupply ? parseDurationDays(latestSupply.tempoh_dibekal) : null;
   const daysSinceSupply = latestSupply ? calendarDaysSince(latestSupply.tarikh_dibekal) : null;
@@ -587,7 +587,7 @@ onSubmit={(e) => {
               <Label style={labelStyle}>Kuantiti *</Label>
               <Input
                 type="number"
-                min={0}
+                min={1}
                 max={maxQty || undefined}
                 value={kuantiti}
                 onChange={(e) => setKuantiti(e.target.value)}

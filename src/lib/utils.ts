@@ -55,20 +55,44 @@ export function formatDate(
   return d.toLocaleDateString(KL_LOCALE, { ...options, timeZone: KL_TIMEZONE });
 }
 
+/** Malay (ms-MY) day-period tokens: PG = pagi (AM), PTG = petang (PM). */
+const KL_DAY_PERIOD: Record<string, string> = { PG: "AM", PTG: "PM" };
+
+/**
+ * Format a date/time in ms-MY + Kuala Lumpur timezone with a literal AM/PM marker.
+ * Only the localized day-period token is replaced; all other parts (Malay month
+ * names, separators, date order, timezone) are unchanged. Unknown tokens pass through.
+ */
+export function formatWithLiteralAMPM(
+  value: string | Date | null | undefined,
+  options: Intl.DateTimeFormatOptions
+): string {
+  if (!value) return "—";
+  const d = value instanceof Date ? value : new Date(value);
+  if (isNaN(d.getTime())) return "—";
+  return new Intl.DateTimeFormat(KL_LOCALE, {
+    ...options,
+    hour12: true,
+    timeZone: KL_TIMEZONE,
+  })
+    .formatToParts(d)
+    .map((p) =>
+      p.type === "dayPeriod" ? KL_DAY_PERIOD[p.value] ?? p.value : p.value
+    )
+    .join("");
+}
+
 /** Format a date+time using the Asia/Kuala_Lumpur timezone. */
 export function formatDateTime(
   value: string | Date | null | undefined
 ): string {
   if (!value) return "—";
-  const d = value instanceof Date ? value : new Date(value);
-  if (isNaN(d.getTime())) return "—";
-  return d.toLocaleString(KL_LOCALE, {
+  return formatWithLiteralAMPM(value, {
     day: "2-digit",
     month: "short",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: KL_TIMEZONE,
   });
 }
 
@@ -77,13 +101,7 @@ export function formatTime(
   value: string | Date | null | undefined
 ): string {
   if (!value) return "—";
-  const d = value instanceof Date ? value : new Date(value);
-  if (isNaN(d.getTime())) return "—";
-  return d.toLocaleTimeString(KL_LOCALE, {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: KL_TIMEZONE,
-  });
+  return formatWithLiteralAMPM(value, { hour: "2-digit", minute: "2-digit" });
 }
 
 /** Return YYYY-MM-DD in KL timezone (for <input type="date"> value). */

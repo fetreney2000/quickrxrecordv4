@@ -27,7 +27,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { DateInput } from "@/components/ui/date-input";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { supabase } from "@/lib/supabase";
-import { addDaysToDateInput, formatDate, formatItemDisplay, formatTime, getKLDayEndISO, getKLDayStartISO, getTodayStrKL } from "@/lib/utils";
+import { addDaysToDateInput, formatDate, formatItemDisplay, formatTime, formatWithLiteralAMPM, getKLDayEndISO, getKLDayStartISO, getTodayStrKL } from "@/lib/utils";
 import { toast } from "sonner";
 import type { ItemBatch } from "@/types";
 
@@ -117,13 +117,12 @@ async function exportToExcel(
   // Date row
   sheet.mergeCells(2, 1, 2, keys.length);
   const dateCell = sheet.getCell("A2");
-  dateCell.value = `Dijana pada: ${new Date().toLocaleString("ms-MY", {
+  dateCell.value = `Dijana pada: ${formatWithLiteralAMPM(new Date(), {
     day: "2-digit",
     month: "long",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: "Asia/Kuala_Lumpur",
   })}`;
   dateCell.font = { italic: true, size: 10, color: { argb: "FF65676B" } };
   dateCell.alignment = { horizontal: "center" };
@@ -238,13 +237,12 @@ async function exportToPDF(
   // Date + count
   doc.setTextColor(100, 103, 107);
   doc.setFontSize(8);
-  const now = new Date().toLocaleString("ms-MY", {
+  const now = formatWithLiteralAMPM(new Date(), {
     day: "2-digit",
     month: "long",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: "Asia/Kuala_Lumpur",
   });
   doc.text(`Dijana pada: ${now}   |   Jumlah rekod: ${data.length}`, 10, 24);
 

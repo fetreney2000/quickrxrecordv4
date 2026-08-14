@@ -45,11 +45,10 @@ formatDate,
   formatItemDisplay,
   formatNumber,
   formatTime,
+  formatWithLiteralAMPM,
   getKLDayEndISO,
   getKLDayStartISO,
   getTodayStrKL,
-  KL_LOCALE,
-  KL_TIMEZONE,
   toDateInputValue,
   toTitleCaseKeepAcronyms,
 } from "@/lib/utils";
@@ -465,7 +464,14 @@ if (defaulterFilter !== "all") {
       ws.getRow(1).height = 28;
       ws.mergeCells("A2:I2");
       const dateCell = ws.getCell("A2");
-       dateCell.value = `Dijana pada ${new Date().toLocaleString(KL_LOCALE, { timeZone: KL_TIMEZONE })} · ${filteredTransactions.length} rekod`;
+       dateCell.value = `Dijana pada ${formatWithLiteralAMPM(new Date(), {
+        day: "numeric",
+        month: "numeric",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      })} · ${filteredTransactions.length} rekod`;
       dateCell.font = { size: 10, italic: true, color: { argb: "FF65676B" } };
       dateCell.alignment = { horizontal: "left" };
       ws.getRow(2).height = 18;
@@ -535,7 +541,14 @@ if (defaulterFilter !== "all") {
       doc.setTextColor(101, 103, 107);
       doc.setFontSize(9);
       doc.setFont("helvetica", "italic");
-       doc.text(`Dijana pada ${new Date().toLocaleString(KL_LOCALE, { timeZone: KL_TIMEZONE })} · ${filteredTransactions.length} rekod`, 14, 28);
+       doc.text(`Dijana pada ${formatWithLiteralAMPM(new Date(), {
+        day: "numeric",
+        month: "numeric",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      })} · ${filteredTransactions.length} rekod`, 14, 28);
       const tableData = filteredTransactions.map((tx) => {
         const baki = tx.baki != null ? tx.baki : "—";
         return [formatDate(tx.tarikh), formatTime(tx.tarikh), tx.jenis_label, tx.kelompok, tx.perubahan_label, String(baki), tx.catatan || "", tx.kakitangan || "", tx.pesakit || ""];

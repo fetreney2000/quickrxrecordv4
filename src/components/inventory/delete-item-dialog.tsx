@@ -85,7 +85,7 @@ export function DeleteItemDialog({
             <p className="text-xs" style={{ color: "#991b1b" }}>
               {isHardDelete
                 ? `Item "${itemLabel}" akan dipadam secara kekal dan tidak boleh dipulihkan.`
-                : `Item "${itemLabel}" telah dibekalkan/ditugaskan kepada pesakit, jadi ia tidak boleh dipadam kekal daripada pangkalan data.`}
+                : `Item "${itemLabel}" telah dibekalkan/ditugaskan kepada pesakit, jadi ia tidak boleh dipadam kekal daripada pangkalan data. Tindakan ini akan menamatkan tugasan pesakit yang aktif dan melupuskan stok sedia ada.`}
             </p>
           </div>
 
@@ -116,8 +116,13 @@ export function DeleteItemDialog({
               >
                 <li>Item disembunyikan daripada senarai &ldquo;Senarai Inventori&rdquo; yang aktif.</li>
                 <li>
-                  Rekod stok, kelompok, transaksi dan sejarah bekalan pesakit dikekalkan
-                  sepenuhnya untuk tujuan audit.
+                  <strong>Semua tugasan pesakit yang aktif untuk item ini akan
+                  ditamatkan</strong> (rawatan ditukar kepada &ldquo;Tamat&rdquo;).
+                </li>
+                <li>
+                  <strong>Semua stok sedia ada akan dilupuskan</strong> (kuantiti
+                  ditetapkan kepada sifar). Rekod stok, kelompok, transaksi dan sejarah
+                  bekalan pesakit dikekalkan sepenuhnya untuk tujuan audit.
                 </li>
                 <li>
                   Penyuntingan item atau penambahan stok baharu akan dilumpuhkan pada item ini.

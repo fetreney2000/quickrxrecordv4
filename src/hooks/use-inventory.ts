@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
-import { getNowISOKL } from "@/lib/utils";
+import { getTodayStrKL, getNowISOKL } from "@/lib/utils";
 import type {
   Item,
   ItemBatch,
@@ -371,21 +371,88 @@ onError: (error: Error) => {
 
 export function useDeleteItem() {
   const queryClient = useQueryClient();
+  const { profile } = useAuth();
   return useMutation({
     mutationFn: async (itemId: string) => {
       const { data, error } = await supabase.rpc("delete_item", {
         p_item_id: itemId,
+        p_deleted_by: profile?.id ?? null,
       });
-      if (error) throw error;
-      return data as "deleted" | "deactivated";
+      if (!error) return data as "deleted" | "deactivated";
+      if (!error.message?.includes("Could not find the function")) throw error;
+
+      // Fallback: DB belum dinaik taraf ke migrasi 019.
+      // Keputusan mesti sama dengan RPC: v_used mengira SEMUA tugasan (sejarah
+      // dikekalkan). Hanya apabila tiada tugasan langsung kita hard-delete;
+      // sebaliknya soft-delete.
+      const { data: hasHistory, error: aErr } = await supabase
+        .from("patient_item_assignments")
+        .select("id")
+        .eq("item_id", itemId)
+        .limit(1);
+      if (aErr) throw aErr;
+
+      if ((hasHistory?.length ?? 0) > 0) {
+        // Soft-delete path: sembunyikan item, tamatkan tugasan aktif, lupuskan stok
+        const today = getTodayStrKL();
+        const sebab = "Item dinyahaktifkan / dikeluarkan dari inventori";
+
+        const { error: hideErr } = await supabase
+          .from("items")
+          .update({ aktif: false })
+          .eq("id", itemId);
+        if (hideErr) throw hideErr;
+
+        const { error: endErr } = await supabase
+          .from("patient_item_assignments")
+          .update({
+            aktif: false,
+            tarikh_tamat_guna: today,
+            sebab_tamat: sebab,
+            ditamatkan_oleh: profile?.id ?? null,
+          })
+          .eq("item_id", itemId)
+          .eq("aktif", true);
+        if (endErr) throw endErr;
+
+        // Lupuskan setiap kelompok yang belum dilupuskan; guna semula
+        // process_batch_disposal apabila ada (018+).
+        const { data: batches, error: bErr } = await supabase
+          .from("item_batches")
+          .select("id")
+          .eq("item_id", itemId)
+          .eq("dilupuskan", false);
+        if (bErr) throw bErr;
+        for (const b of batches ?? []) {
+          const { error: disposeErr } = await supabase.rpc("process_batch_disposal", {
+            p_batch_id: b.id,
+            p_adjusted_by: profile?.id ?? null,
+            p_reason: sebab,
+          });
+          if (
+            disposeErr &&
+            !disposeErr.message?.includes("Could not find the function")
+          )
+            throw disposeErr;
+        }
+        return "deactivated" as const;
+      }
+
+      // Hard-delete path: tiada tugasan -> padam item (FK cascade bawa
+      // item_batches, inventory_transactions, dll.)
+      const { error: delErr } = await supabase.from("items").delete().eq("id", itemId);
+      if (delErr) throw delErr;
+      return "deleted" as const;
     },
     onSuccess: (status, itemId) => {
       toast.success(
         status === "deleted"
           ? "Item telah dipadam secara kekal."
-          : "Item ditetapkan sebagai tidak aktif. Sejarah disimpan."
+          : "Item ditetapkan sebagai tidak aktif. Tugasan pesakit aktif ditamatkan dan stok dilupuskan. Sejarah disimpan."
       );
       queryClient.invalidateQueries({ queryKey: ["items"] });
+      queryClient.invalidateQueries({ queryKey: ["items-with-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["item-patients", itemId] });
       queryClient.removeQueries({ queryKey: ["item", itemId] });
     },
     onError: (err: any) => {

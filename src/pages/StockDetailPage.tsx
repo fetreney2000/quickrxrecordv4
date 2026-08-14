@@ -41,9 +41,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { useNavStore } from "@/lib/nav-store";
 import { supabase } from "@/lib/supabase";
 import {
-  formatDate,
+formatDate,
   formatItemDisplay,
   formatNumber,
+  formatTime,
   getKLDayEndISO,
   getKLDayStartISO,
   getTodayStrKL,
@@ -455,20 +456,20 @@ if (defaulterFilter !== "all") {
       wb.creator = "QuickRxRecord";
       wb.created = new Date();
       const ws = wb.addWorksheet("Sejarah Transaksi");
-      ws.mergeCells("A1:H1");
+      ws.mergeCells("A1:I1");
       const titleCell = ws.getCell("A1");
       titleCell.value = `Sejarah Transaksi — ${displayTitle || ""}`;
       titleCell.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
       titleCell.alignment = { horizontal: "center", vertical: "middle" };
       titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1877F2" } };
       ws.getRow(1).height = 28;
-      ws.mergeCells("A2:H2");
+      ws.mergeCells("A2:I2");
       const dateCell = ws.getCell("A2");
        dateCell.value = `Dijana pada ${new Date().toLocaleString(KL_LOCALE, { timeZone: KL_TIMEZONE })} · ${filteredTransactions.length} rekod`;
       dateCell.font = { size: 10, italic: true, color: { argb: "FF65676B" } };
       dateCell.alignment = { horizontal: "left" };
       ws.getRow(2).height = 18;
-      const headers = ["Tarikh", "Jenis", "Kelompok", "Perubahan", "Baki Stok", "Keterangan", "Kakitangan", "Pesakit"];
+      const headers = ["Tarikh", "Masa", "Jenis", "Kelompok", "Perubahan", "Baki Stok", "Keterangan", "Kakitangan", "Pesakit"];
       ws.addRow(headers);
       const headerRow = ws.getRow(3);
       headerRow.eachCell((cell) => {
@@ -480,15 +481,15 @@ if (defaulterFilter !== "all") {
       headerRow.height = 22;
       filteredTransactions.forEach((tx, i) => {
         const baki = tx.baki != null ? tx.baki : "—";
-        const row = ws.addRow([formatDate(tx.tarikh), tx.jenis_label, tx.kelompok, tx.perubahan_label, baki, tx.catatan || "", tx.kakitangan || "", tx.pesakit || ""]);
+        const row = ws.addRow([formatDate(tx.tarikh), formatTime(tx.tarikh), tx.jenis_label, tx.kelompok, tx.perubahan_label, baki, tx.catatan || "", tx.kakitangan || "", tx.pesakit || ""]);
         if (i % 2 === 0) {
           row.eachCell((cell) => { cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF9FAFB" } }; });
         }
-        const changeCell = row.getCell(4);
+        const changeCell = row.getCell(5);
         changeCell.font = { color: tx.perubahan > 0 ? { argb: "FF16A34A" } : tx.perubahan < 0 ? { argb: "FFE41E3F" } : { argb: "FF6B7280" }, bold: true };
         changeCell.alignment = { horizontal: "center" };
-        row.getCell(2).alignment = { horizontal: "center" };
-        row.getCell(5).alignment = { horizontal: "center" };
+        row.getCell(3).alignment = { horizontal: "center" };
+        row.getCell(6).alignment = { horizontal: "center" };
       });
       const cols = (ws as any).columns as any[] | undefined;
       cols?.forEach((col) => {
@@ -537,23 +538,23 @@ if (defaulterFilter !== "all") {
        doc.text(`Dijana pada ${new Date().toLocaleString(KL_LOCALE, { timeZone: KL_TIMEZONE })} · ${filteredTransactions.length} rekod`, 14, 28);
       const tableData = filteredTransactions.map((tx) => {
         const baki = tx.baki != null ? tx.baki : "—";
-        return [formatDate(tx.tarikh), tx.jenis_label, tx.kelompok, tx.perubahan_label, String(baki), tx.catatan || "", tx.kakitangan || "", tx.pesakit || ""];
+        return [formatDate(tx.tarikh), formatTime(tx.tarikh), tx.jenis_label, tx.kelompok, tx.perubahan_label, String(baki), tx.catatan || "", tx.kakitangan || "", tx.pesakit || ""];
       });
       autoTable(doc, {
         startY: 33,
-        head: [["Tarikh", "Jenis", "Kelompok", "Perubahan", "Baki Stok", "Keterangan", "Kakitangan", "Pesakit"]],
+        head: [["Tarikh", "Masa", "Jenis", "Kelompok", "Perubahan", "Baki Stok", "Keterangan", "Kakitangan", "Pesakit"]],
         body: tableData,
         headStyles: { fillColor: [55, 65, 81], textColor: 255, fontSize: 9, fontStyle: "bold" },
         bodyStyles: { fontSize: 8 },
         alternateRowStyles: { fillColor: [249, 250, 251] },
         didParseCell: (data) => {
-          if (data.column.index === 3 && data.section === "body") {
-            data.cell.styles.halign = "center";
-          }
           if (data.column.index === 4 && data.section === "body") {
             data.cell.styles.halign = "center";
           }
-          if (data.column.index === 3 && data.section === "body") {
+          if (data.column.index === 5 && data.section === "body") {
+            data.cell.styles.halign = "center";
+          }
+          if (data.column.index === 4 && data.section === "body") {
             const tx = filteredTransactions[data.row.index];
             if (tx) {
               if (tx.perubahan > 0) { data.cell.styles.textColor = [22, 163, 74]; data.cell.styles.fontStyle = "bold"; }

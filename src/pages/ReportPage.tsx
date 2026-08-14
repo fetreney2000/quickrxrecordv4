@@ -27,7 +27,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { DateInput } from "@/components/ui/date-input";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { supabase } from "@/lib/supabase";
-import { addDaysToDateInput, formatDate, formatItemDisplay, getKLDayEndISO, getKLDayStartISO, getTodayStrKL } from "@/lib/utils";
+import { addDaysToDateInput, formatDate, formatItemDisplay, formatTime, getKLDayEndISO, getKLDayStartISO, getTodayStrKL } from "@/lib/utils";
 import { toast } from "sonner";
 import type { ItemBatch } from "@/types";
 
@@ -312,6 +312,7 @@ const INVENTORY_COLUMN_LABELS: Record<string, string> = {
 
 const TRANSACTION_COLUMN_LABELS: Record<string, string> = {
   tarikh: "Tarikh",
+  masa: "Masa",
   pesakit: "Pesakit",
   item: "Item",
   dos: "Dos",
@@ -559,8 +560,9 @@ export default function ReportPage() {
   const handleExportTransactionExcel = async () => {
     try {
       if (!transactionsData) return;
-      const mapped = transactionsData.map((t) => ({
+const mapped = transactionsData.map((t) => ({
         tarikh: formatDate(t.tarikh_dibekal),
+        masa: formatTime(t.tarikh_dibekal),
         pesakit: t.assignment?.patient?.nama ?? "-",
         item: formatItemDisplay(t.assignment?.item) || "-",
         dos: t.dos,
@@ -578,8 +580,9 @@ export default function ReportPage() {
   const handleExportTransactionPDF = async () => {
     try {
       if (!transactionsData) return;
-      const mapped = transactionsData.map((t) => ({
+const mapped = transactionsData.map((t) => ({
         tarikh: formatDate(t.tarikh_dibekal),
+        masa: formatTime(t.tarikh_dibekal),
         pesakit: t.assignment?.patient?.nama ?? "-",
         item: formatItemDisplay(t.assignment?.item) || "-",
         dos: t.dos,
@@ -1055,6 +1058,7 @@ function TransactionsTab({
                 <tr>
                   {[
                     "Tarikh",
+                    "Masa",
                     "Pesakit",
                     "Item",
                     "Dos",
@@ -1093,6 +1097,15 @@ function TransactionsTab({
                       }}
                     >
                       {formatDate(t.tarikh_dibekal)}
+                    </td>
+                    <td
+                      className="px-3 py-3 text-sm"
+                      style={{
+                        borderBottom: "1px solid var(--border-light)",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {formatTime(t.tarikh_dibekal)}
                     </td>
                     <td
                       className="px-3 py-3 text-sm"

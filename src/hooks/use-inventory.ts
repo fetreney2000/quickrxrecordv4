@@ -522,22 +522,27 @@ export function useAddBatch(itemId: string | undefined) {
         if (error) throw error;
         batchId = inserted.id;
       }
+      const { data: addition, error: staffError } = await supabase
+        .from("batch_additions")
+        .insert({
+          batch_id: batchId,
+          quantity: batchData.kuantiti,
+          added_by: profile?.id ?? null,
+        })
+        .select("id")
+        .single();
+      if (staffError) throw staffError;
+      const additionId = addition.id;
       const { error: transactionError } = await supabase.from("inventory_transactions").insert({
         item_id: itemId!,
         batch_id: batchId,
         jenis: "masuk",
         kuantiti: batchData.kuantiti,
-        rujukan_id: batchId,
+        rujukan_id: additionId,
         rujukan_type: "batch_addition",
         catatan: existing ? "Tambah stok ke kelompok sedia ada" : "Kelompok baharu",
       });
       if (transactionError) throw transactionError;
-      const { error: staffError } = await supabase.from("batch_additions").insert({
-        batch_id: batchId,
-        quantity: batchData.kuantiti,
-        added_by: profile?.id ?? null,
-      });
-      if (staffError) throw staffError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["batches", itemId] });

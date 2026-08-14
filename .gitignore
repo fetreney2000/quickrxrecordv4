@@ -45,3 +45,6 @@ vite/api-mock.d.ts
 vite/api-mock.js
 
 SRQ.db3
+
+# Kilo plan/agent artifacts
+.kilo/

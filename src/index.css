@@ -150,6 +150,14 @@
   }
 }
 
+/* Reduce overall font size by 2px on mobile (≤768px) only.
+   Mobile bottom nav uses fixed px text/styles so it stays unchanged. */
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+}
+
 @layer components {
   /* Glass Card */
   .glass-card {

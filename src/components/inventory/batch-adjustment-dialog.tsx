@@ -330,10 +330,6 @@ export function BatchAdjustmentDialog({
           <div>
             <Label htmlFor="catatan" className="mb-1" style={labelStyle}>
               Catatan / Sebab Terperinci
-              <span className="text-2xs font-normal" style={{ color: "var(--text-muted)" }}>
-                &nbsp;(Opsyenal)
-              </span>
-            </Label>
             <textarea
               id="catatan"
               value={catatan}

@@ -28,6 +28,7 @@ import {
   Inbox,
   RotateCcw,
   Trash2,
+  ChevronDown,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -194,6 +195,7 @@ export default function StockDetailPage() {
 
   const [activeBatchPage, setActiveBatchPage] = useState(0);
   const [inactiveBatchPage, setInactiveBatchPage] = useState(0);
+  const [showInactiveBatches, setShowInactiveBatches] = useState(false);
   const [patientPage, setPatientPage] = useState(0);
   const [txPage, setTxPage] = useState(0);
 
@@ -758,12 +760,15 @@ if (defaulterFilter !== "all") {
             </>}
 
             {inactiveBatches.length > 0 && <>
-              <div className="px-4 pt-3 flex items-center gap-2">
+              <button type="button" onClick={() => setShowInactiveBatches((v) => !v)} className="px-4 pt-3 w-full flex items-center gap-2 hover:opacity-80" title={showInactiveBatches ? "Sorokkan kelompok tidak aktif" : "Papar kelompok tidak aktif"}>
+                <ChevronDown className="w-3.5 h-3.5 transition-transform" style={{ color: "var(--text-muted)", transform: showInactiveBatches ? "" : "rotate(-90deg)" }} />
                 <span className="text-2xs font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Tidak Aktif (Dilupuskan / Kosong)</span>
                 <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-md" style={{ background: "rgba(107,114,128,0.10)", color: "var(--text-muted)" }}>{inactiveBatches.length}</span>
-              </div>
-              {pagedInactiveBatches.map((b, idx) => <BatchRow key={b.id} batch={b} index={idx} canEdit={canAddBatch && item.aktif} onConfirmAdjust={handleBatchAdjust} onDispose={handleBatchDispose} onUpdateBatch={handleUpdateBatch} />)}
-              {inactiveBatchTotalPages > 1 && <Pagination page={inactiveBatchPage} totalPages={inactiveBatchTotalPages} onChange={setInactiveBatchPage} totalCount={inactiveBatches.length} itemLabel="kelompok" />}
+              </button>
+              {showInactiveBatches && <>
+                {pagedInactiveBatches.map((b, idx) => <BatchRow key={b.id} batch={b} index={idx} canEdit={canAddBatch && item.aktif} onConfirmAdjust={handleBatchAdjust} onDispose={handleBatchDispose} onUpdateBatch={handleUpdateBatch} />)}
+                {inactiveBatchTotalPages > 1 && <Pagination page={inactiveBatchPage} totalPages={inactiveBatchTotalPages} onChange={setInactiveBatchPage} totalCount={inactiveBatches.length} itemLabel="kelompok" />}
+              </>}
             </>}
           </>}
         </FoldableCard>

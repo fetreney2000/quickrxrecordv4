@@ -83,6 +83,21 @@ const fieldStyle: React.CSSProperties = {
   padding: "4px 0",
 };
 
+const noteTextareaStyle: React.CSSProperties = {
+  width: "100%",
+  minHeight: 68,
+  resize: "vertical",
+  padding: "10px 12px",
+  fontSize: 13,
+  fontWeight: 400,
+  color: "var(--text-primary)",
+  background: "var(--card)",
+  border: "1px solid var(--border)",
+  borderRadius: 10,
+  outline: "none",
+  fontFamily: "inherit",
+};
+
 export function BatchAdjustmentDialog({
   open,
   onOpenChange,
@@ -94,11 +109,13 @@ export function BatchAdjustmentDialog({
   const [reason, setReason] = useState<ReasonCode>(
     actionType === "dispose" ? "pelupusan" : "pelarasan_stok"
   );
+  const [catatan, setCatatan] = useState("");
   const updateBatch = useUpdateBatchQuantity(itemId);
 
   useEffect(() => {
     if (open) {
       setReason(actionType === "dispose" ? "pelupusan" : "pelarasan_stok");
+      setCatatan("");
     }
   }, [open, actionType]);
 
@@ -141,6 +158,7 @@ export function BatchAdjustmentDialog({
         batchId: batch.id,
         newKuantiti: finalKuantiti,
         reason: REASON_LABELS[reason],
+        catatan,
       },
       {
         onSuccess: () => onOpenChange(false),
@@ -305,6 +323,30 @@ export function BatchAdjustmentDialog({
               {REASON_CHANGES[reason] === "up" && "Penambahan stok"}
               {REASON_CHANGES[reason] === "down" && "Pengurangan stok"}
               {REASON_CHANGES[reason] === "zero" && "Set semua stok kepada kosong"}
+            </p>
+          </div>
+
+          {/* Catatan / Sebab Terperinci */}
+          <div>
+            <Label htmlFor="catatan" className="mb-1" style={labelStyle}>
+              Catatan / Sebab Terperinci
+              <span className="text-2xs font-normal" style={{ color: "var(--text-muted)" }}>
+                &nbsp;(Opsyenal)
+              </span>
+            </Label>
+            <textarea
+              id="catatan"
+              value={catatan}
+              onChange={(e) => setCatatan(e.target.value)}
+              placeholder="Contoh: Stok rosak semasa pemeriksaan bulanan, kuantiti dicatut semula."
+              style={noteTextareaStyle}
+              rows={3}
+            />
+            <p
+              className="text-2xs mt-1"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Catatkan sebab terperinci mengapa stok ini dilaraskan/dilupuskan.
             </p>
           </div>
 

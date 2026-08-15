@@ -171,6 +171,7 @@ export interface BatchAdjustment {
   change: number;
   reason: string | null;
   adjusted_by: string | null;
+  catatan: string | null;
   created_at: string;
 }
 

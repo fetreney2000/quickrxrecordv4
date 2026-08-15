@@ -35,12 +35,15 @@ export function useUpdateBatchQuantity(itemId: string | undefined) {
       batchId: string;
       newKuantiti: number;
       reason?: string;
+      catatan?: string;
     }) => {
-if (data.reason === "Pelupusan Stok") {
+      const catatan = data.catatan?.trim();
+      if (data.reason === "Pelupusan Stok") {
         const { error } = await supabase.rpc("process_batch_disposal", {
           p_batch_id: data.batchId,
           p_adjusted_by: profile?.id ?? null,
           p_reason: data.reason,
+          p_catatan: catatan || null,
         });
         if (!error) return;
         if (!error.message?.includes("Could not find the function")) throw error;
@@ -75,6 +78,7 @@ if (data.reason === "Pelupusan Stok") {
         p_new_kuantiti: data.newKuantiti,
         p_reason: data.reason ?? null,
         p_adjusted_by: profile?.id ?? null,
+        p_catatan: catatan || null,
       });
       if (!rpcErr) return;
       if (!rpcErr.message?.includes("Could not find the function")) throw rpcErr;
@@ -731,6 +735,17 @@ export function useItemPatients(itemId: string | undefined) {
 // ============================================================================
 export const TX_PAGE_SIZE = 50;
 
+function buildAdjustmentNote(
+  reason: string | null,
+  catatan: string | null,
+  fallback: string | null
+): string | null {
+  const note = catatan?.trim();
+  if (reason && note && note !== reason) return `${reason} — ${note}`;
+  if (reason) return reason;
+  return fallback ?? null;
+}
+
 export function useItemTransactionHistory(itemId: string | undefined) {
   return useQuery({
     queryKey: ["transaction-history", itemId],
@@ -765,7 +780,10 @@ export function useItemTransactionHistory(itemId: string | undefined) {
         .filter((r) => r.rujukan_type === "batch_addition" && r.rujukan_id)
         .map((r) => r.rujukan_id);
       const adjustmentIds = rows
-        .filter((r) => r.rujukan_type === "adjustment" && r.rujukan_id)
+        .filter((r) =>
+          (r.rujukan_type === "adjustment" || r.rujukan_type === "batch_disposal") &&
+          r.rujukan_id
+        )
         .map((r) => r.rujukan_id);
 
       // 2a. supply → pesakit + kakitangan_pembekal
@@ -823,12 +841,12 @@ export function useItemTransactionHistory(itemId: string | undefined) {
       }
 
       // 2c. adjustment & batch_disposal → kakitangan + catatan (batch_adjustments → profiles)
-      const adjustmentDetailMap = new Map<string, { kakitangan: string | null; catatan: string | null }>();
+      const adjustmentDetailMap = new Map<string, { kakitangan: string | null; reason: string | null; catatan: string | null }>();
       if (adjustmentIds.length > 0) {
         const adjustments = await batchInQuery<any>(adjustmentIds, async (batchIds) => {
           const { data, error } = await supabase
             .from("batch_adjustments")
-            .select("id, reason, adjusted_by, change")
+            .select("id, reason, adjusted_by, change, catatan")
             .in("id", batchIds);
           if (error) throw error;
           return (data ?? []) as any[];
@@ -846,7 +864,8 @@ export function useItemTransactionHistory(itemId: string | undefined) {
         (adjustments ?? []).forEach((a: any) => {
           adjustmentDetailMap.set(a.id, {
             kakitangan: a.adjusted_by ? staffMap.get(a.adjusted_by) ?? null : null,
-            catatan: a.reason ?? null,
+            reason: a.reason ?? null,
+            catatan: a.catatan ?? null,
           });
         });
       }
@@ -882,7 +901,7 @@ export function useItemTransactionHistory(itemId: string | undefined) {
           perubahan = -tx.kuantiti;
           const detail = adjustmentDetailMap.get(tx.rujukan_id);
           kakitangan = detail?.kakitangan ?? null;
-          catatan = detail?.catatan ?? tx.catatan ?? null;
+          catatan = buildAdjustmentNote(detail?.reason ?? null, detail?.catatan ?? null, tx.catatan);
         } else {
           // adjustment (pelarasan naik/turun)
           jenis = "pelarasan";
@@ -890,7 +909,7 @@ export function useItemTransactionHistory(itemId: string | undefined) {
           perubahan = tx.jenis === "masuk" ? tx.kuantiti : -tx.kuantiti;
           const detail = adjustmentDetailMap.get(tx.rujukan_id);
           kakitangan = detail?.kakitangan ?? null;
-          catatan = detail?.catatan ?? tx.catatan ?? null;
+          catatan = buildAdjustmentNote(detail?.reason ?? null, detail?.catatan ?? null, tx.catatan);
         }
 
         combined.push({

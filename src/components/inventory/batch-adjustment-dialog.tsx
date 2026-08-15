@@ -338,7 +338,7 @@ export function BatchAdjustmentDialog({
               id="catatan"
               value={catatan}
               onChange={(e) => setCatatan(e.target.value)}
-              placeholder="Contoh: Stok rosak semasa pemeriksaan bulanan, kuantiti dicatut semula."
+              
               style={noteTextareaStyle}
               rows={3}
             />

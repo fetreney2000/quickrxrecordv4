@@ -87,6 +87,7 @@ export function BatchRow({
   const status = batch.dilupuskan
     ? { label: "Dilupuskan", bg: "rgba(220,38,38,0.10)", fg: "#dc2626", border: "rgba(220,38,38,0.25)", isExpired: true }
     : getStatus(batch);
+  const isDisposed = !!batch.dilupuskan;
 
   useEffect(() => {
     if (editing && inputRef.current) {
@@ -272,26 +273,30 @@ export function BatchRow({
           </span>
         </div>
         <div className="flex items-center justify-end gap-1">
-          {canEdit && !editing && !editingInfo && !status.isExpired && (
+          {canEdit && !editing && !editingInfo && !isDisposed && (
             <>
-              <button
-                onClick={startEditInfo}
-                className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-black/[0.05] transition-colors"
-                style={{ color: "#7c3aed" }}
-                aria-label="Edit info kelompok"
-                title="Edit maklumat kelompok"
-              >
-                <Pencil className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={startEdit}
-                className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-black/[0.05] transition-colors"
-                style={{ color: "#7c3aed" }}
-                aria-label="Edit kuantiti"
-                title="Edit kuantiti"
-              >
-                <Edit className="w-3.5 h-3.5" />
-              </button>
+              {!status.isExpired && (
+                <>
+                  <button
+                    onClick={startEditInfo}
+                    className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-black/[0.05] transition-colors"
+                    style={{ color: "#7c3aed" }}
+                    aria-label="Edit info kelompok"
+                    title="Edit maklumat kelompok"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={startEdit}
+                    className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-black/[0.05] transition-colors"
+                    style={{ color: "#7c3aed" }}
+                    aria-label="Edit kuantiti"
+                    title="Edit kuantiti"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              )}
               <button
                 onClick={() => onDispose(batch)}
                 className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-red-50 transition-colors"
@@ -389,13 +394,14 @@ export function BatchRow({
                   ref={inputRef}
                   type="number"
                   min={0}
+                  inputMode="numeric"
                   value={draftQty}
                   onChange={(e) => setDraftQty(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleSubmit();
                     if (e.key === "Escape") cancelEdit();
                   }}
-                  className="w-20 h-7 text-xs font-semibold px-2 rounded-lg outline-none"
+                  className="w-24 h-7 text-xs font-semibold px-2 rounded-lg outline-none"
                   style={{
                     border: "1px solid #7c3aed",
                     boxShadow: "0 0 0 3px rgba(124,58,237,0.15)",
@@ -405,7 +411,7 @@ export function BatchRow({
                 />
                 <button
                   onClick={handleSubmit}
-                  className="w-9 h-9 flex items-center justify-center rounded-md"
+                  className="w-11 h-11 flex items-center justify-center rounded-md"
                   style={{ background: "#16a34a", color: "white" }}
                   title="Sahkan kuantiti"
                 >
@@ -413,7 +419,7 @@ export function BatchRow({
                 </button>
                 <button
                   onClick={cancelEdit}
-                  className="w-9 h-9 flex items-center justify-center rounded-md"
+                  className="w-11 h-11 flex items-center justify-center rounded-md"
                   style={{ background: "var(--text-muted)", color: "white" }}
                   title="Batal edit kuantiti"
                 >
@@ -425,7 +431,7 @@ export function BatchRow({
                 <button
                   onClick={handleInfoSubmit}
                   disabled={!infoDirty}
-                  className="w-9 h-9 flex items-center justify-center rounded-md"
+                  className="w-11 h-11 flex items-center justify-center rounded-md"
                   style={{ background: infoDirty ? "#16a34a" : "var(--text-muted)", color: "white" }}
                   title="Sahkan maklumat kelompok"
                 >
@@ -433,7 +439,7 @@ export function BatchRow({
                 </button>
                 <button
                   onClick={cancelEditInfo}
-                  className="w-9 h-9 flex items-center justify-center rounded-md"
+                  className="w-11 h-11 flex items-center justify-center rounded-md"
                   style={{ background: "var(--text-muted)", color: "white" }}
                   title="Batal edit maklumat"
                 >
@@ -445,31 +451,35 @@ export function BatchRow({
                 <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
                   {formatNumber(batch.kuantiti)} unit
                 </span>
-                {canEdit && !status.isExpired && (
-                  <div className="ml-auto flex items-center gap-1">
-                    <button
-                      onClick={startEditInfo}
-                      className="w-9 h-9 flex items-center justify-center rounded-md hover:bg-black/[0.05] transition-colors"
-                      style={{ color: "#7c3aed" }}
-                      title="Edit maklumat kelompok"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={startEdit}
-                      className="w-9 h-9 flex items-center justify-center rounded-md hover:bg-black/[0.05] transition-colors"
-                      style={{ color: "#7c3aed" }}
-                      title="Edit kuantiti"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                    </button>
+                {canEdit && !isDisposed && (
+                  <div className="ml-auto flex items-center gap-1.5">
+                    {!status.isExpired && (
+                      <>
+                        <button
+                          onClick={startEditInfo}
+                          className="w-11 h-11 flex items-center justify-center rounded-md hover:bg-black/[0.05] transition-colors"
+                          style={{ color: "#7c3aed" }}
+                          title="Edit maklumat kelompok"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={startEdit}
+                          className="w-11 h-11 flex items-center justify-center rounded-md hover:bg-black/[0.05] transition-colors"
+                          style={{ color: "#7c3aed" }}
+                          title="Edit kuantiti"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      </>
+                    )}
                     <button
                       onClick={() => onDispose(batch)}
-                      className="w-9 h-9 flex items-center justify-center rounded-md hover:bg-red-50 transition-colors"
-                      style={{ color: "#dc2626" }}
+                      className="w-11 h-11 flex items-center justify-center rounded-md hover:bg-red-50 transition-colors"
+                      style={{ color: "#dc2626", background: "rgba(220,38,38,0.10)" }}
                       title="Lupuskan kelompok"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 )}

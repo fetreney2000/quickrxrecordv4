@@ -352,6 +352,7 @@ export function BatchAdjustmentDialog({
                 : undefined
             }
             title="Sahkan dan teruskan pelarasan stok"
+            className="whitespace-normal text-center leading-snug"
           >
             {updateBatch.isPending && (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />

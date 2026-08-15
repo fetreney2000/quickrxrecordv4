@@ -192,7 +192,8 @@ export default function StockDetailPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteMode, setDeleteMode] = useState<"deleted" | "deactivated">("deactivated");
 
-  const [batchPage, setBatchPage] = useState(0);
+  const [activeBatchPage, setActiveBatchPage] = useState(0);
+  const [inactiveBatchPage, setInactiveBatchPage] = useState(0);
   const [patientPage, setPatientPage] = useState(0);
   const [txPage, setTxPage] = useState(0);
 
@@ -308,6 +309,15 @@ if (defaulterFilter !== "all") {
     });
   }, [batches, batchSort]);
 
+  const activeBatches = useMemo(
+    () => sortedBatches.filter((b) => b.kuantiti > 0 && !b.dilupuskan),
+    [sortedBatches]
+  );
+  const inactiveBatches = useMemo(
+    () => sortedBatches.filter((b) => b.kuantiti <= 0 || !!b.dilupuskan),
+    [sortedBatches]
+  );
+
   const sortedTransactions = useMemo(() => {
     if (!txSort) return filteredTransactions;
     return [...filteredTransactions].sort((a, b) => {
@@ -319,10 +329,15 @@ if (defaulterFilter !== "all") {
     });
   }, [filteredTransactions, txSort]);
 
-  const pagedBatches = useMemo(() => {
-    const from = batchPage * BATCH_PAGE_SIZE;
-    return sortedBatches.slice(from, from + BATCH_PAGE_SIZE);
-  }, [sortedBatches, batchPage]);
+  const pagedActiveBatches = useMemo(() => {
+    const from = activeBatchPage * BATCH_PAGE_SIZE;
+    return activeBatches.slice(from, from + BATCH_PAGE_SIZE);
+  }, [activeBatches, activeBatchPage]);
+
+  const pagedInactiveBatches = useMemo(() => {
+    const from = inactiveBatchPage * BATCH_PAGE_SIZE;
+    return inactiveBatches.slice(from, from + BATCH_PAGE_SIZE);
+  }, [inactiveBatches, inactiveBatchPage]);
 
   const pagedPatients = useMemo(() => {
     const from = patientPage * PATIENT_PAGE_SIZE;
@@ -334,7 +349,8 @@ if (defaulterFilter !== "all") {
     return sortedTransactions.slice(from, from + TX_PAGE_SIZE);
   }, [sortedTransactions, txPage]);
 
-  const batchTotalPages = Math.max(1, Math.ceil(sortedBatches.length / BATCH_PAGE_SIZE));
+  const activeBatchTotalPages = Math.max(1, Math.ceil(activeBatches.length / BATCH_PAGE_SIZE));
+  const inactiveBatchTotalPages = Math.max(1, Math.ceil(inactiveBatches.length / BATCH_PAGE_SIZE));
   const patientTotalPages = Math.max(1, Math.ceil(sortedPatients.length / PATIENT_PAGE_SIZE));
   const txTotalPages = Math.max(1, Math.ceil(sortedTransactions.length / TX_PAGE_SIZE));
 
@@ -433,7 +449,8 @@ if (defaulterFilter !== "all") {
       if (prev?.key === key) return { key, dir: prev.dir === "asc" ? "desc" : "asc" };
       return { key, dir: "asc" };
     });
-    setBatchPage(0);
+    setActiveBatchPage(0);
+    setInactiveBatchPage(0);
   }, []);
 
   const toggleTxSort = useCallback((key: string) => {
@@ -717,19 +734,37 @@ if (defaulterFilter !== "all") {
 
       {/* 3. SENARAI KELOMPOK */}
       <div>
-        <FoldableCard title={<span className="flex items-center gap-2"><Package className="w-4 h-4" style={{ color: "#7c3aed" }} /> Senarai Kelompok <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-md" style={{ background: "rgba(124,58,237,0.10)", color: "#7c3aed" }}>{batches.length}</span></span>}
+        <FoldableCard title={<span className="flex items-center gap-2"><Package className="w-4 h-4" style={{ color: "#7c3aed" }} /> Senarai Kelompok <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-md" style={{ background: "rgba(124,58,237,0.10)", color: "#7c3aed" }}>{activeBatches.length} aktif</span></span>}
            headerExtra={canAddBatch && item.aktif ? <Button size="sm" onClick={() => setOpenAddBatch(true)} title="Tambah kelompok atau stok baharu" className="min-h-11 sm:min-h-0" style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}><Plus className="w-3.5 h-3.5" /> Tambah Stok</Button> : null}
         >
           {batches.length === 0 ? <EmptyState icon={Package} title="Tiada kelompok" hint={canAddBatch ? "Klik \u201cTambah Stok\u201d untuk mendaftarkan kelompok baharu." : "Item ini belum mempunyai kelompok."} /> : <>
-            <div className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "2fr 1.5fr 1.2fr 1.2fr 1fr", gap: 12, color: "var(--text-secondary)", background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-medium)", borderTop: "1px solid var(--border-light)" }}>
-              <button type="button" onClick={() => toggleBatchSort("nombor_kelompok")} title="Urut mengikut Nombor Kelompok" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: batchSort?.key === "nombor_kelompok" ? "#7c3aed" : "var(--text-secondary)" }}>Nombor Kelompok <SortIcon active={batchSort?.key === "nombor_kelompok"} dir={batchSort?.dir ?? "asc"} /></button>
-              <button type="button" onClick={() => toggleBatchSort("tarikh_luput")} title="Urut mengikut Tarikh Luput" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: batchSort?.key === "tarikh_luput" ? "#7c3aed" : "var(--text-secondary)" }}>Tarikh Luput <SortIcon active={batchSort?.key === "tarikh_luput"} dir={batchSort?.dir ?? "asc"} /></button>
-              <button type="button" onClick={() => toggleBatchSort("kuantiti")} title="Urut mengikut Kuantiti" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: batchSort?.key === "kuantiti" ? "#7c3aed" : "var(--text-secondary)" }}>Kuantiti <SortIcon active={batchSort?.key === "kuantiti"} dir={batchSort?.dir ?? "asc"} /></button>
-              <button type="button" onClick={() => toggleBatchSort("status")} title="Urut mengikut Status" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: batchSort?.key === "status" ? "#7c3aed" : "var(--text-secondary)" }}>Status <SortIcon active={batchSort?.key === "status"} dir={batchSort?.dir ?? "asc"} /></button>
-              <span className="text-right">Tindakan</span>
+            <div className="px-4 pt-3">
+              <div className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "2fr 1.5fr 1.2fr 1.2fr 1fr", gap: 12, color: "var(--text-secondary)", background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-medium)", borderTop: "1px solid var(--border-light)" }}>
+                <button type="button" onClick={() => toggleBatchSort("nombor_kelompok")} title="Urut mengikut Nombor Kelompok" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: batchSort?.key === "nombor_kelompok" ? "#7c3aed" : "var(--text-secondary)" }}>Nombor Kelompok <SortIcon active={batchSort?.key === "nombor_kelompok"} dir={batchSort?.dir ?? "asc"} /></button>
+                <button type="button" onClick={() => toggleBatchSort("tarikh_luput")} title="Urut mengikut Tarikh Luput" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: batchSort?.key === "tarikh_luput" ? "#7c3aed" : "var(--text-secondary)" }}>Tarikh Luput <SortIcon active={batchSort?.key === "tarikh_luput"} dir={batchSort?.dir ?? "asc"} /></button>
+                <button type="button" onClick={() => toggleBatchSort("kuantiti")} title="Urut mengikut Kuantiti" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: batchSort?.key === "kuantiti" ? "#7c3aed" : "var(--text-secondary)" }}>Kuantiti <SortIcon active={batchSort?.key === "kuantiti"} dir={batchSort?.dir ?? "asc"} /></button>
+                <button type="button" onClick={() => toggleBatchSort("status")} title="Urut mengikut Status" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: batchSort?.key === "status" ? "#7c3aed" : "var(--text-secondary)" }}>Status <SortIcon active={batchSort?.key === "status"} dir={batchSort?.dir ?? "asc"} /></button>
+                <span className="text-right">Tindakan</span>
+              </div>
             </div>
-            {pagedBatches.map((b, idx) => <BatchRow key={b.id} batch={b} index={idx} canEdit={canAddBatch && item.aktif} onConfirmAdjust={handleBatchAdjust} onDispose={handleBatchDispose} onUpdateBatch={handleUpdateBatch} />)}
-            {batchTotalPages > 1 && <Pagination page={batchPage} totalPages={batchTotalPages} onChange={setBatchPage} totalCount={batches.length} itemLabel="kelompok" />}
+
+            {activeBatches.length > 0 && <>
+              <div className="px-4 pt-3 flex items-center gap-2">
+                <span className="text-2xs font-bold uppercase tracking-wider" style={{ color: "#16a34a" }}>Aktif (Tersedia)</span>
+                <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-md" style={{ background: "rgba(22,163,74,0.10)", color: "#16a34a" }}>{activeBatches.length}</span>
+              </div>
+              {pagedActiveBatches.map((b, idx) => <BatchRow key={b.id} batch={b} index={idx} canEdit={canAddBatch && item.aktif} onConfirmAdjust={handleBatchAdjust} onDispose={handleBatchDispose} onUpdateBatch={handleUpdateBatch} />)}
+              {activeBatchTotalPages > 1 && <Pagination page={activeBatchPage} totalPages={activeBatchTotalPages} onChange={setActiveBatchPage} totalCount={activeBatches.length} itemLabel="kelompok" />}
+            </>}
+
+            {inactiveBatches.length > 0 && <>
+              <div className="px-4 pt-3 flex items-center gap-2">
+                <span className="text-2xs font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Tidak Aktif (Dilupuskan / Kosong)</span>
+                <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-md" style={{ background: "rgba(107,114,128,0.10)", color: "var(--text-muted)" }}>{inactiveBatches.length}</span>
+              </div>
+              {pagedInactiveBatches.map((b, idx) => <BatchRow key={b.id} batch={b} index={idx} canEdit={canAddBatch && item.aktif} onConfirmAdjust={handleBatchAdjust} onDispose={handleBatchDispose} onUpdateBatch={handleUpdateBatch} />)}
+              {inactiveBatchTotalPages > 1 && <Pagination page={inactiveBatchPage} totalPages={inactiveBatchTotalPages} onChange={setInactiveBatchPage} totalCount={inactiveBatches.length} itemLabel="kelompok" />}
+            </>}
           </>}
         </FoldableCard>
       </div>

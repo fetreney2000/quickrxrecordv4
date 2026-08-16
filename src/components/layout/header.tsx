@@ -49,31 +49,44 @@ export function Header() {
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  const { data: results, isFetching } = useQuery({
+  const { data, isFetching } = useQuery({
     queryKey: ["patient-search", debounced],
     enabled: canViewPatients && debounced.trim().length >= 2 && open,
     queryFn: async () => {
       const term = debounced.trim();
       const orFilter = `nama.ilike.%${term}%,nombor_kad_pengenalan.ilike.%${term}%,nombor_pendaftaran_hospital.ilike.%${term}%`;
-      const { data, error } = await supabase
+      const base = supabase
         .from("patients")
-        .select("id, nama, nombor_kad_pengenalan, nombor_pendaftaran_hospital")
+        .select("id, nama, nombor_kad_pengenalan, nombor_pendaftaran_hospital", { count: "exact" })
         .eq("aktif", true)
         .is("merged_into", null)
-        .or(orFilter)
+        .or(orFilter);
+      const { data, error, count } = await base
         .order("nama", { ascending: true })
         .limit(10);
       if (error) throw error;
-      return (data ?? []) as SearchResult[];
+      return {
+        results: (data ?? []) as SearchResult[],
+        total: count ?? 0,
+      };
     },
     staleTime: 30_000,
   });
+
+  const results = data?.results ?? [];
+  const total = data?.total ?? 0;
 
   const handleSelect = (id: string) => {
     setOpen(false);
     setQuery("");
     setNavSource("search");
     navigate(`/pesakit/${id}?from=search`);
+  };
+
+  const handleViewAll = () => {
+    setOpen(false);
+    setNavSource("list");
+    navigate(`/pesakit?q=${encodeURIComponent(debounced.trim())}`);
   };
 
   const showDropdown =
@@ -228,6 +241,18 @@ export function Header() {
                       )}
                     </div>
                   ) : null}
+                  {results.length > 0 && total > results.length && (
+                    <button
+                      type="button"
+                      onMouseDown={(e) => { e.preventDefault(); handleViewAll(); }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-accent-blue)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                      className="w-full text-left px-4 py-2.5 text-sm font-semibold transition-colors border-t"
+                      style={{ borderColor: "var(--border-light)", color: "#1877f2" }}
+                    >
+                      Lihat semua ({total}) hasil
+                    </button>
+                  )}
                 </div>
               )}
             </div>

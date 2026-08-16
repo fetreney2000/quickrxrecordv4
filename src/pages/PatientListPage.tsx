@@ -2,7 +2,7 @@
  * PatientListPage — Senarai Pesakit dengan carian, isihan, dan pagination.
  */
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Users,
   Search,
@@ -44,12 +44,14 @@ function User(props: { className?: string }) {
 
 export default function PatientListPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { can } = useAuth();
   const setNavSource = useNavStore((s) => s.setNavSource);
   const setBreadcrumbTrail = useNavStore((s) => s.setBreadcrumbTrail);
 
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const initialQuery = searchParams.get("q") ?? "";
+  const [search, setSearch] = useState(initialQuery);
+  const [debouncedSearch, setDebouncedSearch] = useState(initialQuery);
   const [searchFocused, setSearchFocused] = useState(false);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(50);
@@ -57,6 +59,10 @@ export default function PatientListPage() {
   const [openAdd, setOpenAdd] = useState(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (initialQuery) searchInputRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {

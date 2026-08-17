@@ -80,7 +80,7 @@ export const DateInput = React.forwardRef<HTMLButtonElement, DateInputProps>(
               variant="outline"
               disabled={disabled}
               aria-required={required || undefined}
-              className="w-full justify-start pr-8 font-normal gap-2"
+              className="w-full justify-start pr-8 font-normal gap-2 text-xs"
               {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}
             >
               <CalendarIcon className="h-4 w-4" />

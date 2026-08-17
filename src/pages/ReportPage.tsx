@@ -980,7 +980,7 @@ function TransactionsTab({
 <DateInput
                 value={dateFrom}
                 onChange={(v) => onDateFromChange(v)}
-                  className="h-11 rounded-lg px-2 text-xs font-medium normal-case tracking-normal sm:h-8"
+                  className="w-full h-11 rounded-lg px-2 text-xs font-medium normal-case tracking-normal sm:h-8"
                   style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
               />
               </label>
@@ -991,7 +991,7 @@ function TransactionsTab({
                 value={dateTo}
                 min={dateFrom || undefined}
                 onChange={(v) => onDateToChange(v)}
-                  className="h-11 rounded-lg px-2 text-xs font-medium normal-case tracking-normal sm:h-8"
+                  className="w-full h-11 rounded-lg px-2 text-xs font-medium normal-case tracking-normal sm:h-8"
                   style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
               />
               </label>

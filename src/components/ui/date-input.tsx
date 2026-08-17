@@ -2,7 +2,7 @@ import * as React from "react";
 import { format } from "date-fns";
 import { CalendarIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
@@ -11,9 +11,17 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 
 /**
- * DateInput — Pemilih tarikh (kalendar shadcn) dengan kontrak
- * `value` bertype YYYY-MM-DD / `onChange(value: string)` (masih YYYY-MM-DD),
- * serasi dengan komponen lama untuk semua kedudukan penggunaan sedia ada.
+ * DateInput — Pemilih tarikh gaya "Date of Birth" shadcn: pencetus ialah Button
+ * (ikon kalendar kiri + tarikh dipaparkan dd/MM/yyyy) yang membuka Popover
+ * berisi Calendar dengan caption dropdown bulan/tahun.
+ *
+ * Kontrak (`value`) bertype YYYY-MM-DD / `onChange(value: string)` (masih
+ * YYYY-MM-DD), serasi dengan komponen lama untuk semua kedudukan penggunaan
+ * sedia ada.
+ *
+ * Nota gaya: `className` digunakan pada div pembalut (kedudukan), manakala
+ * `style` dan atribut lain (cth. `id`, `onKeyDown`) dipindahkan ke trigger
+ * `Button`.
  */
 export interface DateInputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange"> {
@@ -22,6 +30,9 @@ export interface DateInputProps
   /** Placeholder paparan (lalai "Pilih tarikh"). */
   placeholder?: string;
 }
+
+const START_YEAR = 1900;
+const END_YEAR = new Date().getFullYear() + 10;
 
 const toDateFromISO = (v: string): Date | undefined => {
   if (!v) return undefined;
@@ -34,9 +45,19 @@ const isoFromDate = (d: Date | undefined): string => {
   return format(d, "yyyy-MM-dd");
 };
 
-export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
+export const DateInput = React.forwardRef<HTMLButtonElement, DateInputProps>(
   (
-    { value, onChange, className, placeholder, min, max, disabled, ...props },
+    {
+      value,
+      onChange,
+      className,
+      placeholder,
+      min,
+      max,
+      disabled,
+      required,
+      ...props
+    },
     ref
   ) => {
     const [open, setOpen] = React.useState(false);
@@ -53,16 +74,24 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
       <div className={cn("relative", className)}>
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
-            <Input
+            <Button
               ref={ref}
-              readOnly
+              type="button"
+              variant="outline"
               disabled={disabled}
-              value={selected ? format(selected, "dd/MM/yyyy") : ""}
-              placeholder={placeholder ?? "Pilih tarikh"}
-              className="cursor-pointer pr-8"
-              onClick={() => setOpen(true)}
-              {...props}
-            />
+              aria-required={required || undefined}
+              className="w-full justify-start pr-8 font-normal gap-2"
+              {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}
+            >
+              <CalendarIcon className="h-4 w-4" />
+              {selected ? (
+                format(selected, "dd/MM/yyyy")
+              ) : (
+                <span className="text-muted-foreground">
+                  {placeholder ?? "Pilih tarikh"}
+                </span>
+              )}
+            </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
             {value && (
@@ -87,13 +116,15 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
               mode="single"
               selected={selected}
               onSelect={handleSelect}
+              captionLayout="dropdown"
+              fromYear={START_YEAR}
+              toYear={END_YEAR}
               fromDate={minDate}
               toDate={maxDate}
               autoFocus
             />
           </PopoverContent>
         </Popover>
-        <CalendarIcon className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       </div>
     );
   }

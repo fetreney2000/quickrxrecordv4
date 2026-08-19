@@ -648,6 +648,7 @@ export function useItemPatients(itemId: string | undefined) {
             .from("supply_records")
             .select("assignment_id, tarikh_dibekal, kuantiti")
             .in("assignment_id", batchIds)
+            .is("voided_at", null)
             .order("tarikh_dibekal", { ascending: false });
           if (error) throw error;
           return (data ?? []) as any[];
@@ -677,6 +678,7 @@ export function useItemPatients(itemId: string | undefined) {
               .from("supply_records")
               .select("assignment_id, tarikh_dibekal, kuantiti")
               .in("assignment_id", batchIds)
+              .is("voided_at", null)
               .order("tarikh_dibekal", { ascending: false });
             if (error) return [];
             return (data ?? []) as any[];

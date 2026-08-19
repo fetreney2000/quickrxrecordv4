@@ -381,6 +381,7 @@ export default function ReportPage() {
           "*, assignment:patient_item_assignments(patient:patients(nama), item:items(id, nama_item, kekuatan, id_bentuk)), batch:item_batches(nombor_kelompok), staff:profiles!kakitangan_pembekal(nama)"
         )
        .order("created_at", { ascending: false })
+        .is("voided_at", null)
         .gte("tarikh_dibekal", dateFrom ? getKLDayStartISO(dateFrom) : "1900-01-01T00:00:00.000Z")
         .lt("tarikh_dibekal", dateTo ? getKLDayEndISO(dateTo) : "9999-12-31T23:59:59.999Z")
         .limit(500);
@@ -451,6 +452,7 @@ export default function ReportPage() {
         supabase
           .from("supply_records")
           .select("kuantiti, assignment:patient_item_assignments!inner(item_id)")
+          .is("voided_at", null)
           .gte("tarikh_dibekal", getKLDayStartISO(usageStart))
           .lt("tarikh_dibekal", getKLDayStartISO(usageEnd)),
       ]);

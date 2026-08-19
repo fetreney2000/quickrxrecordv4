@@ -39,6 +39,7 @@ export function useDashboardStats() {
           supabase
             .from("supply_records")
             .select("id", { count: "exact", head: true })
+            .is("voided_at", null)
             .gte("tarikh_dibekal", startOfTodayISO)
             .lt("tarikh_dibekal", startOfTomorrowISO),
           supabase
@@ -62,6 +63,7 @@ export function useDashboardStats() {
       const { data: recentUsage, error: usageError } = await supabase
         .from("supply_records")
         .select("kuantiti, assignment:patient_item_assignments!inner(item_id)")
+        .is("voided_at", null)
         .gte("tarikh_dibekal", getKLDayStartISO(usageStart))
         .lt("tarikh_dibekal", getKLDayStartISO(usageEnd));
       if (usageError) throw usageError;

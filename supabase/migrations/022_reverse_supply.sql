@@ -1,9 +1,12 @@
 -- ============================================================================
 -- 022_reverse_supply.sql
 -- Reverse a supply record: restore batch stock + create reversal inventory
--- transaction + delete the supply record, all atomically.
+-- transaction + mark supply record as voided (kept for audit trail).
 -- Tarikh: 20 Ogos 2026
 -- ============================================================================
+
+-- Tambah lajur voided_at pada supply_records
+ALTER TABLE supply_records ADD COLUMN IF NOT EXISTS voided_at TIMESTAMPTZ;
 
 CREATE OR REPLACE FUNCTION reverse_supply(
   p_supply_id UUID,
@@ -18,14 +21,14 @@ DECLARE
   v_item_id UUID;
   v_baki INTEGER;
 BEGIN
-  -- 1. Dapatkan rekod bekalan
+  -- 1. Dapatkan rekod bekalan (skip jika sudah voided)
   SELECT sr.*, pia.item_id INTO v_supply
   FROM supply_records sr
   JOIN patient_item_assignments pia ON pia.id = sr.assignment_id
-  WHERE sr.id = p_supply_id;
+  WHERE sr.id = p_supply_id AND sr.voided_at IS NULL;
 
   IF v_supply IS NULL THEN
-    RAISE EXCEPTION 'Rekod bekalan % tidak dijumpai.', p_supply_id;
+    RAISE EXCEPTION 'Rekod bekalan % tidak dijumpai atau telah dibatalkan.', p_supply_id;
   END IF;
 
   v_item_id := v_supply.item_id;
@@ -58,8 +61,10 @@ BEGIN
     v_baki
   );
 
-  -- 6. Padam rekod bekalan
-  DELETE FROM supply_records WHERE id = p_supply_id;
+  -- 6. Tandakan rekod bekalan sebagai voided (kekal untuk audit)
+  UPDATE supply_records
+  SET voided_at = now()
+  WHERE id = p_supply_id;
 END;
 $$;
 

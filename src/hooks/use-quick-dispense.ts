@@ -108,6 +108,7 @@ export function useFrequentItems(assignedItemIds: Set<string>) {
       const { data: supplies, error: sErr } = await supabase
         .from("supply_records")
         .select("assignment_id, patient_item_assignments!inner(item_id)")
+        .is("voided_at", null)
         .order("tarikh_dibekal", { ascending: false })
         .limit(500);
       if (sErr) throw sErr;

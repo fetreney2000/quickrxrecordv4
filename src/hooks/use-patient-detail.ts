@@ -175,6 +175,7 @@ export function useSupplyHistory(assignmentId: string | null) {
         `
         )
         .eq("assignment_id", assignmentId!)
+        .is("voided_at", null)
         .order("tarikh_dibekal", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as SupplyRecordWithJoins[];
@@ -241,6 +242,7 @@ export function useAssignmentActivity(assignmentId: string | null) {
           `
           )
           .eq("assignment_id", assignmentId!)
+          .is("voided_at", null)
           .order("tarikh_dibekal", { ascending: false }),
         supabase
           .from("supply_declinations")
@@ -323,6 +325,7 @@ export function useLatestSupplyDates(assignmentIds: string[]) {
         .from("supply_records")
         .select("assignment_id, tarikh_dibekal")
         .in("assignment_id", assignmentIds)
+        .is("voided_at", null)
         .order("tarikh_dibekal", { ascending: false });
       if (error) throw error;
       const map = new Map<string, string>();
@@ -773,15 +776,15 @@ export function useDeleteSupplyRecord(patientId: string | undefined) {
       });
       if (!rpcError) return;
 
-      // Fallback: direct delete (RPC not deployed)
+      // Fallback: mark as voided directly (RPC not deployed)
       const { error } = await supabase
         .from("supply_records")
-        .delete()
+        .update({ voided_at: new Date().toISOString() })
         .eq("id", supplyId);
       if (error) throw error;
     },
     onSuccess: (_data, vars) => {
-      toast.success("Rekod bekalan dipadam dan stok dikembalikan.");
+      toast.success("Rekod bekalan dibatalkan dan stok dikembalikan.");
       queryClient.invalidateQueries({ queryKey: ["assignments", patientId] });
       queryClient.invalidateQueries({ queryKey: ["supply-history", vars.assignmentId] });
       queryClient.invalidateQueries({ queryKey: ["assignment-activity", vars.assignmentId] });

@@ -117,18 +117,22 @@ export default function QuickDispensePage() {
     [availableBatches]
   );
   const [batchAllocations, setBatchAllocations] = useState<Record<string, number>>({});
+  const userEditedRef = useRef(false);
 
   useEffect(() => {
     if (selectableBatches.length === 0 || !quantity || parseInt(quantity) <= 0) {
       setBatchAllocations({});
+      userEditedRef.current = false;
       return;
     }
-    const alloc = computeFefoAllocation(selectableBatches, parseInt(quantity) || 0);
-    const map: Record<string, number> = {};
-    for (const a of alloc) {
-      map[a.batchId] = a.kuantitiDiambil;
+    if (!userEditedRef.current) {
+      const alloc = computeFefoAllocation(selectableBatches, parseInt(quantity) || 0);
+      const map: Record<string, number> = {};
+      for (const a of alloc) {
+        map[a.batchId] = a.kuantitiDiambil;
+      }
+      setBatchAllocations(map);
     }
-    setBatchAllocations(map);
   }, [selectableBatches, quantity]);
 
   const totalAllocated = useMemo(
@@ -552,6 +556,7 @@ export default function QuickDispensePage() {
                           max={b.kuantiti}
                           value={batchAllocations[b.id] ?? 0}
                           onChange={(e) => {
+                            userEditedRef.current = true;
                             const val = Math.max(0, Math.min(b.kuantiti, parseInt(e.target.value) || 0));
                             setBatchAllocations((prev) => ({ ...prev, [b.id]: val }));
                           }}
@@ -579,7 +584,7 @@ export default function QuickDispensePage() {
                 )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div><Label style={labelStyle}>Kuantiti *</Label><Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} required style={inputStyle} /></div>
+                <div><Label style={labelStyle}>Kuantiti *</Label><Input type="number" min={1} value={quantity} onChange={(e) => { userEditedRef.current = false; setQuantity(e.target.value); }} required style={inputStyle} /></div>
                 <div><Label style={labelStyle}>Dos</Label><Input value={dose} readOnly style={{ ...inputStyle, opacity: 0.6, cursor: "default" }} /></div>
                 <div>
                   <Label style={labelStyle}>Tempoh</Label>

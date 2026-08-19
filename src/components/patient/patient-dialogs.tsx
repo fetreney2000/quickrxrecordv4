@@ -1,7 +1,7 @@
 /**
  * PatientDialogs — Kumpulan dialog untuk PatientDetailPage.
  */
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   Dialog,
   DialogContent,
@@ -424,6 +424,7 @@ export function SupplyDialog({
   const [tempohUnit, setTempohUnit] = useState("");
   const [catatan, setCatatan] = useState("");
   const [batchAllocations, setBatchAllocations] = useState<Record<string, number>>({});
+  const userEditedRef = useRef(false);
 
   const { data: batches = [], isLoading: batchesLoading } = useAvailableBatches(
     open ? assignment.item_id : null
@@ -455,6 +456,7 @@ export function SupplyDialog({
       setTempohUnit("");
       setCatatan("");
       setBatchAllocations({});
+      userEditedRef.current = false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, durations.length, tempohUnit]);
@@ -462,14 +464,17 @@ export function SupplyDialog({
   useEffect(() => {
     if (selectableBatches.length === 0 || !kuantiti || parseInt(kuantiti, 10) <= 0) {
       setBatchAllocations({});
+      userEditedRef.current = false;
       return;
     }
-    const alloc = computeFefoAllocation(selectableBatches, parseInt(kuantiti, 10) || 0);
-    const map: Record<string, number> = {};
-    for (const a of alloc) {
-      map[a.batchId] = a.kuantitiDiambil;
+    if (!userEditedRef.current) {
+      const alloc = computeFefoAllocation(selectableBatches, parseInt(kuantiti, 10) || 0);
+      const map: Record<string, number> = {};
+      for (const a of alloc) {
+        map[a.batchId] = a.kuantitiDiambil;
+      }
+      setBatchAllocations(map);
     }
-    setBatchAllocations(map);
   }, [selectableBatches, kuantiti]);
 
   const totalAllocated = useMemo(
@@ -604,7 +609,7 @@ export function SupplyDialog({
                 type="number"
                 min={1}
                 value={kuantiti}
-                onChange={(e) => setKuantiti(e.target.value)}
+                onChange={(e) => { userEditedRef.current = false; setKuantiti(e.target.value); }}
                 onFocus={(e) => e.target.select()}
                 required
                 style={inputBaseStyle}
@@ -651,6 +656,7 @@ export function SupplyDialog({
                       max={b.kuantiti}
                       value={batchAllocations[b.id] ?? 0}
                       onChange={(e) => {
+                        userEditedRef.current = true;
                         const val = Math.max(0, Math.min(b.kuantiti, parseInt(e.target.value) || 0));
                         setBatchAllocations((prev) => ({ ...prev, [b.id]: val }));
                       }}

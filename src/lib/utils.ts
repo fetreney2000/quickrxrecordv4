@@ -456,3 +456,39 @@ export function safeJsonParse<T>(value: string | null | undefined, fallback: T):
     return fallback;
   }
 }
+
+export interface FefoAllocationEntry {
+  batchId: string;
+  nombor_kelompok: string;
+  tarikh_luput: string;
+  kuantitiDiambil: number;
+  stokAsal: number;
+}
+
+/**
+ * Compute FEFO (First Expiry First Out) allocation from an already-sorted batch list.
+ * `batches` must already be sorted by `tarikh_luput ASC`.
+ */
+export function computeFefoAllocation(
+  batches: { id: string; kuantiti: number; nombor_kelompok: string; tarikh_luput: string }[],
+  totalQty: number
+): FefoAllocationEntry[] {
+  if (totalQty <= 0 || batches.length === 0) return [];
+  const result: FefoAllocationEntry[] = [];
+  let remaining = totalQty;
+  for (const batch of batches) {
+    if (remaining <= 0) break;
+    const take = Math.min(batch.kuantiti, remaining);
+    if (take > 0) {
+      result.push({
+        batchId: batch.id,
+        nombor_kelompok: batch.nombor_kelompok,
+        tarikh_luput: batch.tarikh_luput,
+        kuantitiDiambil: take,
+        stokAsal: batch.kuantiti,
+      });
+      remaining -= take;
+    }
+  }
+  return result;
+}

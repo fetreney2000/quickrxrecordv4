@@ -1,7 +1,7 @@
 /**
  * PatientDialogs — Kumpulan dialog untuk PatientDetailPage.
  */
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,7 @@ import {
   Edit,
   Loader2,
 } from "lucide-react";
-import { cn, formatDate, formatItemDisplay, formatMyKad, getTodayStrKL, toDateInputValue } from "@/lib/utils";
+import { cn, formatDate, formatItemDisplay, formatMyKad, getTodayStrKL, toDateInputValue, computeFefoAllocation } from "@/lib/utils";
 import {
   useAvailableBatches,
   useSupplyHistory,
@@ -414,7 +414,7 @@ export function SupplyDialog({
     dos: string;
     kuantiti: number;
     tempoh: string;
-    batchId: string;
+    allocations: Array<{ batchId: string; kuantiti: number }>;
     catatan: string;
   }) => void;
   isPending: boolean;
@@ -422,7 +422,6 @@ export function SupplyDialog({
   const [kuantiti, setKuantiti] = useState("");
   const [tempohNilai, setTempohNilai] = useState("");
   const [tempohUnit, setTempohUnit] = useState("");
-  const [batchId, setBatchId] = useState<string | null>(null);
   const [catatan, setCatatan] = useState("");
 
   const { data: batches = [], isLoading: batchesLoading } = useAvailableBatches(
@@ -444,14 +443,8 @@ export function SupplyDialog({
     ? `${tempohNilai.trim()} ${tempohUnit}`.trim()
     : "";
 
-  // Auto-select first batch (FEFO) and default duration
+  // Auto-select default duration and reset on close
   useEffect(() => {
-    if (open && selectableBatches.length > 0 && !batchId) {
-      setBatchId(selectableBatches[0].id);
-    }
-    if (batchId && !selectableBatches.some((batch) => batch.id === batchId)) {
-      setBatchId(selectableBatches[0]?.id ?? null);
-    }
     if (open && durations.length > 0 && !tempohUnit) {
       setTempohUnit(durations[0]?.nama ?? "");
     }
@@ -459,16 +452,22 @@ export function SupplyDialog({
       setKuantiti("");
       setTempohNilai("");
       setTempohUnit("");
-      setBatchId(null);
       setCatatan("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, selectableBatches, durations.length, batchId]);
+  }, [open, durations.length, tempohUnit]);
 
-  const selectedBatch = selectableBatches.find((b) => b.id === batchId);
-  const maxQty = selectedBatch?.kuantiti ?? 0;
+  const fefoAllocation = useMemo(
+    () => computeFefoAllocation(selectableBatches, parseInt(kuantiti, 10) || 0),
+    [selectableBatches, kuantiti]
+  );
+  const totalAllocated = fefoAllocation.reduce((s, a) => s + a.kuantitiDiambil, 0);
+  const maxQty = useMemo(
+    () => selectableBatches.reduce((sum, b) => sum + b.kuantiti, 0),
+    [selectableBatches]
+  );
   const qty = parseInt(kuantiti, 10);
-  const qtyOutOfRange = Number.isNaN(qty) || qty <= 0 || qty > maxQty;
+  const qtyOutOfRange = Number.isNaN(qty) || qty <= 0 || totalAllocated < qty;
   const latestSupply = supplyHistory[0];
   const latestSupplyDays = latestSupply ? parseDurationDays(latestSupply.tempoh_dibekal) : null;
   const daysSinceSupply = latestSupply ? calendarDaysSince(latestSupply.tarikh_dibekal) : null;
@@ -532,14 +531,14 @@ export function SupplyDialog({
         </div>
 
         <form
-onSubmit={(e) => {
+          onSubmit={(e) => {
             e.preventDefault();
-            if (!selectedBatch || qtyOutOfRange) return;
+            if (qtyOutOfRange) return;
             onSubmit({
               dos: assignment.dos ?? "",
               kuantiti: qty,
               tempoh: tempoh.trim(),
-               batchId: batchId!,
+              allocations: fefoAllocation.map((a) => ({ batchId: a.batchId, kuantiti: a.kuantitiDiambil })),
               catatan: catatan.trim(),
             });
           }}
@@ -588,7 +587,6 @@ onSubmit={(e) => {
               <Input
                 type="number"
                 min={1}
-                max={maxQty || undefined}
                 value={kuantiti}
                 onChange={(e) => setKuantiti(e.target.value)}
                 onFocus={(e) => e.target.select()}
@@ -599,7 +597,7 @@ onSubmit={(e) => {
           </div>
 
           <div>
-            <Label style={labelStyle}>Nombor Kelompok</Label>
+            <Label style={labelStyle}>Alokasi Kelompok (FEFO)</Label>
             {batchesLoading ? (
               <div className="flex items-center gap-2 text-xs" style={{ color: "var(--text-secondary)" }}>
                 <Loader2 className="w-3 h-3 animate-spin" /> Memuatkan kelompok...
@@ -614,44 +612,35 @@ onSubmit={(e) => {
               >
                 Tiada kelompok tersedia untuk item ini.
               </div>
+            ) : kuantiti.trim() === "" || qty === 0 ? (
+              <div className="text-xs p-2 rounded-lg" style={{ background: "rgba(24,119,242,0.06)", color: "#1877f2" }}>
+                Masukkan kuantiti untuk melihat alokasi kelompok.
+              </div>
             ) : (
-              <div
-                className="border rounded-xl overflow-y-auto"
-                style={{ borderColor: "var(--border-medium)", maxHeight: 160 }}
-              >
-                {selectableBatches.map((b) => (
-                  <label
-                    key={b.id}
-                    className="flex items-center gap-2 px-3 py-2 text-xs border-b last:border-b-0 cursor-pointer"
-                    style={{
-                      borderColor: "var(--border-light)",
-                      background: batchId === b.id ? "var(--bg-accent-blue)" : "transparent",
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      name="batch"
-                      checked={batchId === b.id}
-                      onChange={() => setBatchId(b.id)}
-                      className="w-3.5 h-3.5"
-                      style={{ accentColor: "#1877f2" }}
-                    />
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {fefoAllocation.map((a) => (
+                  <div key={a.batchId} className="flex items-center gap-2 px-3 py-2.5 text-xs border rounded-lg"
+                    style={{ borderColor: "var(--border-medium)", background: "var(--card)" }}>
                     <div className="flex-1 min-w-0">
                       <p className="font-mono font-semibold" style={{ color: "var(--text-primary)" }}>
-                        {b.nombor_kelompok}
+                        Batch {a.nombor_kelompok}
                       </p>
                       <p style={{ color: "var(--text-secondary)" }}>
-                        Luput: {formatDate(b.tarikh_luput)} · Stok:{" "}
-                        {b.kuantiti}
+                        Luput: {formatDate(a.tarikh_luput)} — {a.kuantitiDiambil} unit
                       </p>
                     </div>
-                  </label>
+                  </div>
                 ))}
               </div>
             )}
-            {maxQty > 0 && kuantiti.trim() !== "" && qty > maxQty && (
-              <p className="text-2xs" style={{ color: "#dc2626" }}>
-                Kuantiti melebihi stok tersedia ({maxQty}).
+            {fefoAllocation.length > 0 && (
+              <div className="mt-1.5 text-xs" style={{ color: "var(--text-secondary)" }}>
+                Jumlah dialokasi: <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{totalAllocated}</span> unit
+              </div>
+            )}
+            {fefoAllocation.length > 0 && totalAllocated < qty && (
+              <p className="text-2xs mt-1" style={{ color: "#dc2626" }}>
+                Stok tidak mencukupi. Baki: {qty - totalAllocated} unit lagi diperlukan.
               </p>
             )}
           </div>
@@ -676,17 +665,17 @@ onSubmit={(e) => {
             Batal
           </Button>
           <Button
-onClick={() => {
-               if (!selectedBatch || qtyOutOfRange) return;
+            onClick={() => {
+              if (qtyOutOfRange) return;
               onSubmit({
                 dos: assignment.dos ?? "",
                 kuantiti: qty,
                 tempoh: tempoh.trim(),
-                 batchId: batchId!,
+                allocations: fefoAllocation.map((a) => ({ batchId: a.batchId, kuantiti: a.kuantitiDiambil })),
                 catatan: catatan.trim(),
               });
             }}
-            disabled={!selectedBatch || qtyOutOfRange || isPending}
+            disabled={qtyOutOfRange || isPending}
             title="Bekalkan ubat"
           >
             {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}

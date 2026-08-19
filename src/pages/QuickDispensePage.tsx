@@ -21,7 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavStore } from "@/lib/nav-store";
-import { formatItemDisplay, getInitials, formatMyKad, formatDate, getTodayStrKL, toDateInputValue, formatSupplyAge } from "@/lib/utils";
+import { formatItemDisplay, getInitials, formatMyKad, formatDate, getTodayStrKL, toDateInputValue, formatSupplyAge, computeFefoAllocation } from "@/lib/utils";
 import { toast } from "sonner";
 import { AddPatientDialog } from "@/components/patient/add-patient-dialog";
 import {
@@ -30,7 +30,7 @@ import {
   useFrequentItems,
   useQuickDispenseBatches,
   useSupplyDurationsList,
-  useQuickSupply,
+  useQuickSupplyMulti,
   useItemsActive,
   useAddAssignmentInline,
 } from "@/hooks/use-quick-dispense";
@@ -68,7 +68,6 @@ export default function QuickDispensePage() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [itemSearch, setItemSearch] = useState("");
-  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState("");
   const [dose, setDose] = useState("");
   const [tempohNilai, setTempohNilai] = useState("30");
@@ -117,8 +116,16 @@ export default function QuickDispensePage() {
     () => availableBatches.filter((batch) => batch.kuantiti > 0 && batch.dilupuskan !== true),
     [availableBatches]
   );
+  const fefoAllocation = useMemo(
+    () => computeFefoAllocation(selectableBatches, parseInt(quantity) || 0),
+    [selectableBatches, quantity]
+  );
+  const totalAllocated = useMemo(
+    () => fefoAllocation.reduce((sum, a) => sum + a.kuantitiDiambil, 0),
+    [fefoAllocation]
+  );
   const { data: supplyDurations = [] } = useSupplyDurationsList();
-  const supplyMut = useQuickSupply(selectedPatient?.id ?? null);
+  const supplyMut = useQuickSupplyMulti(selectedPatient?.id ?? null);
   const declineMut = useDeclineSupply(selectedPatient?.id);
   const { data: lastDeclination = null } = useLastDeclination(
     selectedItem?.assignment_id ?? null
@@ -134,18 +141,6 @@ export default function QuickDispensePage() {
   useEffect(() => {
     searchInputRef.current?.focus();
   }, []);
-
-  useEffect(() => {
-    if (selectableBatches.length > 0) {
-      setSelectedBatchId((cur) =>
-        cur && selectableBatches.some((b) => b.id === cur)
-          ? cur
-          : selectableBatches[0].id
-      );
-    } else {
-      setSelectedBatchId(null);
-    }
-  }, [selectableBatches]);
 
   useEffect(() => {
     setDose(effectiveDos(selectedItem));
@@ -243,13 +238,13 @@ export default function QuickDispensePage() {
     );
   }
 
+  const qtyNum = parseInt(quantity);
   const canSubmit =
     !!selectedPatient &&
     !!selectedItem &&
-    quantity.trim() !== "" &&
-    parseInt(quantity) > 0 &&
-     selectableBatches.some((batch) => batch.id === selectedBatchId) &&
-     dose.trim() !== "";
+    qtyNum > 0 &&
+    totalAllocated === qtyNum &&
+    dose.trim() !== "";
 
   const latestSupply = supplyHistory[0] ?? null;
   const latestSupplyDays = latestSupply
@@ -272,8 +267,8 @@ export default function QuickDispensePage() {
         dos: dose.trim(),
         kuantiti: parseInt(quantity),
         tempoh: tempohNilai.trim() ? `${tempohNilai.trim()} ${tempohUnit}`.trim() : "",
-        batchId: selectedBatchId!,
         catatan: catatan.trim(),
+        allocations: fefoAllocation.map((a) => ({ batchId: a.batchId, kuantiti: a.kuantitiDiambil })),
       },
       {
         onSuccess: () => {
@@ -524,25 +519,37 @@ export default function QuickDispensePage() {
             </div>
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
-                <Label style={labelStyle}>Pilih Kelompok (FEFO)</Label>
+                <Label style={labelStyle}>Alokasi Kelompok (FEFO)</Label>
                 {selectableBatches.length === 0 ? (
                   <div className="text-xs p-2 rounded-lg" style={{ background: "rgba(220,38,38,0.08)", color: "#991b1b" }}>Tiada kelompok tersedia.</div>
+                ) : quantity === "" || qtyNum === 0 ? (
+                  <div className="text-xs p-2 rounded-lg" style={{ background: "rgba(24,119,242,0.06)", color: "#1877f2" }}>Masukkan kuantiti untuk melihat alokasi kelompok.</div>
                 ) : (
                   <div className="space-y-1 max-h-40 overflow-y-auto">
-                    {selectableBatches.map((b: any) => (
-                      <label key={b.id} className="flex min-h-14 items-center gap-2 px-3 py-2.5 text-xs border rounded-lg cursor-pointer"
-                        style={{ borderColor: selectedBatchId === b.id ? "#f59e0b" : "var(--border-medium)", background: selectedBatchId === b.id ? "rgba(245,158,11,0.06)" : "var(--card)" }}>
-                        <input type="radio" name="batch" checked={selectedBatchId === b.id} onChange={() => setSelectedBatchId(b.id)} style={{ accentColor: "#f59e0b" }} />
+                    {fefoAllocation.map((a, idx) => (
+                      <div key={a.batchId} className="flex items-center gap-2 px-3 py-2.5 text-xs border rounded-lg"
+                        style={{ borderColor: "var(--border-medium)", background: "var(--card)" }}>
                         <div className="flex-1">
-                          <p className="font-mono font-semibold" style={{ color: "var(--text-primary)" }}>{b.nombor_kelompok}</p>
-                          <p style={{ color: "var(--text-secondary)" }}>Luput: {formatDate(b.tarikh_luput)} · Stok: {b.kuantiti}</p>
+                          <p className="font-mono font-semibold" style={{ color: "var(--text-primary)" }}>Batch {a.nombor_kelompok}</p>
+                          <p style={{ color: "var(--text-secondary)" }}>Luput: {formatDate(a.tarikh_luput)} — {a.kuantitiDiambil} unit</p>
                         </div>
-                      </label>
+                      </div>
                     ))}
                   </div>
                 )}
+                {fefoAllocation.length > 0 && (
+                  <div className="mt-1.5 text-xs" style={{ color: "var(--text-secondary)" }}>
+                    Jumlah dialokasi: <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{totalAllocated}</span> unit
+                  </div>
+                )}
+                {fefoAllocation.length > 0 && totalAllocated < qtyNum && (
+                  <p className="text-2xs mt-1" style={{ color: "#dc2626" }}>
+                    Stok tidak mencukupi. Baki: {qtyNum - totalAllocated} unit lagi diperlukan.
+                  </p>
+                )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div><Label style={labelStyle}>Kuantiti *</Label><Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} required style={inputStyle} /></div>
                 <div><Label style={labelStyle}>Dos</Label><Input value={dose} readOnly style={{ ...inputStyle, opacity: 0.6, cursor: "default" }} /></div>
                 <div>
                   <Label style={labelStyle}>Tempoh</Label>
@@ -553,7 +560,6 @@ export default function QuickDispensePage() {
                     </select>
                   </div>
                 </div>
-                <div><Label style={labelStyle}>Kuantiti *</Label><Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} required style={inputStyle} /></div>
                 <div><Label style={labelStyle}>Catatan</Label><Input value={catatan} onChange={(e) => setCatatan(e.target.value)} style={inputStyle} /></div>
               </div>
               <Button type="submit" title="Bekalkan ubat" disabled={!canSubmit || supplyMut.isPending} className="w-full h-12 text-sm font-bold"

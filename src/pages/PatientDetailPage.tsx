@@ -48,7 +48,7 @@ import {
   useAddAssignment,
   useStopAssignment,
   useUpdateDose,
-  useSupplyMedication,
+  useSupplyMedicationMulti,
   useDeleteSupplyRecord,
 useUpdateSupplyRecord,
   useItemsWithStats,
@@ -120,7 +120,7 @@ export default function PatientDetailPage() {
   const addAssignment = useAddAssignment(id);
   const stopAssignment = useStopAssignment(id);
   const updateDoseMut = useUpdateDose(id);
-  const supplyMut = useSupplyMedication(id);
+  const supplyMut = useSupplyMedicationMulti(id);
   const deleteSupplyMut = useDeleteSupplyRecord(id);
   const updateSupplyMut = useUpdateSupplyRecord(id);
   const declineMut = useDeclineSupply(id);

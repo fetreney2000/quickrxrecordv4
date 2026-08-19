@@ -195,77 +195,96 @@ export function useSupplyDurationsList() {
 }
 
 // ============================================================================
-// Supply mutation
+// Supply mutation (multi-batch FEFO)
 // ============================================================================
-export function useQuickSupply(patientId: string | null) {
+export function useQuickSupplyMulti(patientId: string | null) {
   const queryClient = useQueryClient();
   const { profile } = useAuth();
 
   return useMutation({
-mutationFn: async (data: {
+    mutationFn: async (data: {
       assignmentId: string;
       itemId: string;
       dos: string;
       kuantiti: number;
       tempoh: string;
-      batchId: string;
       catatan: string;
+      allocations: Array<{ batchId: string; kuantiti: number }>;
     }) => {
-      // 1. Cuba RPC process_supply (atomik + jurnal baki)
-      const { data: rpcData, error: rpcError } = await supabase.rpc("process_supply", {
+      // 1. Cuba RPC process_supply_multi (atomik + jurnal baki)
+      const { data: rpcData, error: rpcError } = await supabase.rpc("process_supply_multi", {
         p_assignment_id: data.assignmentId,
         p_dos: data.dos,
         p_tempoh_dibekal: data.tempoh,
-        p_kuantiti: data.kuantiti,
-        p_batch_id: data.batchId,
+        p_allocations: JSON.stringify(data.allocations),
         p_kakitangan_pembekal: profile?.id ?? null,
         p_catatan_bekalan: data.catatan ?? null,
       });
       if (!rpcError) return { success: true, id: (rpcData as string) ?? null };
 
-      // 2. Fallback: DB belum dinaik taraf ke migrasi 018 — direct supabase
-      const { data: batch, error: bErr } = await supabase
-        .from("item_batches")
-        .select("kuantiti, dilupuskan")
-        .eq("id", data.batchId)
-        .single();
-      if (bErr) throw bErr;
-      if (batch?.dilupuskan) throw new Error("Kelompok ini telah dilupuskan.");
-      if (!batch || batch.kuantiti < data.kuantiti) {
-        throw new Error("Stok tidak mencukupi.");
-      }
-      await supabase
-        .from("item_batches")
-        .update({ kuantiti: batch.kuantiti - data.kuantiti })
-        .eq("id", data.batchId);
-
-      const { data: supply, error: sErr2 } = await supabase
-        .from("supply_records")
-        .insert({
-          assignment_id: data.assignmentId,
-          dos: data.dos,
-          tempoh_dibekal: data.tempoh,
-          kuantiti: data.kuantiti,
-          batch_id: data.batchId,
-          kakitangan_pembekal: profile?.id!,
-          catatan_bekalan: data.catatan || null,
-        })
-        .select("id")
-        .single();
-      if (sErr2) throw sErr2;
-
-      if (supply) {
-        await supabase.from("inventory_transactions").insert({
-          item_id: data.itemId,
-          batch_id: data.batchId,
-          jenis: "keluar",
-          kuantiti: data.kuantiti,
-          rujukan_id: supply.id,
-          rujukan_type: "supply",
-          catatan: data.catatan || null,
+      // 2. Fallback: RPC belum deployed — loop per allocation memanggil process_supply
+      let firstId: string | null = null;
+      for (const alloc of data.allocations) {
+        const { data: perBatchData, error: perBatchError } = await supabase.rpc("process_supply", {
+          p_assignment_id: data.assignmentId,
+          p_dos: data.dos,
+          p_tempoh_dibekal: data.tempoh,
+          p_kuantiti: alloc.kuantiti,
+          p_batch_id: alloc.batchId,
+          p_kakitangan_pembekal: profile?.id ?? null,
+          p_catatan_bekalan: data.catatan ?? null,
         });
+        if (perBatchError) throw perBatchError;
+        if (!firstId && perBatchData) firstId = perBatchData as string;
       }
-      return { success: true, id: supply?.id };
+      if (firstId) return { success: true, id: firstId };
+
+      // 3. Fallback: manual per allocation
+      for (const alloc of data.allocations) {
+        const { data: batch, error: bErr } = await supabase
+          .from("item_batches")
+          .select("kuantiti, dilupuskan")
+          .eq("id", alloc.batchId)
+          .single();
+        if (bErr) throw bErr;
+        if (batch?.dilupuskan) throw new Error("Kelompok ini telah dilupuskan.");
+        if (!batch || batch.kuantiti < alloc.kuantiti) {
+          throw new Error("Stok tidak mencukupi.");
+        }
+        await supabase
+          .from("item_batches")
+          .update({ kuantiti: batch.kuantiti - alloc.kuantiti })
+          .eq("id", alloc.batchId);
+
+        const { data: supply, error: sErr2 } = await supabase
+          .from("supply_records")
+          .insert({
+            assignment_id: data.assignmentId,
+            dos: data.dos,
+            tempoh_dibekal: data.tempoh,
+            kuantiti: alloc.kuantiti,
+            batch_id: alloc.batchId,
+            kakitangan_pembekal: profile?.id!,
+            catatan_bekalan: data.catatan || null,
+          })
+          .select("id")
+          .single();
+        if (sErr2) throw sErr2;
+
+        if (supply) {
+          await supabase.from("inventory_transactions").insert({
+            item_id: data.itemId,
+            batch_id: alloc.batchId,
+            jenis: "keluar",
+            kuantiti: alloc.kuantiti,
+            rujukan_id: supply.id,
+            rujukan_type: "supply",
+            catatan: data.catatan || null,
+          });
+          if (!firstId) firstId = supply.id;
+        }
+      }
+      return { success: true, id: firstId };
     },
     onSuccess: () => {
       toast.success("Bekalan direkodkan.");

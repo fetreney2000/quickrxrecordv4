@@ -3,7 +3,7 @@
  */
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { formatItemDisplay } from "@/lib/utils";
+import { formatItemDisplay, formatDate, formatDateTime } from "@/lib/utils";
 import {
   Pill,
   Package,
@@ -21,7 +21,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FoldableCard } from "@/components/ui/foldable-card";
-import { formatDate, formatDateTime } from "@/lib/utils";
 import {
   useDoseHistory,
   useAssignmentActivity,
@@ -40,7 +39,7 @@ interface AssignmentItemProps {
   onDecline: () => void;
   onDeleteDeclination: (id: string) => void;
   onEditSupply: (s: { id: string; assignment_id: string; dos: string; kuantiti: number; tempoh_dibekal: string | null; catatan_bekalan: string | null; }) => void;
-  onDeleteSupply: (id: string) => void;
+  onDeleteSupply: (id: string | string[]) => void;
   canEdit: boolean;
   formsMap: Map<string, string>;
   lastSupplyAge: string | null;
@@ -64,6 +63,65 @@ function SortableHeader({ label, sortKey, currentSort, onSort }: { label: string
 const DOSE_PAGE_SIZE = 20;
 const SUPPLY_PAGE_SIZE = 20;
 
+interface BatchInfo {
+  batchId?: string | null;
+  nombor_kelompok?: string | null;
+  kuantiti: number;
+}
+
+interface GroupedSupplyRow extends SupplyActivityRow {
+  batches: BatchInfo[];
+  _allIds: string[];
+}
+
+function groupSupplyRecords(rows: SupplyActivityRow[]): SupplyActivityRow[] {
+  const result: SupplyActivityRow[] = [];
+  let i = 0;
+  while (i < rows.length) {
+    const row = rows[i];
+    if (row.kind !== "supply") {
+      result.push(row);
+      i++;
+      continue;
+    }
+    const group: SupplyActivityRow[] = [row];
+    let j = i + 1;
+    while (j < rows.length && rows[j].kind === "supply") {
+      const prev = rows[j - 1];
+      const curr = rows[j];
+      const sameCore =
+        prev.dos === curr.dos &&
+        prev.tempoh_dibekal === curr.tempoh_dibekal &&
+        prev.kakitangan_pembekal === curr.kakitangan_pembekal &&
+        prev.catatan === curr.catatan;
+      if (!sameCore) break;
+      const t1 = new Date(prev.tarikh).getTime();
+      const t2 = new Date(curr.tarikh).getTime();
+      if (Math.abs(t2 - t1) > 5000) break;
+      group.push(curr);
+      j++;
+    }
+    if (group.length > 1) {
+      const first = group[0];
+      const merged: GroupedSupplyRow = {
+        ...first,
+        kuantiti: group.reduce((sum, r) => sum + (r.kuantiti ?? 0), 0),
+        batches: group.map((r) => ({
+          batchId: (r as any).batch?.id ?? null,
+          nombor_kelompok: (r as any).batch?.nombor_kelompok ?? null,
+          kuantiti: r.kuantiti ?? 0,
+        })),
+        _allIds: group.map((r) => r.id),
+      };
+      result.push(merged);
+    } else {
+      result.push(row);
+    }
+    i = j;
+  }
+  return result;
+}
+
 export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpdateDose, onStop, onDecline, onDeleteDeclination, onEditSupply, onDeleteSupply, canEdit, formsMap, lastSupplyAge }: AssignmentItemProps) {
   const navigate = useNavigate();
   const [doseSort, setDoseSort] = useState<{ key: string; dir: SortDir } | null>(null);
@@ -72,6 +130,7 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
   const [supplyPage, setSupplyPage] = useState(0);
   const { data: doseHistory = [], isLoading: doseLoading } = useDoseHistory(expanded ? assignment.id : null);
   const { data: supplyHistory = [], isLoading: supplyLoading } = useAssignmentActivity(expanded ? assignment.id : null);
+  const groupedSupplyHistory = useMemo(() => groupSupplyRecords(supplyHistory), [supplyHistory]);
   const item = assignment.item;
   const formName = item?.id_bentuk ? formsMap.get(item.id_bentuk) : null;
 
@@ -88,8 +147,8 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
   }, [doseHistory, doseSort]);
 
   const sortedSupply = useMemo(() => {
-    if (!supplySort) return supplyHistory;
-    const sorted = [...supplyHistory].sort((a, b) => {
+    if (!supplySort) return groupedSupplyHistory;
+    const sorted = [...groupedSupplyHistory].sort((a, b) => {
       const key = supplySort.key;
       let av: any = (a as any)[key] ?? "";
       let bv: any = (b as any)[key] ?? "";
@@ -98,7 +157,7 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
       return 0;
     });
     return supplySort.dir === "asc" ? sorted : sorted.reverse();
-  }, [supplyHistory, supplySort]);
+  }, [groupedSupplyHistory, supplySort]);
 
   const pagedDose = useMemo(() => {
     const start = dosePage * DOSE_PAGE_SIZE;
@@ -200,8 +259,8 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
             </>}
           </FoldableCard>
 
-          <FoldableCard title={<span className="flex items-center gap-2"><Package className="w-3.5 h-3.5" style={{ color: "#1877f2" }} /> Sejarah Bekalan{supplyHistory.length > 0 && <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-md" style={{ background: "var(--bg-accent-blue)", color: "#1877f2" }}>{supplyHistory.length}</span>}</span>} defaultOpen={true}>
-            {supplyLoading ? <div className="flex items-center gap-2 py-3"><Loader2 className="w-3 h-3 animate-spin" style={{ color: "#1877f2" }} /><span className="text-2xs" style={{ color: "var(--text-secondary)" }}>Memuatkan...</span></div> : supplyHistory.length === 0 ? <p className="text-2xs py-2" style={{ color: "var(--text-muted)" }}>Tiada sejarah bekalan.</p> : <>
+          <FoldableCard title={<span className="flex items-center gap-2"><Package className="w-3.5 h-3.5" style={{ color: "#1877f2" }} /> Sejarah Bekalan{groupedSupplyHistory.length > 0 && <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-md" style={{ background: "var(--bg-accent-blue)", color: "#1877f2" }}>{groupedSupplyHistory.length}</span>}</span>} defaultOpen={true}>
+            {supplyLoading ? <div className="flex items-center gap-2 py-3"><Loader2 className="w-3 h-3 animate-spin" style={{ color: "#1877f2" }} /><span className="text-2xs" style={{ color: "var(--text-secondary)" }}>Memuatkan...</span></div> : groupedSupplyHistory.length === 0 ? <p className="text-2xs py-2" style={{ color: "var(--text-muted)" }}>Tiada sejarah bekalan.</p> : <>
               <div className="overflow-x-auto mt-1">
                 <table className="w-full text-xs">
                   <thead>
@@ -217,7 +276,10 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                     </tr>
                   </thead>
                   <tbody>
-                    {pagedSupply.map((row) => (
+                    {pagedSupply.map((row) => {
+                      const isMerged = row.kind === "supply" && "_allIds" in row && (row as GroupedSupplyRow)._allIds.length > 1;
+                      const batches = isMerged ? (row as GroupedSupplyRow).batches : [];
+                      return (
                       <tr key={row.id} className="border-b last:border-b-0" style={{ borderColor: "var(--border-light)", background: row.kind === "declination" ? "rgba(240,147,43,0.04)" : "transparent" }}>
                         <td className="px-2 py-1.5" style={{ color: "var(--text-primary)" }}>{formatDateTime(row.tarikh)}</td>
                         <td className="px-2 py-1.5">
@@ -226,8 +288,9 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                               <AlertCircle className="w-3 h-3" /> Tak Dibekal
                             </span>
                           ) : (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-2xs font-semibold whitespace-nowrap" style={{ background: "rgba(24,119,242,0.10)", color: "#1877f2", border: "1px solid rgba(24,119,242,0.2)" }}>
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-2xs font-semibold whitespace-nowrap" style={{ background: "rgba(24,119,242,0.10)", color: "#1877f2", border: "1px solid rgba(24,119,242,0.2)" }}>
                               Bekalan
+                              {isMerged && <Package className="w-2.5 h-2.5" />}
                             </span>
                           )}
                         </td>
@@ -249,10 +312,19 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                             ? row.kakitangan_pembekal_profile?.nama ?? "—"
                             : row.direkod_oleh_profile?.nama ?? "—"}
                         </td>
-                        <td className="px-2 py-1.5 italic" style={{ color: "var(--text-muted)" }}>
+                        <td className="px-2 py-1.5" style={{ color: "var(--text-muted)" }}>
                           {row.kind === "declination"
-                            ? <>{row.sebab}{row.catatan ? ` — ${row.catatan}` : ""}</>
-                            : row.catatan || "—"}
+                            ? <span className="italic">{row.sebab}{row.catatan ? ` — ${row.catatan}` : ""}</span>
+                            : isMerged ? (
+                              <span className="text-2xs leading-tight">
+                                {batches.map((b, idx) => (
+                                  <span key={idx}>
+                                    {batches.length > 1 && <>{b.nombor_kelompok ?? "—"}: </>}
+                                    {b.kuantiti} unit{idx < batches.length - 1 ? ", " : ""}
+                                  </span>
+                                ))}
+                              </span>
+                            ) : row.catatan || "—"}
                         </td>
                         {canEdit && <td className="px-2 py-1.5">
                           {row.kind === "declination" ? (
@@ -262,12 +334,22 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                           ) : (
                             <div className="flex items-center gap-1">
                               <button title="Edit rekod bekalan" onClick={(e) => { e.stopPropagation(); onEditSupply({ id: row.id, assignment_id: assignment.id, dos: row.dos ?? "", kuantiti: row.kuantiti ?? 0, tempoh_dibekal: row.tempoh_dibekal ?? null, catatan_bekalan: row.catatan ?? null }); }} className="hover:opacity-70" style={{ color: "#1877f2" }}><Edit className="w-3 h-3" /></button>
-                              <button title="Padam rekod bekalan" onClick={(e) => { e.stopPropagation(); onDeleteSupply(row.id); }} className="hover:opacity-70" style={{ color: "#dc2626" }}><Trash2 className="w-3 h-3" /></button>
+                              <button title="Padam rekod bekalan" onClick={(e) => {
+                                e.stopPropagation();
+                                if (isMerged) {
+                                  for (const id of (row as GroupedSupplyRow)._allIds) {
+                                    onDeleteSupply(id);
+                                  }
+                                } else {
+                                  onDeleteSupply(row.id);
+                                }
+                              }} className="hover:opacity-70" style={{ color: "#dc2626" }}><Trash2 className="w-3 h-3" /></button>
                             </div>
                           )}
                         </td>}
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

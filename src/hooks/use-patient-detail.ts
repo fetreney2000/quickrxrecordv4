@@ -817,6 +817,17 @@ export function useUpdateSupplyRecord(patientId: string | undefined) {
       catatan: string;
       assignmentId: string;
     }) => {
+      // 1. Cuba RPC update_supply (atomik + laraskan stok)
+      const { error: rpcError } = await supabase.rpc("update_supply", {
+        p_supply_id: supplyId,
+        p_dos: dos,
+        p_kuantiti: kuantiti,
+        p_tempoh_dibekal: tempoh,
+        p_catatan_bekalan: catatan || null,
+      });
+      if (!rpcError) return;
+
+      // 2. Fallback: direct update (RPC not deployed) — tanpa larasan stok
       const { error } = await supabase
         .from("supply_records")
         .update({
@@ -834,6 +845,9 @@ export function useUpdateSupplyRecord(patientId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ["supply-history", vars.assignmentId] });
       queryClient.invalidateQueries({ queryKey: ["assignment-activity", vars.assignmentId] });
       queryClient.invalidateQueries({ queryKey: ["latest-supply-dates"] });
+      queryClient.invalidateQueries({ queryKey: ["batches"] });
+      queryClient.invalidateQueries({ queryKey: ["pantas-batches"] });
+      queryClient.invalidateQueries({ queryKey: ["items-with-stats"] });
     },
     onError: (err: any) => {
       toast.error(err?.message || "Gagal mengemaskini rekod bekalan.");

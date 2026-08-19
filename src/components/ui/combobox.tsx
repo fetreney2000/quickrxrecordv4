@@ -44,13 +44,14 @@ export function Combobox({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
+        <button
           role="combobox"
           aria-expanded={open}
           disabled={disabled}
           className={cn(
-            "w-full justify-between h-10 rounded-xl text-sm font-medium",
+            "flex h-10 w-full items-center justify-between rounded-xl border px-3 text-sm font-medium transition-colors",
+            "hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-ring/50",
+            "disabled:cursor-not-allowed disabled:opacity-50",
             !selectedLabel && "text-muted-foreground",
             className
           )}
@@ -60,9 +61,9 @@ export function Combobox({
             color: "var(--text-primary)",
           }}
         >
-          {selectedLabel || placeholder}
+          <span className="truncate">{selectedLabel || placeholder}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
+        </button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
         <Command>

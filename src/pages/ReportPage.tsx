@@ -548,7 +548,8 @@ export default function ReportPage() {
         .is("voided_at", null)
         .in("assignment_id", assignmentIds)
         .gte("tarikh_dibekal", yearStart)
-        .lt("tarikh_dibekal", yearEnd);
+        .lt("tarikh_dibekal", yearEnd)
+        .limit(10000);
       if (error) throw error;
 
       const monthly: MonthlyUsage[] = MALAY_MONTHS.map((_, i) => ({ month: i + 1, total: 0 }));
@@ -1067,7 +1068,7 @@ function AnnualUsageTab({
               }))}
               value={selectedItemId}
               onValueChange={onItemChange}
-              placeholder="Pilih item..."
+              placeholder="Cari item..."
               searchPlaceholder="Cari item..."
               emptyText="Tiada item dijumpai."
             />

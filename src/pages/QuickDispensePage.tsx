@@ -116,13 +116,24 @@ export default function QuickDispensePage() {
     () => availableBatches.filter((batch) => batch.kuantiti > 0 && batch.dilupuskan !== true),
     [availableBatches]
   );
-  const fefoAllocation = useMemo(
-    () => computeFefoAllocation(selectableBatches, parseInt(quantity) || 0),
-    [selectableBatches, quantity]
-  );
+  const [batchAllocations, setBatchAllocations] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (selectableBatches.length === 0 || !quantity || parseInt(quantity) <= 0) {
+      setBatchAllocations({});
+      return;
+    }
+    const alloc = computeFefoAllocation(selectableBatches, parseInt(quantity) || 0);
+    const map: Record<string, number> = {};
+    for (const a of alloc) {
+      map[a.batchId] = a.kuantitiDiambil;
+    }
+    setBatchAllocations(map);
+  }, [selectableBatches, quantity]);
+
   const totalAllocated = useMemo(
-    () => fefoAllocation.reduce((sum, a) => sum + a.kuantitiDiambil, 0),
-    [fefoAllocation]
+    () => Object.values(batchAllocations).reduce((sum, v) => sum + v, 0),
+    [batchAllocations]
   );
   const { data: supplyDurations = [] } = useSupplyDurationsList();
   const supplyMut = useQuickSupplyMulti(selectedPatient?.id ?? null);
@@ -268,7 +279,9 @@ export default function QuickDispensePage() {
         kuantiti: parseInt(quantity),
         tempoh: tempohNilai.trim() ? `${tempohNilai.trim()} ${tempohUnit}`.trim() : "",
         catatan: catatan.trim(),
-        allocations: fefoAllocation.map((a) => ({ batchId: a.batchId, kuantiti: a.kuantitiDiambil })),
+        allocations: Object.entries(batchAllocations)
+          .filter(([, qty]) => qty > 0)
+          .map(([batchId, kuantiti]) => ({ batchId, kuantiti })),
       },
       {
         onSuccess: () => {
@@ -525,26 +538,43 @@ export default function QuickDispensePage() {
                 ) : quantity === "" || qtyNum === 0 ? (
                   <div className="text-xs p-2 rounded-lg" style={{ background: "rgba(24,119,242,0.06)", color: "#1877f2" }}>Masukkan kuantiti untuk melihat alokasi kelompok.</div>
                 ) : (
-                  <div className="space-y-1 max-h-40 overflow-y-auto">
-                    {fefoAllocation.map((a, idx) => (
-                      <div key={a.batchId} className="flex items-center gap-2 px-3 py-2.5 text-xs border rounded-lg"
-                        style={{ borderColor: "var(--border-medium)", background: "var(--card)" }}>
-                        <div className="flex-1">
-                          <p className="font-mono font-semibold" style={{ color: "var(--text-primary)" }}>Batch {a.nombor_kelompok}</p>
-                          <p style={{ color: "var(--text-secondary)" }}>Luput: {formatDate(a.tarikh_luput)} — {a.kuantitiDiambil} unit</p>
+                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                    {selectableBatches.map((b) => (
+                      <div key={b.id} className="flex items-center gap-2 px-3 py-2 text-xs border rounded-lg"
+                        style={{ borderColor: (batchAllocations[b.id] ?? 0) > 0 ? "#f59e0b" : "var(--border-medium)", background: (batchAllocations[b.id] ?? 0) > 0 ? "rgba(245,158,11,0.04)" : "var(--card)" }}>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-mono font-semibold" style={{ color: "var(--text-primary)" }}>{b.nombor_kelompok}</p>
+                          <p style={{ color: "var(--text-secondary)" }}>Luput: {formatDate(b.tarikh_luput)} · Stok: {b.kuantiti}</p>
                         </div>
+                        <input
+                          type="number"
+                          min={0}
+                          max={b.kuantiti}
+                          value={batchAllocations[b.id] ?? 0}
+                          onChange={(e) => {
+                            const val = Math.max(0, Math.min(b.kuantiti, parseInt(e.target.value) || 0));
+                            setBatchAllocations((prev) => ({ ...prev, [b.id]: val }));
+                          }}
+                          className="w-16 text-center text-xs font-semibold rounded-lg border px-1 py-1.5"
+                          style={{ background: "var(--card)", borderColor: "var(--border-medium)", color: "var(--text-primary)", outline: "none" }}
+                        />
                       </div>
                     ))}
                   </div>
                 )}
-                {fefoAllocation.length > 0 && (
+                {selectableBatches.length > 0 && quantity !== "" && qtyNum > 0 && (
                   <div className="mt-1.5 text-xs" style={{ color: "var(--text-secondary)" }}>
-                    Jumlah dialokasi: <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{totalAllocated}</span> unit
+                    Jumlah dialokasi: <span className="font-semibold" style={{ color: totalAllocated === qtyNum ? "#059669" : "var(--text-primary)" }}>{totalAllocated}</span> / {qtyNum} unit
                   </div>
                 )}
-                {fefoAllocation.length > 0 && totalAllocated < qtyNum && (
+                {totalAllocated > 0 && totalAllocated < qtyNum && (
                   <p className="text-2xs mt-1" style={{ color: "#dc2626" }}>
                     Stok tidak mencukupi. Baki: {qtyNum - totalAllocated} unit lagi diperlukan.
+                  </p>
+                )}
+                {totalAllocated > qtyNum && (
+                  <p className="text-2xs mt-1" style={{ color: "#dc2626" }}>
+                    Jumlah melebihi kuantiti yang diminta.
                   </p>
                 )}
               </div>

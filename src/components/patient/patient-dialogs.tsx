@@ -423,6 +423,7 @@ export function SupplyDialog({
   const [tempohNilai, setTempohNilai] = useState("");
   const [tempohUnit, setTempohUnit] = useState("");
   const [catatan, setCatatan] = useState("");
+  const [batchAllocations, setBatchAllocations] = useState<Record<string, number>>({});
 
   const { data: batches = [], isLoading: batchesLoading } = useAvailableBatches(
     open ? assignment.item_id : null
@@ -453,15 +454,28 @@ export function SupplyDialog({
       setTempohNilai("");
       setTempohUnit("");
       setCatatan("");
+      setBatchAllocations({});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, durations.length, tempohUnit]);
 
-  const fefoAllocation = useMemo(
-    () => computeFefoAllocation(selectableBatches, parseInt(kuantiti, 10) || 0),
-    [selectableBatches, kuantiti]
+  useEffect(() => {
+    if (selectableBatches.length === 0 || !kuantiti || parseInt(kuantiti, 10) <= 0) {
+      setBatchAllocations({});
+      return;
+    }
+    const alloc = computeFefoAllocation(selectableBatches, parseInt(kuantiti, 10) || 0);
+    const map: Record<string, number> = {};
+    for (const a of alloc) {
+      map[a.batchId] = a.kuantitiDiambil;
+    }
+    setBatchAllocations(map);
+  }, [selectableBatches, kuantiti]);
+
+  const totalAllocated = useMemo(
+    () => Object.values(batchAllocations).reduce((s, v) => s + v, 0),
+    [batchAllocations]
   );
-  const totalAllocated = fefoAllocation.reduce((s, a) => s + a.kuantitiDiambil, 0);
   const maxQty = useMemo(
     () => selectableBatches.reduce((sum, b) => sum + b.kuantiti, 0),
     [selectableBatches]
@@ -538,7 +552,9 @@ export function SupplyDialog({
               dos: assignment.dos ?? "",
               kuantiti: qty,
               tempoh: tempoh.trim(),
-              allocations: fefoAllocation.map((a) => ({ batchId: a.batchId, kuantiti: a.kuantitiDiambil })),
+              allocations: Object.entries(batchAllocations)
+                .filter(([, qty]) => qty > 0)
+                .map(([batchId, kuantiti]) => ({ batchId, kuantiti })),
               catatan: catatan.trim(),
             });
           }}
@@ -617,30 +633,47 @@ export function SupplyDialog({
                 Masukkan kuantiti untuk melihat alokasi kelompok.
               </div>
             ) : (
-              <div className="space-y-1 max-h-40 overflow-y-auto">
-                {fefoAllocation.map((a) => (
-                  <div key={a.batchId} className="flex items-center gap-2 px-3 py-2.5 text-xs border rounded-lg"
-                    style={{ borderColor: "var(--border-medium)", background: "var(--card)" }}>
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {selectableBatches.map((b) => (
+                  <div key={b.id} className="flex items-center gap-2 px-3 py-2 text-xs border rounded-lg"
+                    style={{ borderColor: (batchAllocations[b.id] ?? 0) > 0 ? "#1877f2" : "var(--border-medium)", background: (batchAllocations[b.id] ?? 0) > 0 ? "var(--bg-accent-blue)" : "var(--card)" }}>
                     <div className="flex-1 min-w-0">
                       <p className="font-mono font-semibold" style={{ color: "var(--text-primary)" }}>
-                        Batch {a.nombor_kelompok}
+                        {b.nombor_kelompok}
                       </p>
                       <p style={{ color: "var(--text-secondary)" }}>
-                        Luput: {formatDate(a.tarikh_luput)} — {a.kuantitiDiambil} unit
+                        Luput: {formatDate(b.tarikh_luput)} · Stok: {b.kuantiti}
                       </p>
                     </div>
+                    <input
+                      type="number"
+                      min={0}
+                      max={b.kuantiti}
+                      value={batchAllocations[b.id] ?? 0}
+                      onChange={(e) => {
+                        const val = Math.max(0, Math.min(b.kuantiti, parseInt(e.target.value) || 0));
+                        setBatchAllocations((prev) => ({ ...prev, [b.id]: val }));
+                      }}
+                      className="w-16 text-center text-xs font-semibold rounded-lg border px-1 py-1.5"
+                      style={{ background: "var(--card)", borderColor: "var(--border-medium)", color: "var(--text-primary)", outline: "none" }}
+                    />
                   </div>
                 ))}
               </div>
             )}
-            {fefoAllocation.length > 0 && (
+            {selectableBatches.length > 0 && kuantiti.trim() !== "" && qty > 0 && (
               <div className="mt-1.5 text-xs" style={{ color: "var(--text-secondary)" }}>
-                Jumlah dialokasi: <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{totalAllocated}</span> unit
+                Jumlah dialokasi: <span className="font-semibold" style={{ color: totalAllocated === qty ? "#059669" : "var(--text-primary)" }}>{totalAllocated}</span> / {qty} unit
               </div>
             )}
-            {fefoAllocation.length > 0 && totalAllocated < qty && (
+            {totalAllocated > 0 && totalAllocated < qty && (
               <p className="text-2xs mt-1" style={{ color: "#dc2626" }}>
                 Stok tidak mencukupi. Baki: {qty - totalAllocated} unit lagi diperlukan.
+              </p>
+            )}
+            {totalAllocated > qty && (
+              <p className="text-2xs mt-1" style={{ color: "#dc2626" }}>
+                Jumlah melebihi kuantiti yang diminta.
               </p>
             )}
           </div>
@@ -671,7 +704,9 @@ export function SupplyDialog({
                 dos: assignment.dos ?? "",
                 kuantiti: qty,
                 tempoh: tempoh.trim(),
-                allocations: fefoAllocation.map((a) => ({ batchId: a.batchId, kuantiti: a.kuantitiDiambil })),
+                allocations: Object.entries(batchAllocations)
+                  .filter(([, qty]) => qty > 0)
+                  .map(([batchId, kuantiti]) => ({ batchId, kuantiti })),
                 catatan: catatan.trim(),
               });
             }}

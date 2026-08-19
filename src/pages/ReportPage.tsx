@@ -321,7 +321,9 @@ const TRANSACTION_COLUMN_LABELS: Record<string, string> = {
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
-type TabKey = "inventory" | "transactions" | "expiry" | "low-stock";
+type TabKey = "inventory" | "transactions" | "expiry" | "low-stock" | "annual-usage";
+
+const MALAY_MONTHS = ["Januari", "Februari", "Mac", "April", "Mei", "Jun", "Julai", "Ogos", "September", "Oktober", "November", "Disember"];
 
 export default function ReportPage() {
   const [searchParams] = useSearchParams();
@@ -334,6 +336,9 @@ export default function ReportPage() {
   const [dateFrom, setDateFrom] = useState(showTodayTransactions ? today : "");
   const [dateTo, setDateTo] = useState(showTodayTransactions ? today : "");
   const [expiryDays, setExpiryDays] = useState(initialExpiryDays);
+  const currentYear = new Date().getFullYear();
+  const [annualUsageId, setAnnualUsageId] = useState<string>("");
+  const [annualUsageYear, setAnnualUsageYear] = useState<number>(currentYear);
 
   useEffect(() => {
     document.title = "Laporan — QuickRxRecord";
@@ -488,6 +493,62 @@ export default function ReportPage() {
     },
   });
 
+  // ── Annual usage queries ──────────────────────────────────────────────────
+
+  const { data: allItems = [] } = useQuery({
+    queryKey: ["report-all-items"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("items")
+        .select("id, kod_item, nama_item, kekuatan, id_bentuk")
+        .eq("aktif", true)
+        .order("nama_item");
+      if (error) throw error;
+      const formIds = [...new Set((data ?? []).map((item: any) => item.id_bentuk).filter(Boolean))];
+      const formMap = new Map<string, string>();
+      if (formIds.length > 0) {
+        const { data: forms } = await supabase.from("item_forms").select("id, nama").in("id", formIds);
+        (forms ?? []).forEach((f: any) => formMap.set(f.id, f.nama));
+      }
+      return (data ?? []).map((item: any) => ({
+        ...item,
+        bentuk: formMap.get(item.id_bentuk) ?? null,
+      })) as { id: string; kod_item: string; nama_item: string; kekuatan: string | null; bentuk: string | null }[];
+    },
+  });
+
+  interface MonthlyUsage {
+    month: number;
+    total: number;
+  }
+
+  const { data: annualUsageData, isLoading: annualUsageLoading } = useQuery({
+    queryKey: ["report-annual-usage", annualUsageId, annualUsageYear],
+    enabled: !!annualUsageId,
+    queryFn: async () => {
+      const yearStart = `${annualUsageYear}-01-01T00:00:00.000Z`;
+      const yearEnd = `${annualUsageYear + 1}-01-01T00:00:00.000Z`;
+
+      const { data, error } = await supabase
+        .from("supply_records")
+        .select("kuantiti, tarikh_dibekal, assignment:patient_item_assignments!inner(item_id)")
+        .is("voided_at", null)
+        .gte("tarikh_dibekal", yearStart)
+        .lt("tarikh_dibekal", yearEnd);
+      if (error) throw error;
+
+      const monthly: MonthlyUsage[] = MALAY_MONTHS.map((_, i) => ({ month: i + 1, total: 0 }));
+      (data ?? []).forEach((record: any) => {
+        if (record.assignment?.item_id === annualUsageId) {
+          const d = new Date(record.tarikh_dibekal);
+          const monthIndex = d.getUTCMonth();
+          monthly[monthIndex].total += record.kuantiti || 0;
+        }
+      });
+      return monthly;
+    },
+  });
+
   // ── Export handlers ────────────────────────────────────────────────────────
 
   const handleExportInventoryExcel = async () => {
@@ -602,6 +663,7 @@ const mapped = transactionsData.map((t) => ({
   const tabs: { key: TabKey; label: string; icon: typeof Package }[] = [
     { key: "inventory", label: "Inventori", icon: Package },
     { key: "transactions", label: "Transaksi", icon: Activity },
+    { key: "annual-usage", label: "Penggunaan Tahunan", icon: BarChart3 },
     { key: "expiry", label: "Akan Luput", icon: AlertTriangle },
     { key: "low-stock", label: "Stok Rendah", icon: AlertTriangle },
   ];
@@ -719,6 +781,16 @@ const mapped = transactionsData.map((t) => ({
                 onDateToChange={setDateTo}
               onExportExcel={handleExportTransactionExcel}
               onExportPDF={handleExportTransactionPDF}
+            />
+          ) : activeTab === "annual-usage" ? (
+            <AnnualUsageTab
+              items={allItems}
+              data={annualUsageData}
+              loading={annualUsageLoading}
+              selectedItemId={annualUsageId}
+              selectedYear={annualUsageYear}
+              onItemChange={setAnnualUsageId}
+              onYearChange={setAnnualUsageYear}
             />
           ) : activeTab === "expiry" ? (
             <ExpiryTab data={expiryData} loading={expiryLoading} days={expiryDays} onDaysChange={setExpiryDays} />
@@ -921,6 +993,143 @@ function InventoryTab({
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Annual Usage Tab ───────────────────────────────────────────────────────
+
+function AnnualUsageTab({
+  items,
+  data,
+  loading,
+  selectedItemId,
+  selectedYear,
+  onItemChange,
+  onYearChange,
+}: {
+  items: { id: string; kod_item: string; nama_item: string; kekuatan: string | null; bentuk: string | null }[];
+  data: { month: number; total: number }[] | undefined;
+  loading: boolean;
+  selectedItemId: string;
+  selectedYear: number;
+  onItemChange: (id: string) => void;
+  onYearChange: (year: number) => void;
+}) {
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+  const totalUsage = data?.reduce((sum, m) => sum + m.total, 0) ?? 0;
+  const selectedItem = items.find((i) => i.id === selectedItemId);
+
+  return (
+    <Card
+      className="relative overflow-hidden"
+      style={{
+        background: "var(--card)",
+        backdropFilter: "blur(12px)",
+        border: "1px solid var(--border-medium)",
+        borderRadius: 16,
+        boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
+      }}
+    >
+      <CardContent className="p-0 relative">
+        <div className="p-4 sm:p-5 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border-light)" }}>
+          <BarChart3 className="w-4 h-4" style={{ color: "#f43f5e" }} />
+          <div>
+            <h2 className="text-[15px] font-bold" style={{ color: "var(--text-primary)" }}>Jumlah Penggunaan Tahunan</h2>
+            <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Jumlah kuantiti dibekal mengikut bulan bagi item yang dipilih</p>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="p-4 sm:p-5 flex flex-col sm:flex-row gap-3" style={{ borderBottom: "1px solid var(--border-light)" }}>
+          <div className="flex-1 min-w-0">
+            <label className="text-xs font-semibold block mb-1" style={{ color: "var(--text-secondary)" }}>Item *</label>
+            <select
+              value={selectedItemId}
+              onChange={(e) => onItemChange(e.target.value)}
+              className="w-full h-10 rounded-xl border px-3 text-sm font-medium"
+              style={{ background: "var(--card)", borderColor: "var(--border-medium)", color: "var(--text-primary)", outline: "none" }}
+            >
+              <option value="">— Pilih item —</option>
+              {items.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {formatItemDisplay(item)} ({item.kod_item})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="w-full sm:w-40">
+            <label className="text-xs font-semibold block mb-1" style={{ color: "var(--text-secondary)" }}>Tahun</label>
+            <select
+              value={selectedYear}
+              onChange={(e) => onYearChange(Number(e.target.value))}
+              className="w-full h-10 rounded-xl border px-3 text-sm font-medium"
+              style={{ background: "var(--card)", borderColor: "var(--border-medium)", color: "var(--text-primary)", outline: "none" }}
+            >
+              {years.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Content */}
+        {!selectedItemId ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-2" style={{ color: "var(--text-muted)" }}>
+            <Package className="w-10 h-10 opacity-40" />
+            <p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Pilih item untuk melihat penggunaan tahunan.</p>
+          </div>
+        ) : loading ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-2" style={{ color: "var(--text-secondary)" }}>
+            <Loader2 className="w-6 h-6 animate-spin" style={{ color: "#f43f5e" }} />
+            <p className="text-sm">Memuatkan data penggunaan...</p>
+          </div>
+        ) : !data || data.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-2" style={{ color: "var(--text-muted)" }}>
+            <Package className="w-10 h-10 opacity-40" />
+            <p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Tiada data penggunaan untuk tahun ini.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto" role="region" aria-label="Jadual penggunaan tahunan" tabIndex={0}>
+            <table className="w-full min-w-[500px] border-collapse">
+              <thead>
+                <tr>
+                  {["Bulan", "Jumlah Kuantiti"].map((heading) => (
+                    <th key={heading} className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-[0.05em]" style={{ color: "var(--text-secondary)", borderBottom: "2px solid var(--border-medium)", background: "var(--bg-secondary)" }}>{heading}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((row) => (
+                  <tr key={row.month}>
+                    <td className="px-3 py-3 text-sm font-medium" style={{ borderBottom: "1px solid var(--border-light)", color: "var(--text-primary)" }}>{MALAY_MONTHS[row.month - 1]}</td>
+                    <td className="px-3 py-3 text-sm font-semibold" style={{ borderBottom: "1px solid var(--border-light)", color: row.total > 0 ? "var(--text-primary)" : "var(--text-muted)" }}>
+                      {row.total > 0 ? row.total.toLocaleString("ms-MY") : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td className="px-3 py-3 text-sm font-bold" style={{ borderTop: "2px solid var(--border-medium)", color: "var(--text-primary)" }}>Jumlah Tahunan</td>
+                  <td className="px-3 py-3 text-sm font-bold" style={{ borderTop: "2px solid var(--border-medium)", color: "#f43f5e" }}>
+                    {totalUsage.toLocaleString("ms-MY")}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+
+        {/* Item info */}
+        {selectedItem && (
+          <div className="px-4 sm:px-5 py-3 text-xs" style={{ borderTop: "1px solid var(--border-light)", color: "var(--text-secondary)" }}>
+            <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{formatItemDisplay(selectedItem)}</span>
+            {" "}&middot; {selectedItem.kod_item} &middot; Tahun {selectedYear}
           </div>
         )}
       </CardContent>

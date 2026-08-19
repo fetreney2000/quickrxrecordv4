@@ -24,6 +24,7 @@ import {
   FileText,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Combobox } from "@/components/ui/combobox";
 import { DateInput } from "@/components/ui/date-input";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { supabase } from "@/lib/supabase";
@@ -526,24 +527,35 @@ export default function ReportPage() {
     queryKey: ["report-annual-usage", annualUsageId, annualUsageYear],
     enabled: !!annualUsageId,
     queryFn: async () => {
+      // Step 1: get assignment IDs for this item
+      const { data: assignments, error: aErr } = await supabase
+        .from("patient_item_assignments")
+        .select("id")
+        .eq("item_id", annualUsageId);
+      if (aErr) throw aErr;
+      const assignmentIds = (assignments ?? []).map((a: any) => a.id);
+      if (assignmentIds.length === 0) {
+        return MALAY_MONTHS.map((_, i) => ({ month: i + 1, total: 0 }));
+      }
+
       const yearStart = `${annualUsageYear}-01-01T00:00:00.000Z`;
       const yearEnd = `${annualUsageYear + 1}-01-01T00:00:00.000Z`;
 
+      // Step 2: fetch supply records only for this item's assignments
       const { data, error } = await supabase
         .from("supply_records")
-        .select("kuantiti, tarikh_dibekal, assignment:patient_item_assignments!inner(item_id)")
+        .select("kuantiti, tarikh_dibekal")
         .is("voided_at", null)
+        .in("assignment_id", assignmentIds)
         .gte("tarikh_dibekal", yearStart)
         .lt("tarikh_dibekal", yearEnd);
       if (error) throw error;
 
       const monthly: MonthlyUsage[] = MALAY_MONTHS.map((_, i) => ({ month: i + 1, total: 0 }));
       (data ?? []).forEach((record: any) => {
-        if (record.assignment?.item_id === annualUsageId) {
-          const d = new Date(record.tarikh_dibekal);
-          const monthIndex = d.getUTCMonth();
-          monthly[monthIndex].total += record.kuantiti || 0;
-        }
+        const d = new Date(record.tarikh_dibekal);
+        const monthIndex = d.getMonth();
+        monthly[monthIndex].total += record.kuantiti || 0;
       });
       return monthly;
     },
@@ -1048,19 +1060,17 @@ function AnnualUsageTab({
         <div className="p-4 sm:p-5 flex flex-col sm:flex-row gap-3" style={{ borderBottom: "1px solid var(--border-light)" }}>
           <div className="flex-1 min-w-0">
             <label className="text-xs font-semibold block mb-1" style={{ color: "var(--text-secondary)" }}>Item *</label>
-            <select
+            <Combobox
+              options={items.map((item) => ({
+                value: item.id,
+                label: `${formatItemDisplay(item)} (${item.kod_item})`,
+              }))}
               value={selectedItemId}
-              onChange={(e) => onItemChange(e.target.value)}
-              className="w-full h-10 rounded-xl border px-3 text-sm font-medium"
-              style={{ background: "var(--card)", borderColor: "var(--border-medium)", color: "var(--text-primary)", outline: "none" }}
-            >
-              <option value="">— Pilih item —</option>
-              {items.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {formatItemDisplay(item)} ({item.kod_item})
-                </option>
-              ))}
-            </select>
+              onValueChange={onItemChange}
+              placeholder="Pilih item..."
+              searchPlaceholder="Cari item..."
+              emptyText="Tiada item dijumpai."
+            />
           </div>
           <div className="w-full sm:w-40">
             <label className="text-xs font-semibold block mb-1" style={{ color: "var(--text-secondary)" }}>Tahun</label>

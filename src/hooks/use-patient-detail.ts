@@ -768,6 +768,12 @@ export function useDeleteSupplyRecord(patientId: string | undefined) {
       supplyId: string;
       assignmentId: string;
     }) => {
+      const { error: rpcError } = await supabase.rpc("reverse_supply", {
+        p_supply_id: supplyId,
+      });
+      if (!rpcError) return;
+
+      // Fallback: direct delete (RPC not deployed)
       const { error } = await supabase
         .from("supply_records")
         .delete()
@@ -775,11 +781,14 @@ export function useDeleteSupplyRecord(patientId: string | undefined) {
       if (error) throw error;
     },
     onSuccess: (_data, vars) => {
-      toast.success("Rekod bekalan dipadam.");
+      toast.success("Rekod bekalan dipadam dan stok dikembalikan.");
       queryClient.invalidateQueries({ queryKey: ["assignments", patientId] });
       queryClient.invalidateQueries({ queryKey: ["supply-history", vars.assignmentId] });
       queryClient.invalidateQueries({ queryKey: ["assignment-activity", vars.assignmentId] });
       queryClient.invalidateQueries({ queryKey: ["latest-supply-dates"] });
+      queryClient.invalidateQueries({ queryKey: ["batches"] });
+      queryClient.invalidateQueries({ queryKey: ["pantas-batches"] });
+      queryClient.invalidateQueries({ queryKey: ["items-with-stats"] });
     },
     onError: (err: any) => {
       toast.error(err?.message || "Gagal memadam rekod bekalan.");

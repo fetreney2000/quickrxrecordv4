@@ -30,7 +30,7 @@ export function usePatient(id: string | undefined) {
   return useQuery({
     queryKey: ["patient", id],
     enabled: !!id,
-    staleTime: 5000,
+    staleTime: 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("patients")
@@ -57,7 +57,7 @@ export function usePatientAssignments(id: string | undefined) {
   return useQuery({
     queryKey: ["assignments", id],
     enabled: !!id,
-    staleTime: 5000,
+    staleTime: 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("patient_item_assignments")
@@ -100,7 +100,7 @@ export function usePatientAssignments(id: string | undefined) {
 export function useItemForms() {
   return useQuery({
     queryKey: ["item_forms"],
-    staleTime: 5000,
+    staleTime: 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("item_forms")
@@ -123,7 +123,7 @@ export function useDoseHistory(assignmentId: string | null) {
   return useQuery({
     queryKey: ["dose-history", assignmentId],
     enabled: !!assignmentId,
-    staleTime: 5000,
+    staleTime: 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("dose_history")
@@ -156,7 +156,7 @@ export function useSupplyHistory(assignmentId: string | null) {
   return useQuery({
     queryKey: ["supply-history", assignmentId],
     enabled: !!assignmentId,
-    staleTime: 5000,
+    staleTime: 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("supply_records")
@@ -202,7 +202,7 @@ export function useDeclinationHistory(assignmentId: string | null) {
   return useQuery({
     queryKey: ["declinations", assignmentId],
     enabled: !!assignmentId,
-    staleTime: 5000,
+    staleTime: 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("supply_declinations")
@@ -229,7 +229,7 @@ export function useAssignmentActivity(assignmentId: string | null) {
   return useQuery({
     queryKey: ["assignment-activity", assignmentId],
     enabled: !!assignmentId,
-    staleTime: 5000,
+    staleTime: 0,
     queryFn: async () => {
       const [suppliesQuery, declinationsQuery] = await Promise.all([
         supabase
@@ -297,7 +297,7 @@ export function useLastDeclination(assignmentId: string | null) {
   return useQuery({
     queryKey: ["last-declination", assignmentId],
     enabled: !!assignmentId,
-    staleTime: 5000,
+    staleTime: 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("supply_declinations")
@@ -319,7 +319,7 @@ export function useLatestSupplyDates(assignmentIds: string[]) {
   return useQuery({
     queryKey: ["latest-supply-dates", assignmentIds],
     enabled: assignmentIds.length > 0,
-    staleTime: 5000,
+    staleTime: 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("supply_records")
@@ -346,7 +346,7 @@ export function useLatestDoseHistoryDos(assignmentIds: string[]) {
   return useQuery({
     queryKey: ["latest-dose-history-dos", assignmentIds],
     enabled: assignmentIds.length > 0,
-    staleTime: 5000,
+    staleTime: 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("dose_history")
@@ -373,7 +373,7 @@ export function useAvailableBatches(itemId: string | null) {
   return useQuery({
     queryKey: ["batches", itemId],
     enabled: !!itemId,
-    staleTime: 5000,
+    staleTime: 0,
     queryFn: async () => {
       const today = getTodayStrKL();
       const { data, error } = await supabase
@@ -396,7 +396,7 @@ export function useAvailableBatches(itemId: string | null) {
 export function useSupplyDurations() {
   return useQuery({
     queryKey: ["supply_durations"],
-    staleTime: 5000,
+    staleTime: 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("supply_durations")
@@ -414,7 +414,7 @@ export function useSupplyDurations() {
 export function useItemsWithStats() {
   return useQuery({
     queryKey: ["items-with-stats"],
-    staleTime: 5000,
+    staleTime: 0,
     queryFn: async () => {
       const { data: counts, error: countErr } = await supabase.rpc(
         "count_active_assignments"

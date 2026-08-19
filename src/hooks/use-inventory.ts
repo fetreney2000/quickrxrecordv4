@@ -227,7 +227,7 @@ export function useItems({
         totalPages: Math.max(1, Math.ceil((count ?? 0) / pageSize)),
       };
     },
-    staleTime: 30_000,
+    staleTime: 0,
   });
 }
 
@@ -285,7 +285,7 @@ export function useItem(id: string | undefined) {
         ? { ...data, item_categories: itemCategories, item_forms: itemForms }
         : null;
     },
-    staleTime: 60_000,
+    staleTime: 0,
   });
 }
 
@@ -300,7 +300,7 @@ export function useItemForms() {
       if (error) throw error;
       return (data ?? []) as ItemForm[];
     },
-    staleTime: 300_000,
+    staleTime: 0,
   });
 }
 
@@ -315,7 +315,7 @@ export function useItemCategories() {
       if (error) throw error;
       return (data ?? []) as ItemCategory[];
     },
-    staleTime: 300_000,
+    staleTime: 0,
   });
 }
 
@@ -481,7 +481,7 @@ export function useBatches(itemId: string | undefined) {
       if (error) throw error;
       return (data ?? []) as ItemBatch[];
     },
-    staleTime: 30_000,
+    staleTime: 0,
   });
 }
 
@@ -728,7 +728,7 @@ export function useItemPatients(itemId: string | undefined) {
         last_activity: computeLastActivity(lastSupplyMap.get(a.id)?.tarikh ?? null, lastDeclinationMap.get(a.id) ?? null),
       }));
     },
-    staleTime: 30_000,
+    staleTime: 0,
   });
 }
 
@@ -936,7 +936,7 @@ export function useItemTransactionHistory(itemId: string | undefined) {
 
       return combined;
     },
-    staleTime: 30_000,
+    staleTime: 0,
   });
 }
 
@@ -971,7 +971,7 @@ export function usePatientsList() {
       if (error) throw error;
       return (data ?? []) as { id: string; nama: string }[];
     },
-    staleTime: 300_000,
+    staleTime: 0,
   });
 }
 
@@ -987,6 +987,6 @@ export function useStaffList() {
       if (error) throw error;
       return (data ?? []) as { id: string; nama: string }[];
     },
-    staleTime: 300_000,
+    staleTime: 0,
   });
 }

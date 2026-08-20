@@ -72,8 +72,17 @@ export function Combobox({
         style={{ width: "var(--radix-popover-trigger-width)" }}
         align="start"
       >
-        <Command className="w-full" shouldFilter={true}>
-          <CommandInput placeholder={searchPlaceholder} className="h-9" />
+        <Command
+          className="w-full min-w-0"
+          style={{ width: "100%" }}
+          shouldFilter={true}
+        >
+          <div className="w-full [&_[cmdk-input-wrapper]]:w-full">
+            <CommandInput
+              placeholder={searchPlaceholder}
+              className="h-9 w-full"
+            />
+          </div>
           <CommandList>
             <CommandEmpty>{emptyText}</CommandEmpty>
             <CommandGroup className="max-h-64 overflow-y-auto">

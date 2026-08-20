@@ -254,7 +254,7 @@ export function useItem(id: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("items")
-        .select("*, item_categories!id_kategori(id, nama), item_forms!id_bentuk(id, nama)")
+        .select("*, item_categories!fk_items_kategori(id, nama), item_forms!fk_items_bentuk(id, nama)")
         .eq("id", id!)
         .maybeSingle();
       if (error) throw error;

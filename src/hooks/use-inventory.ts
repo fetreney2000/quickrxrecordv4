@@ -254,18 +254,34 @@ export function useItem(id: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("items")
-        .select("*, item_categories!fk_items_kategori(id, nama), item_forms!fk_items_bentuk(id, nama)")
+        .select("*")
         .eq("id", id!)
         .maybeSingle();
       if (error) throw error;
       if (!data) return null;
-      const cats = (data as any).item_categories;
-      const forms = (data as any).item_forms;
-      return {
-        ...data,
-        item_categories: Array.isArray(cats) ? cats[0] ?? null : cats ?? null,
-        item_forms: Array.isArray(forms) ? forms[0] ?? null : forms ?? null,
-      };
+
+      let itemCategories: { id: string; nama: string } | null = null;
+      let itemForms: { id: string; nama: string } | null = null;
+
+      if (data?.id_kategori) {
+        const { data: cat } = await supabase
+          .from("item_categories")
+          .select("id, nama")
+          .eq("id", data.id_kategori)
+          .maybeSingle();
+        itemCategories = cat;
+      }
+
+      if (data?.id_bentuk) {
+        const { data: form } = await supabase
+          .from("item_forms")
+          .select("id, nama")
+          .eq("id", data.id_bentuk)
+          .maybeSingle();
+        itemForms = form;
+      }
+
+      return { ...data, item_categories: itemCategories, item_forms: itemForms };
     },
     staleTime: 0,
   });

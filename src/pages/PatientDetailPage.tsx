@@ -12,7 +12,6 @@ import {
   ShieldAlert,
   ChevronLeft,
   ChevronRight,
-  Stethoscope,
   User,
   Users,
   Activity,

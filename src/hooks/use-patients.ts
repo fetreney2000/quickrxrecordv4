@@ -25,8 +25,13 @@ export const PATIENT_PAGE_SIZE = 100;
 export const SEARCH_DEBOUNCE_MS = 400;
 const DUPLICATE_DEBOUNCE_MS = 600;
 
+export interface PatientListItem extends Patient {
+  bilangan_item?: number;
+  dinyahaktif_oleh_nama?: string;
+}
+
 export interface PatientsData {
-  patients: Patient[];
+  patients: PatientListItem[];
   total: number;
   totalPages: number;
 }

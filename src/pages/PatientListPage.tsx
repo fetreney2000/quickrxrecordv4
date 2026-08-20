@@ -13,9 +13,9 @@ import {
   Inbox,
   UserPlus,
   Loader2,
-  Stethoscope,
   FileText,
   ShieldAlert,
+  Calendar,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -280,7 +280,7 @@ function PatientListContent({
         </div>
       </div>
       <div className="relative">
-        {isLoading && <div>{Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} cols={isDeactivated ? 4 : 5} />)}</div>}
+        {isLoading && <div>{Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} cols={5} />)}</div>}
         {!isLoading && patients.length === 0 && debouncedSearch && <div className="flex flex-col items-center justify-center py-12 gap-2" style={{ color: "var(--text-muted)" }}><Inbox className="w-10 h-10 opacity-40" /><p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Tiada pesakit dijumpai.</p><p className="text-xs">Cuba tukar kata kunci carian anda.</p></div>}
         {!isLoading && patients.length === 0 && !debouncedSearch && (
           <div className="flex flex-col items-center justify-center py-12 gap-2" style={{ color: "var(--text-muted)" }}>
@@ -294,11 +294,12 @@ function PatientListContent({
         {!isLoading && patients.length > 0 && (
           <>
             {isDeactivated ? (
-              <div className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "3fr 3fr 3fr 3fr", gap: 12, color: "var(--text-secondary)", background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-medium)" }}>
+              <div className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "3fr 3fr 3fr 2fr 2fr", gap: 12, color: "var(--text-secondary)", background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-medium)" }}>
                 <SortableHeader columnKey="nama" label="Nama" sort={sort} onSort={toggleSort} icon={User} />
                 <SortableHeader columnKey="nombor_kad_pengenalan" label="No. Kad Pengenalan" sort={sort} onSort={toggleSort} icon={IdCard} />
                 <SortableHeader columnKey="nombor_pendaftaran_hospital" label="No. Pendaftaran Hospital" sort={sort} onSort={toggleSort} icon={Activity} />
-                <div>Tarikh Nyahaktif</div>
+                <SortableHeader columnKey="tarikh_nyahaktif" label="Tarikh Nyahaktif" sort={sort} onSort={toggleSort} icon={Calendar} />
+                <div>Dinyahaktif Oleh</div>
               </div>
             ) : (
               <div className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "3fr 3fr 3fr 2fr 2fr", gap: 12, color: "var(--text-secondary)", background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-medium)" }}>
@@ -356,7 +357,7 @@ function DeactivatedPatientRow({ patient, index, onClick }: { patient: Patient &
         tabIndex={0}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
         className="hidden sm:grid px-4 py-2.5 items-center cursor-pointer transition-colors hover:bg-[rgba(217,119,6,0.05)]"
-        style={{ gridTemplateColumns: "3fr 3fr 3fr 3fr", gap: 12, borderBottom: "1px solid var(--border-light)" }}
+        style={{ gridTemplateColumns: "3fr 3fr 3fr 2fr 2fr", gap: 12, borderBottom: "1px solid var(--border-light)" }}
       >
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ background: "linear-gradient(135deg, #9ca3af, #6b7280)" }}>
@@ -372,6 +373,9 @@ function DeactivatedPatientRow({ patient, index, onClick }: { patient: Patient &
         </span>
         <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>
           {formatDate(patient.tarikh_nyahaktif) || <em style={{ color: "var(--text-muted)" }}>-</em>}
+        </span>
+        <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>
+          {patient.dinyahaktif_oleh_nama || <em style={{ color: "var(--text-muted)" }}>-</em>}
         </span>
       </div>
 

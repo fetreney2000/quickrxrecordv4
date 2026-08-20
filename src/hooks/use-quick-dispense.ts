@@ -71,24 +71,28 @@ export function usePatientAssignments(patientId: string | null) {
       const { data, error } = await supabase
         .from("patient_item_assignments")
         .select(
-          "id, item_id, dos, item:items(id, kod_item, nama_item, kekuatan, id_bentuk, item_forms(id, nama))"
+          "id, item_id, dos, item:items(id, kod_item, nama_item, kekuatan, id_bentuk)"
         )
         .eq("patient_id", patientId!)
         .eq("aktif", true)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []).map((d: any) => {
-        const rawItem = Array.isArray(d.item) ? d.item[0] ?? null : d.item;
-        const forms = rawItem?.item_forms;
-        const formName = Array.isArray(forms) ? forms[0]?.nama ?? null : forms?.nama ?? null;
-        const item = rawItem ? { ...rawItem, bentuk: formName, item_forms: undefined } : null;
-        return {
-          assignment_id: d.id,
-          item_id: d.item_id,
-          dos: d.dos,
-          item,
-        };
-      }) as AssignedItem[];
+      const formIds = [...new Set((data ?? []).map((d: any) => d.item?.id_bentuk).filter(Boolean))];
+      const formMap = new Map<string, string>();
+      if (formIds.length > 0) {
+        const { data: forms, error: formsError } = await supabase.from("item_forms").select("id, nama").in("id", formIds);
+        if (formsError) throw formsError;
+        (forms ?? []).forEach((form) => formMap.set(form.id, form.nama));
+      }
+      return (data ?? []).map((d: any) => ({
+        assignment_id: d.id,
+        item_id: d.item_id,
+        dos: d.dos,
+        item: (() => {
+          const item = Array.isArray(d.item) ? d.item[0] ?? null : d.item;
+          return item ? { ...item, bentuk: formMap.get(item.id_bentuk) ?? null } : null;
+        })(),
+      })) as AssignedItem[];
     },
   });
 }
@@ -125,22 +129,23 @@ export function useFrequentItems(assignedItemIds: Set<string>) {
 
       const { data: items, error: iErr } = await supabase
         .from("items")
-        .select("*, item_forms(id, nama)")
+        .select("*")
         .eq("aktif", true)
         .in("id", top.length > 0 ? top : [""]);
       if (iErr) throw iErr;
 
-      return ((items as any[]) ?? [])
-        .filter((i) => assignedItemIds.has(i.id))
-        .map((item) => {
-          const forms = item.item_forms;
-          const formName = Array.isArray(forms) ? forms[0]?.nama ?? null : forms?.nama ?? null;
-          return {
-            ...item,
-            item_forms: undefined,
-            bentuk: formName,
-          };
-        });
+      const formIds = [...new Set((items ?? []).map((item: any) => item.id_bentuk).filter(Boolean))];
+      const formMap = new Map<string, string>();
+      if (formIds.length > 0) {
+        const { data: forms, error: formsError } = await supabase.from("item_forms").select("id, nama").in("id", formIds);
+        if (formsError) throw formsError;
+        (forms ?? []).forEach((form) => formMap.set(form.id, form.nama));
+      }
+
+      return ((items as Item[]) ?? []).filter((i) => assignedItemIds.has(i.id)).map((item: any) => ({
+        ...item,
+        bentuk: formMap.get(item.id_bentuk ?? "") ?? null,
+      }));
     },
     staleTime: 60_000,
   });
@@ -311,10 +316,18 @@ export function useItemsActive() {
     queryFn: async () => {
       const { data: items, error: iErr } = await supabase
         .from("items")
-        .select("*, item_forms(id, nama)")
+        .select("*")
         .eq("aktif", true)
         .order("nama_item", { ascending: true });
       if (iErr) throw iErr;
+
+      const formIds = [...new Set((items ?? []).map((item: any) => item.id_bentuk).filter(Boolean))];
+      const formMap = new Map<string, string>();
+      if (formIds.length > 0) {
+        const { data: forms, error: formsError } = await supabase.from("item_forms").select("id, nama").in("id", formIds);
+        if (formsError) throw formsError;
+        (forms ?? []).forEach((form) => formMap.set(form.id, form.nama));
+      }
 
       // Get assignment counts via RPC, fallback to direct query
       const { data: counts, error: cErr } = await supabase.rpc(
@@ -336,18 +349,15 @@ export function useItemsActive() {
         });
       }
 
-      return ((items as any[]) ?? []).map((item) => {
+      return ((items as Item[]) ?? []).map((item) => {
         const active = countMap.get(item.id) ?? 0;
         const kuota = item.kuota;
         const hasQuota = kuota != null && kuota > 0;
         const baki = hasQuota ? Math.max(0, kuota - active) : null;
         const penuh = hasQuota ? active >= kuota : false;
-        const forms = item.item_forms;
-        const formName = Array.isArray(forms) ? forms[0]?.nama ?? null : forms?.nama ?? null;
         return {
           ...item,
-          item_forms: undefined,
-          bentuk: formName,
+          bentuk: formMap.get(item.id_bentuk ?? "") ?? null,
           patient_count: active,
           baki_kuota: baki,
           kuota_penuh: penuh,

@@ -71,28 +71,24 @@ export function usePatientAssignments(patientId: string | null) {
       const { data, error } = await supabase
         .from("patient_item_assignments")
         .select(
-          "id, item_id, dos, item:items(id, kod_item, nama_item, kekuatan, id_bentuk)"
+          "id, item_id, dos, item:items(id, kod_item, nama_item, kekuatan, id_bentuk, item_forms(id, nama))"
         )
         .eq("patient_id", patientId!)
         .eq("aktif", true)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      const formIds = [...new Set((data ?? []).map((d: any) => d.item?.id_bentuk).filter(Boolean))];
-      const formMap = new Map<string, string>();
-      if (formIds.length > 0) {
-        const { data: forms, error: formsError } = await supabase.from("item_forms").select("id, nama").in("id", formIds);
-        if (formsError) throw formsError;
-        (forms ?? []).forEach((form) => formMap.set(form.id, form.nama));
-      }
-      return (data ?? []).map((d: any) => ({
-        assignment_id: d.id,
-        item_id: d.item_id,
-        dos: d.dos,
-        item: (() => {
-          const item = Array.isArray(d.item) ? d.item[0] ?? null : d.item;
-          return item ? { ...item, bentuk: formMap.get(item.id_bentuk) ?? null } : null;
-        })(),
-      })) as AssignedItem[];
+      return (data ?? []).map((d: any) => {
+        const rawItem = Array.isArray(d.item) ? d.item[0] ?? null : d.item;
+        const forms = rawItem?.item_forms;
+        const formName = Array.isArray(forms) ? forms[0]?.nama ?? null : forms?.nama ?? null;
+        const item = rawItem ? { ...rawItem, bentuk: formName, item_forms: undefined } : null;
+        return {
+          assignment_id: d.id,
+          item_id: d.item_id,
+          dos: d.dos,
+          item,
+        };
+      }) as AssignedItem[];
     },
   });
 }
@@ -104,7 +100,6 @@ export function useFrequentItems(assignedItemIds: Set<string>) {
   return useQuery({
     queryKey: ["frequent-items"],
     queryFn: async () => {
-      // Get last 500 supply records
       const { data: supplies, error: sErr } = await supabase
         .from("supply_records")
         .select("assignment_id, patient_item_assignments!inner(item_id)")
@@ -123,32 +118,29 @@ export function useFrequentItems(assignedItemIds: Set<string>) {
         }
       });
 
-      // Sort by frequency
       const top = Array.from(counts.entries())
         .sort((a, b) => b[1] - a[1])
         .slice(0, 10)
         .map(([id]) => id);
 
-      // Get full item data, filter to assigned
       const { data: items, error: iErr } = await supabase
         .from("items")
-        .select("*")
+        .select("*, item_forms(id, nama)")
         .eq("aktif", true)
         .in("id", top.length > 0 ? top : [""]);
       if (iErr) throw iErr;
 
-      const formIds = [...new Set((items ?? []).map((item: any) => item.id_bentuk).filter(Boolean))];
-      const formMap = new Map<string, string>();
-      if (formIds.length > 0) {
-        const { data: forms, error: formsError } = await supabase.from("item_forms").select("id, nama").in("id", formIds);
-        if (formsError) throw formsError;
-        (forms ?? []).forEach((form) => formMap.set(form.id, form.nama));
-      }
-
-      return ((items as Item[]) ?? []).filter((i) => assignedItemIds.has(i.id)).map((item: any) => ({
-        ...item,
-        bentuk: formMap.get(item.id_bentuk ?? "") ?? null,
-      }));
+      return ((items as any[]) ?? [])
+        .filter((i) => assignedItemIds.has(i.id))
+        .map((item) => {
+          const forms = item.item_forms;
+          const formName = Array.isArray(forms) ? forms[0]?.nama ?? null : forms?.nama ?? null;
+          return {
+            ...item,
+            item_forms: undefined,
+            bentuk: formName,
+          };
+        });
     },
     staleTime: 60_000,
   });
@@ -317,21 +309,12 @@ export function useItemsActive() {
   return useQuery({
     queryKey: ["items-active"],
     queryFn: async () => {
-      // Get all active items (explicitly include quota)
       const { data: items, error: iErr } = await supabase
         .from("items")
-        .select("*")
+        .select("*, item_forms(id, nama)")
         .eq("aktif", true)
         .order("nama_item", { ascending: true });
       if (iErr) throw iErr;
-
-      const formIds = [...new Set((items ?? []).map((item: any) => item.id_bentuk).filter(Boolean))];
-      const formMap = new Map<string, string>();
-      if (formIds.length > 0) {
-        const { data: forms, error: formsError } = await supabase.from("item_forms").select("id, nama").in("id", formIds);
-        if (formsError) throw formsError;
-        (forms ?? []).forEach((form) => formMap.set(form.id, form.nama));
-      }
 
       // Get assignment counts via RPC, fallback to direct query
       const { data: counts, error: cErr } = await supabase.rpc(
@@ -353,15 +336,18 @@ export function useItemsActive() {
         });
       }
 
-      return ((items as Item[]) ?? []).map((item) => {
+      return ((items as any[]) ?? []).map((item) => {
         const active = countMap.get(item.id) ?? 0;
         const kuota = item.kuota;
         const hasQuota = kuota != null && kuota > 0;
         const baki = hasQuota ? Math.max(0, kuota - active) : null;
         const penuh = hasQuota ? active >= kuota : false;
+        const forms = item.item_forms;
+        const formName = Array.isArray(forms) ? forms[0]?.nama ?? null : forms?.nama ?? null;
         return {
           ...item,
-          bentuk: formMap.get(item.id_bentuk ?? "") ?? null,
+          item_forms: undefined,
+          bentuk: formName,
           patient_count: active,
           baki_kuota: baki,
           kuota_penuh: penuh,
@@ -385,8 +371,21 @@ export function useAddAssignmentInline(patientId: string | null) {
       dos: string;
       catatan?: string;
     }) => {
+      const { data: newId, error: rpcErr } = await supabase.rpc("add_assignment_with_dose", {
+        p_patient_id: patientId!,
+        p_item_id: data.itemId,
+        p_dos: data.dos,
+        p_catatan_penggunaan: data.catatan || null,
+        p_dimulakan_oleh: profile?.id ?? null,
+        p_kakitangan_farmasi_perekod: profile?.id ?? null,
+        p_dose_catatan: "Bekalan kali pertama (Dispen Pantas)",
+        p_tarikh_dose: getTodayStrKL(),
+      });
+      if (!rpcErr) return { id: newId as string };
+      if (!rpcErr.message?.includes("Could not find the function")) throw rpcErr;
+
+      // Fallback: RPC belum deployed — manual 2-step insert
       const today = getTodayStrKL();
-      // 1. Insert assignment
       const { data: assignment, error: assignErr } = await supabase
         .from("patient_item_assignments")
         .insert({
@@ -403,7 +402,6 @@ export function useAddAssignmentInline(patientId: string | null) {
         .single();
       if (assignErr) throw assignErr;
 
-      // 2. Insert initial dose history
       if (assignment) {
         await supabase.from("dose_history").insert({
           assignment_id: assignment.id,

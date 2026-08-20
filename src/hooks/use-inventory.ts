@@ -254,36 +254,18 @@ export function useItem(id: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("items")
-        .select("*")
+        .select("*, item_categories!id_kategori(id, nama), item_forms!id_bentuk(id, nama)")
         .eq("id", id!)
         .maybeSingle();
       if (error) throw error;
-
-      // Fetch related data separately to avoid join issues
-      let itemCategories: { id: string; nama: string } | null = null;
-      let itemForms: { id: string; nama: string } | null = null;
-
-      if (data?.id_kategori) {
-        const { data: cat } = await supabase
-          .from("item_categories")
-          .select("id, nama")
-          .eq("id", data.id_kategori)
-          .maybeSingle();
-        itemCategories = cat;
-      }
-
-      if (data?.id_bentuk) {
-        const { data: form } = await supabase
-          .from("item_forms")
-          .select("id, nama")
-          .eq("id", data.id_bentuk)
-          .maybeSingle();
-        itemForms = form;
-      }
-
-      return data
-        ? { ...data, item_categories: itemCategories, item_forms: itemForms }
-        : null;
+      if (!data) return null;
+      const cats = (data as any).item_categories;
+      const forms = (data as any).item_forms;
+      return {
+        ...data,
+        item_categories: Array.isArray(cats) ? cats[0] ?? null : cats ?? null,
+        item_forms: Array.isArray(forms) ? forms[0] ?? null : forms ?? null,
+      };
     },
     staleTime: 0,
   });
@@ -624,7 +606,28 @@ export function useItemPatients(itemId: string | undefined) {
     queryKey: ["item-patients", itemId],
     enabled: !!itemId,
     queryFn: async () => {
-      // Fetch assignments with patient data via joined query
+      const { data: rpcData, error: rpcErr } = await supabase.rpc(
+        "get_item_patients_with_activity",
+        { p_item_id: itemId! }
+      );
+      if (!rpcErr) {
+        return (rpcData ?? []).map((r: any) => ({
+          id: r.id,
+          patient_id: r.patient_id,
+          dos: r.dos,
+          tarikh_mula_guna: r.tarikh_mula_guna,
+          patient: { id: r.patient_id, nama: r.patient_nama,
+            nombor_kad_pengenalan: r.patient_no_kp,
+            nombor_pendaftaran_hospital: r.patient_no_hospital },
+          last_supply: r.last_supply_tarikh
+            ? { tarikh: r.last_supply_tarikh, qty: r.last_supply_kuantiti } : null,
+          last_declination: r.last_declination_tarikh,
+          last_activity: r.last_activity,
+        }));
+      }
+      if (!rpcErr.message?.includes("Could not find the function")) throw rpcErr;
+
+      // Fallback: RPC belum deployed — legacy multi-query path
       const { data: assignments, error: aErr } = await supabase
         .from("patient_item_assignments")
         .select(`
@@ -639,7 +642,6 @@ export function useItemPatients(itemId: string | undefined) {
       if (aErr) throw aErr;
       if (!assignments || assignments.length === 0) return [];
 
-      // Fetch ALL supply records for this item using batched queries.
       const assignmentIds = assignments.map((a: any) => a.id);
       const allSupplies = await batchInQuery(
         assignmentIds,
@@ -665,36 +667,6 @@ export function useItemPatients(itemId: string | undefined) {
         }
       });
 
-      // Fallback: for any assignment still missing a supply, fetch individually
-      const missingIds = assignments
-        .filter((a: any) => !lastSupplyMap.has(a.id))
-        .map((a: any) => a.id);
-      
-      if (missingIds.length > 0) {
-        const fallbackSupplies = await batchInQuery(
-          missingIds,
-          async (batchIds) => {
-            const { data, error } = await supabase
-              .from("supply_records")
-              .select("assignment_id, tarikh_dibekal, kuantiti")
-              .in("assignment_id", batchIds)
-              .is("voided_at", null)
-              .order("tarikh_dibekal", { ascending: false });
-            if (error) return [];
-            return (data ?? []) as any[];
-          }
-        );
-        fallbackSupplies.forEach((s: any) => {
-          if (!lastSupplyMap.has(s.assignment_id)) {
-            lastSupplyMap.set(s.assignment_id, {
-              tarikh: s.tarikh_dibekal,
-              qty: s.kuantiti,
-            });
-          }
-        });
-      }
-
-      // "Ubat Tidak Perlu Dibekalkan" (supply_declinations) — dianggap aktiviti terbaru
       const allDeclinations = assignmentIds.length > 0
         ? await batchInQuery(
             assignmentIds,
@@ -753,7 +725,28 @@ export function useItemTransactionHistory(itemId: string | undefined) {
     queryKey: ["transaction-history", itemId],
     enabled: !!itemId,
     queryFn: async () => {
-      // 1. Baca jurnal tunggal (inventory_transactions) utk item ini
+      const { data: rpcData, error: rpcErr } = await supabase.rpc(
+        "get_item_transaction_history",
+        { p_item_id: itemId! }
+      );
+      if (!rpcErr) {
+        return (rpcData ?? []).map((r: any) => ({
+          id: r.id,
+          tarikh: r.tarikh,
+          jenis: r.jenis,
+          jenis_label: r.jenis_label,
+          kelompok: r.kelompok,
+          perubahan: r.perubahan,
+          perubahan_label: `${r.perubahan > 0 ? "+" : ""}${r.perubahan}`,
+          catatan: r.catatan,
+          kakitangan: r.kakitangan,
+          pesakit: r.pesakit,
+          baki: r.baki != null ? (r.baki as number) : null,
+        })) as CombinedTransaction[];
+      }
+      if (!rpcErr.message?.includes("Could not find the function")) throw rpcErr;
+
+      // Fallback: RPC belum deployed — legacy multi-query path
       const { data: ledgerRows, error: ledgerError } = await supabase
         .from("inventory_transactions")
         .select(`
@@ -774,7 +767,6 @@ export function useItemTransactionHistory(itemId: string | undefined) {
       if (ledgerError) throw ledgerError;
       const rows = (ledgerRows ?? []) as any[];
 
-      // 2. Kumpulkan id rujukan mengikut jenis utk lookup terperinci (batched)
       const supplyIds = rows
         .filter((r) => r.rujukan_type === "supply" && r.rujukan_id)
         .map((r) => r.rujukan_id);
@@ -788,7 +780,6 @@ export function useItemTransactionHistory(itemId: string | undefined) {
         )
         .map((r) => r.rujukan_id);
 
-      // 2a. supply → pesakit + kakitangan_pembekal
       const supplyDetailMap = new Map<string, { pesakit: string | null; kakitangan: string | null; catatan: string | null }>();
       if (supplyIds.length > 0) {
         const supplies = await batchInQuery<any>(supplyIds, async (batchIds) => {
@@ -816,7 +807,6 @@ export function useItemTransactionHistory(itemId: string | undefined) {
         });
       }
 
-      // 2b. batch_addition → kakitangan (batch_additions → profiles)
       const additionStaffMap = new Map<string, string>();
       if (additionIds.length > 0) {
         const additions = await batchInQuery<any>(additionIds, async (batchIds) => {
@@ -842,7 +832,6 @@ export function useItemTransactionHistory(itemId: string | undefined) {
         });
       }
 
-      // 2c. adjustment & batch_disposal → kakitangan + catatan (batch_adjustments → profiles)
       const adjustmentDetailMap = new Map<string, { kakitangan: string | null; reason: string | null; catatan: string | null }>();
       if (adjustmentIds.length > 0) {
         const adjustments = await batchInQuery<any>(adjustmentIds, async (batchIds) => {
@@ -872,7 +861,6 @@ export function useItemTransactionHistory(itemId: string | undefined) {
         });
       }
 
-      // 3. Bina baris CombinedTransaction dari jurnal
       const combined: CombinedTransaction[] = [];
 
       (rows as any[]).forEach((tx) => {
@@ -929,7 +917,6 @@ export function useItemTransactionHistory(itemId: string | undefined) {
         });
       });
 
-      // Susun mengikut tarikh menurun
       combined.sort(
         (a, b) => new Date(b.tarikh).getTime() - new Date(a.tarikh).getTime()
       );

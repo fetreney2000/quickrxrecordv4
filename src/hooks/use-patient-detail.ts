@@ -546,8 +546,21 @@ export function useAddAssignment(patientId: string | undefined) {
       dos: string;
       catatan: string;
     }) => {
+      const { data: newId, error: rpcErr } = await supabase.rpc("add_assignment_with_dose", {
+        p_patient_id: patientId!,
+        p_item_id: data.item_id,
+        p_dos: data.dos,
+        p_catatan_penggunaan: data.catatan || null,
+        p_dimulakan_oleh: profile?.id ?? null,
+        p_kakitangan_farmasi_perekod: profile?.id ?? null,
+        p_dose_catatan: "Bekalan kali pertama",
+        p_tarikh_dose: getNowISOKL(),
+      });
+      if (!rpcErr) return { id: newId as string };
+      if (!rpcErr.message?.includes("Could not find the function")) throw rpcErr;
+
+      // Fallback: RPC belum deployed — manual 2-step insert
       const today = getTodayStrKL();
-      // 1. Insert assignment
       const { data: assignment, error: assignError } = await supabase
         .from("patient_item_assignments")
         .insert({
@@ -558,12 +571,12 @@ export function useAddAssignment(patientId: string | undefined) {
           tarikh_mula_guna: today,
           aktif: true,
           dimulakan_oleh: profile?.id ?? null,
+          kakitangan_farmasi_perekod: profile?.id ?? null,
         })
         .select("id")
         .single();
       if (assignError) throw assignError;
 
-      // 2. Insert initial dose history
       if (assignment && data.dos) {
         await supabase.from("dose_history").insert({
           assignment_id: assignment.id,
@@ -638,13 +651,21 @@ export function useUpdateDose(patientId: string | undefined) {
       dos: string;
       catatan: string;
     }) => {
-      // 1. Update assignment
+      const { error: rpcErr } = await supabase.rpc("update_dose_with_history", {
+        p_assignment_id: assignmentId,
+        p_dos: dos,
+        p_catatan: catatan || null,
+        p_dikemaskini_oleh: profile?.id ?? null,
+      });
+      if (!rpcErr) return;
+      if (!rpcErr.message?.includes("Could not find the function")) throw rpcErr;
+
+      // Fallback: RPC belum deployed — manual 2-step
       const { error: updateError } = await supabase
         .from("patient_item_assignments")
         .update({ dos })
         .eq("id", assignmentId);
       if (updateError) throw updateError;
-      // 2. Insert dose history
       const { error: historyError } = await supabase
         .from("dose_history")
         .insert({

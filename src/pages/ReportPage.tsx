@@ -538,26 +538,27 @@ export default function ReportPage() {
         return MALAY_MONTHS.map((_, i) => ({ month: i + 1, total: 0 }));
       }
 
-      const yearStart = `${annualUsageYear}-01-01T00:00:00.000Z`;
-      const yearEnd = `${annualUsageYear + 1}-01-01T00:00:00.000Z`;
-
-      // Step 2: fetch supply records only for this item's assignments
-      const { data, error } = await supabase
-        .from("supply_records")
-        .select("kuantiti, tarikh_dibekal")
-        .is("voided_at", null)
-        .in("assignment_id", assignmentIds)
-        .gte("tarikh_dibekal", yearStart)
-        .lt("tarikh_dibekal", yearEnd)
-        .limit(10000);
-      if (error) throw error;
-
       const monthly: MonthlyUsage[] = MALAY_MONTHS.map((_, i) => ({ month: i + 1, total: 0 }));
-      (data ?? []).forEach((record: any) => {
-        const d = new Date(record.tarikh_dibekal);
-        const monthIndex = d.getMonth();
-        monthly[monthIndex].total += record.kuantiti || 0;
-      });
+
+      // Step 2: fetch month by month (10000 rows per month)
+      for (let m = 0; m < 12; m++) {
+        const monthStart = `${annualUsageYear}-${String(m + 1).padStart(2, "0")}-01T00:00:00.000Z`;
+        const nextMonth = m === 11 ? `${annualUsageYear + 1}-01-01T00:00:00.000Z` : `${annualUsageYear}-${String(m + 2).padStart(2, "0")}-01T00:00:00.000Z`;
+
+        const { data, error } = await supabase
+          .from("supply_records")
+          .select("kuantiti")
+          .is("voided_at", null)
+          .in("assignment_id", assignmentIds)
+          .gte("tarikh_dibekal", monthStart)
+          .lt("tarikh_dibekal", nextMonth)
+          .limit(10000);
+        if (error) throw error;
+
+        (data ?? []).forEach((record: any) => {
+          monthly[m].total += record.kuantiti || 0;
+        });
+      }
       return monthly;
     },
   });

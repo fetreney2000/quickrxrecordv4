@@ -75,7 +75,10 @@ export function Combobox({
         <Command
           className="w-full min-w-0"
           style={{ width: "100%" }}
-          shouldFilter={true}
+          filter={(value, search) => {
+            if (value.toLowerCase().includes(search.toLowerCase())) return 1;
+            return 0;
+          }}
         >
           <div className="w-full [&_[cmdk-input-wrapper]]:w-full">
             <CommandInput

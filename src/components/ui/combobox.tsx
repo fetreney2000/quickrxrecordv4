@@ -3,12 +3,20 @@
 import * as React from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "cmdk";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "cmdk";
 
 interface ComboboxOption {
   value: string;
@@ -37,32 +45,27 @@ export function Combobox({
   disabled = false,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
-
   const selectedLabel = options.find((opt) => opt.value === value)?.label;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
+        <Button
+          type="button"
+          variant="outline"
           role="combobox"
           aria-expanded={open}
+          aria-label={placeholder}
           disabled={disabled}
           className={cn(
-            "flex h-10 w-full items-center justify-between rounded-xl border px-3 text-sm font-medium transition-colors",
-            "hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-ring/50",
-            "disabled:cursor-not-allowed disabled:opacity-50",
+            "w-full justify-between font-medium",
             !selectedLabel && "text-muted-foreground",
             className
           )}
-          style={{
-            background: "var(--card)",
-            borderColor: "var(--border-medium)",
-            color: "var(--text-primary)",
-          }}
         >
           <span className="truncate">{selectedLabel || placeholder}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent
         className="p-0"
@@ -89,7 +92,7 @@ export function Combobox({
                       value === opt.value ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  {opt.label}
+                  <span className="truncate">{opt.label}</span>
                 </CommandItem>
               ))}
             </CommandGroup>

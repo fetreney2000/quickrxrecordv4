@@ -527,52 +527,20 @@ export default function ReportPage() {
     queryKey: ["report-annual-usage", annualUsageId, annualUsageYear],
     enabled: !!annualUsageId,
     queryFn: async () => {
-      // Step 1: get assignment IDs for this item
-      const { data: assignments, error: aErr } = await supabase
-        .from("patient_item_assignments")
-        .select("id")
-        .eq("item_id", annualUsageId);
-      if (aErr) throw aErr;
-      const assignmentIds = (assignments ?? []).map((a: any) => a.id);
-      if (assignmentIds.length === 0) {
-        return MALAY_MONTHS.map((_, i) => ({ month: i + 1, total: 0 }));
-      }
+      // Server-side aggregation via RPC — single fast query
+      const { data, error } = await supabase.rpc("get_annual_usage", {
+        p_item_id: annualUsageId,
+        p_year: annualUsageYear,
+      });
+      if (error) throw error;
 
-      const monthly: MonthlyUsage[] = MALAY_MONTHS.map((_, i) => ({ month: i + 1, total: 0 }));
-
-      // Helper: batch array into chunks
-      const BATCH_SIZE = 50;
-      const chunk = (arr: string[], size: number) => {
-        const result: string[][] = [];
-        for (let i = 0; i < arr.length; i += size) {
-          result.push(arr.slice(i, i + size));
+      const result: MonthlyUsage[] = MALAY_MONTHS.map((_, i) => ({ month: i + 1, total: 0 }));
+      ((data ?? []) as { month: number; total: number }[]).forEach((row) => {
+        if (row.month >= 1 && row.month <= 12) {
+          result[row.month - 1].total = Number(row.total) || 0;
         }
-        return result;
-      };
-      const assignmentBatches = chunk(assignmentIds, BATCH_SIZE);
-
-      // Step 2: fetch month by month, batched in() clause
-      for (let m = 0; m < 12; m++) {
-        const monthStart = `${annualUsageYear}-${String(m + 1).padStart(2, "0")}-01T00:00:00.000Z`;
-        const nextMonth = m === 11 ? `${annualUsageYear + 1}-01-01T00:00:00.000Z` : `${annualUsageYear}-${String(m + 2).padStart(2, "0")}-01T00:00:00.000Z`;
-
-        for (const batch of assignmentBatches) {
-          const { data, error } = await supabase
-            .from("supply_records")
-            .select("kuantiti")
-            .is("voided_at", null)
-            .in("assignment_id", batch)
-            .gte("tarikh_dibekal", monthStart)
-            .lt("tarikh_dibekal", nextMonth)
-            .limit(10000);
-          if (error) throw error;
-
-          (data ?? []).forEach((record: any) => {
-            monthly[m].total += record.kuantiti || 0;
-          });
-        }
-      }
-      return monthly;
+      });
+      return result;
     },
   });
 

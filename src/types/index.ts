@@ -88,6 +88,9 @@ export interface Patient {
   aktif: boolean;
   merged_into: string | null;
   tarikh_daftar: string | null;
+  catatan_nyahaktif: string | null;
+  tarikh_nyahaktif: string | null;
+  dinyahaktif_oleh: string | null;
   created_at: string;
   updated_at: string;
 }

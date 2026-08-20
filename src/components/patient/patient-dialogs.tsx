@@ -64,10 +64,20 @@ export function DeactivateDialog({
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
-  onConfirm: () => void;
+  onConfirm: (catatan: string) => void;
   isPending: boolean;
   patientName: string;
 }) {
+  const [catatan, setCatatan] = useState("");
+
+  useEffect(() => {
+    if (!open) {
+      setCatatan("");
+    }
+  }, [open]);
+
+  const canSubmit = catatan.trim().length > 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -105,6 +115,16 @@ export function DeactivateDialog({
               Pesakit yang dinyahaktifkan tidak boleh diaktifkan semula.
             </p>
           </div>
+          <div>
+            <Label style={labelStyle}>Sebab Nyahaktif *</Label>
+            <Input
+              value={catatan}
+              onChange={(e) => setCatatan(e.target.value)}
+              placeholder="Nyatakan sebab nyahaktifkan pesakit"
+              required
+              style={inputBaseStyle}
+            />
+          </div>
         </div>
         <DialogFooter>
           <Button
@@ -117,8 +137,8 @@ export function DeactivateDialog({
           </Button>
           <Button
             variant="destructive"
-            onClick={onConfirm}
-            disabled={isPending}
+            onClick={() => onConfirm(catatan.trim())}
+            disabled={!canSubmit || isPending}
             title="Sahkan nyahaktifkan pesakit"
           >
             {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}

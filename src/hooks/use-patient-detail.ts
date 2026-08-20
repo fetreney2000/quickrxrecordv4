@@ -23,6 +23,10 @@ import type {
 
 export type { SupplyActivityRow };
 
+export type PatientWithDeactivatedBy = Patient & {
+  dinyahaktif_oleh_profile: Pick<Profile, "id" | "nama"> | null;
+};
+
 // ============================================================================
 // 1. Single patient
 // ============================================================================
@@ -34,11 +38,17 @@ export function usePatient(id: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("patients")
-        .select("*")
+        .select(`
+          *,
+          dinyahaktif_oleh_profile:profiles!patients_dinyahaktif_oleh_fkey (
+            id,
+            nama
+          )
+        `)
         .eq("id", id!)
         .maybeSingle();
       if (error) throw error;
-      return data as Patient | null;
+      return data as PatientWithDeactivatedBy | null;
     },
   });
 }
@@ -501,12 +511,15 @@ export function useDeactivatePatient(patientId: string | undefined) {
   const { profile } = useAuth();
 
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async ({ catatan }: { catatan: string }) => {
       const { error } = await supabase
         .from("patients")
         .update({
           aktif: false,
           updated_at: getNowISOKL(),
+          catatan_nyahaktif: catatan || null,
+          tarikh_nyahaktif: getTodayStrKL(),
+          dinyahaktif_oleh: profile?.id ?? null,
         })
         .eq("id", patientId!);
       if (error) throw error;

@@ -36,19 +36,21 @@ export function usePatients({
   page,
   sort,
   pageSize = PATIENT_PAGE_SIZE,
+  active = true,
 }: {
   search: string;
   page: number;
   sort: SortState | null;
   pageSize?: number;
+  active?: boolean;
 }) {
   return useQuery<PatientsData>({
-    queryKey: ["patients", search, page, sort, pageSize],
+    queryKey: ["patients", search, page, sort, pageSize, active],
     queryFn: async () => {
       let query = supabase
         .from("patients")
         .select("*", { count: "exact" })
-        .eq("aktif", true)
+        .eq("aktif", active)
         .is("merged_into", null);
 
       // Carian (nama, KP, hospital)
@@ -73,24 +75,45 @@ export function usePatients({
       const { data, count, error } = await query;
       if (error) throw error;
 
-      // Fetch active assignment counts for these patients
       const patientIds = (data ?? []).map((p: any) => p.id);
       const countMap = new Map<string, number>();
+      const profileMap = new Map<string, string>();
+
       if (patientIds.length > 0) {
-        const { data: assignments } = await supabase
-          .from("patient_item_assignments")
-          .select("patient_id")
-          .eq("aktif", true)
-          .in("patient_id", patientIds);
-        ((assignments ?? []) as any[]).forEach((a) => {
-          countMap.set(a.patient_id, (countMap.get(a.patient_id) ?? 0) + 1);
-        });
+        if (active) {
+          // Fetch active assignment counts for active patients
+          const { data: assignments } = await supabase
+            .from("patient_item_assignments")
+            .select("patient_id")
+            .eq("aktif", true)
+            .in("patient_id", patientIds);
+          ((assignments ?? []) as any[]).forEach((a) => {
+            countMap.set(a.patient_id, (countMap.get(a.patient_id) ?? 0) + 1);
+          });
+        } else {
+          // Fetch deactivator profile names for deactivated patients
+          const deactivatorIds = [...new Set(
+            (data ?? [])
+              .map((p: any) => p.dinyahaktif_oleh)
+              .filter((id: string | null): id is string => !!id)
+          )];
+          if (deactivatorIds.length > 0) {
+            const { data: profiles } = await supabase
+              .from("profiles")
+              .select("id, nama")
+              .in("id", deactivatorIds);
+            ((profiles ?? []) as any[]).forEach((prof) => {
+              profileMap.set(prof.id, prof.nama);
+            });
+          }
+        }
       }
 
       return {
         patients: ((data ?? []) as Patient[]).map((p) => ({
           ...p,
           bilangan_item: countMap.get(p.id) ?? 0,
+          dinyahaktif_oleh_nama: active ? undefined : (profileMap.get((p as any).dinyahaktif_oleh) ?? undefined),
         })),
         total: count ?? 0,
         totalPages: Math.max(1, Math.ceil((count ?? 0) / pageSize)),

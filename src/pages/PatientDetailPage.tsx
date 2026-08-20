@@ -57,6 +57,7 @@ useUpdateSupplyRecord,
   useDeclineSupply,
   useDeleteDeclination,
   type AssignmentWithItem,
+  type PatientWithDeactivatedBy,
 } from "@/hooks/use-patient-detail";
 import { InfoField, StatCardMini } from "@/components/patient/patient-info-helpers";
 import { AssignmentItem } from "@/components/patient/assignment-item";
@@ -276,7 +277,7 @@ export default function PatientDetailPage() {
         </>}
       </FoldableCard></div>
 
-      <DeactivateDialog open={openDeactivate} onOpenChange={setOpenDeactivate} onConfirm={() => deactivatePatient.mutate(undefined, { onSuccess: () => setOpenDeactivate(false) })} isPending={deactivatePatient.isPending} patientName={patient.nama} />
+      <DeactivateDialog open={openDeactivate} onOpenChange={setOpenDeactivate} onConfirm={(catatan) => deactivatePatient.mutate({ catatan }, { onSuccess: () => setOpenDeactivate(false) })} isPending={deactivatePatient.isPending} patientName={patient.nama} />
       <AddAssignmentDialog open={openAddAssignment} onOpenChange={setOpenAddAssignment} items={itemsWithStats} activeItemIds={activeItemIds} onSubmit={(data) => addAssignment.mutate(data, { onSuccess: () => setOpenAddAssignment(false) })} isPending={addAssignment.isPending} formsMap={formsMap} />
       {supplyAssignment && <SupplyDialog open={!!openSupply} onOpenChange={(o) => !o && setOpenSupply(null)} assignment={supplyAssignment} formsMap={formsMap} onSubmit={(data) => supplyMut.mutate({ ...data, assignmentId: supplyAssignment.id, itemId: supplyAssignment.item_id }, { onSuccess: () => setOpenSupply(null) })} isPending={supplyMut.isPending} />}
       {updateDoseAssignment && <UpdateDoseDialog open={!!openUpdateDose} onOpenChange={(o) => !o && setOpenUpdateDose(null)} currentDose={updateDoseAssignment.dos} onSubmit={(data) => updateDoseMut.mutate({ ...data, assignmentId: updateDoseAssignment.id }, { onSuccess: () => setOpenUpdateDose(null) })} isPending={updateDoseMut.isPending} />}
@@ -301,7 +302,7 @@ export default function PatientDetailPage() {
   );
 }
 
-function ViewInfo({ patient }: { patient: Patient }) {
+function ViewInfo({ patient }: { patient: PatientWithDeactivatedBy }) {
   return <div className="space-y-3">
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
       <InfoField icon={User} label="No. Kad Pengenalan" value={patient.nombor_kad_pengenalan ? formatMyKad(patient.nombor_kad_pengenalan) : null} />
@@ -312,6 +313,35 @@ function ViewInfo({ patient }: { patient: Patient }) {
     <InfoField icon={User} label="Tarikh Daftar" value={formatDate(patient.tarikh_daftar)} />
     <InfoField icon={User} label="Alamat" value={patient.alamat} block />
     <InfoField icon={User} label="Catatan" value={patient.catatan} block />
+    {!patient.aktif && (
+      <div
+        className="rounded-xl p-3 space-y-2"
+        style={{
+          background: "rgba(217,119,6,0.08)",
+          border: "1px solid rgba(217,119,6,0.25)",
+        }}
+      >
+        <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#92400e" }}>
+          Maklumat Nyahaktif
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          <div>
+            <p style={{ color: "var(--text-secondary)" }}>Tarikh Nyahaktif</p>
+            <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{formatDate(patient.tarikh_nyahaktif)}</p>
+          </div>
+          <div>
+            <p style={{ color: "var(--text-secondary)" }}>Dinyahaktif Oleh</p>
+            <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{patient.dinyahaktif_oleh_profile?.nama ?? "—"}</p>
+          </div>
+          {patient.catatan_nyahaktif && (
+            <div>
+              <p style={{ color: "var(--text-secondary)" }}>Sebab</p>
+              <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{patient.catatan_nyahaktif}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
   </div>;
 }
 

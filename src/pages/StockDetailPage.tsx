@@ -76,7 +76,7 @@ import { AddBatchDialog } from "@/components/inventory/add-batch-dialog";
 import { BatchAdjustmentDialog } from "@/components/inventory/batch-adjustment-dialog";
 import { DeleteItemDialog } from "@/components/inventory/delete-item-dialog";
 import { BatchRow } from "@/components/inventory/batch-row";
-import { PatientUsingRow } from "@/components/inventory/patient-using-row";
+import { PatientUsingRow, type PatientUsingData } from "@/components/inventory/patient-using-row";
 import { TransactionRow } from "@/components/inventory/transaction-row";
 import { toast } from "sonner";
 import type { Item } from "@/types";
@@ -237,7 +237,7 @@ export default function StockDetailPage() {
         default: return 0;
       }
     })();
-    return patients.filter((p) => {
+    return patients.filter((p: PatientUsingData) => {
       if (term) {
         const n = p.patient?.nama?.toLowerCase() || "";
         const kp = p.patient?.nombor_kad_pengenalan || "";
@@ -728,7 +728,7 @@ if (defaulterFilter !== "all") {
               <button type="button" onClick={() => togglePatientSort("last_supply")} title="Urut mengikut Bekalan Terakhir" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: patientSort?.key === "last_supply" ? "#7c3aed" : "var(--text-secondary)" }}>Bekalan Terakhir <SortIcon active={patientSort?.key === "last_supply"} dir={patientSort?.dir ?? "asc"} /></button>
               <button type="button" onClick={() => togglePatientSort("status")} title="Urut mengikut Status" className="flex items-center gap-1 text-left hover:text-foreground transition-colors" style={{ color: patientSort?.key === "status" ? "#7c3aed" : "var(--text-secondary)" }}>Status <SortIcon active={patientSort?.key === "status"} dir={patientSort?.dir ?? "asc"} /></button>
             </div>
-            {pagedPatients.map((p, idx) => <PatientUsingRow key={p.id} data={p as any} index={idx} itemName={displayTitle} itemId={id} />)}
+            {pagedPatients.map((p: PatientUsingData, idx: number) => <PatientUsingRow key={p.id} data={p as any} index={idx} itemName={displayTitle} itemId={id} />)}
             {patientTotalPages > 1 && <Pagination page={patientPage} totalPages={patientTotalPages} onChange={setPatientPage} totalCount={filteredPatients.length} itemLabel="pesakit" />}
           </>}
         </FoldableCard>

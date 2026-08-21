@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +16,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  CommandSeparator,
 } from "cmdk";
 
 interface ComboboxOption {
@@ -58,17 +59,38 @@ export function Combobox({
           aria-label={placeholder}
           disabled={disabled}
           className={cn(
-            "w-full justify-between font-medium",
-            !selectedLabel && "text-muted-foreground",
+            "w-full justify-between font-medium h-10",
+            "rounded-xl border bg-[var(--card)]",
+            "hover:shadow-md",
+            "focus-visible:ring-2 focus-visible:ring-[var(--primary)]/30 focus-visible:border-[var(--primary)]",
+            "transition-all duration-200",
             className
           )}
+          style={{
+            borderColor: open
+              ? "var(--primary)"
+              : "var(--border-medium)",
+            color: selectedLabel
+              ? "var(--text-primary)"
+              : "var(--text-secondary)",
+            boxShadow: open
+              ? "0 0 0 3px rgba(24,119,242,0.12)"
+              : undefined,
+          }}
         >
           <span className="truncate">{selectedLabel || placeholder}</span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronsUpDown
+            className={cn(
+              "ml-2 h-4 w-4 shrink-0 transition-all duration-200",
+              open
+                ? "text-[var(--primary)] scale-110"
+                : "text-[var(--text-muted)]"
+            )}
+          />
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="p-0"
+        className="p-1.5 rounded-xl overflow-hidden"
         style={{ width: "var(--radix-popover-trigger-width)" }}
         align="start"
       >
@@ -80,15 +102,19 @@ export function Combobox({
             return 0;
           }}
         >
-          <div className="w-full [&_[cmdk-input-wrapper]]:w-full">
+          <div className="relative w-full [&_[cmdk-input-wrapper]]:w-full [&_[cmdk-input-wrapper]]:rounded-lg [&_[cmdk-input-wrapper]]:bg-[var(--bg-secondary)] [&_[cmdk-input-wrapper]]:border-0 [&_[cmdk-input-wrapper]]:h-10 [&_[cmdk-input-wrapper]]:pl-9 [&_[cmdk-input-wrapper]]:pr-3 [&_[cmdk-input-wrapper]]:shadow-none [&_[cmdk-input-wrapper]]:focus-within:ring-1 [&_[cmdk-input-wrapper]]:focus-within:ring-[var(--primary)]/20 [&_[cmdk-input]]:text-sm [&_[cmdk-input]]:font-medium [&_[cmdk-input]]:placeholder:text-[var(--text-muted)]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)] pointer-events-none" />
             <CommandInput
               placeholder={searchPlaceholder}
-              className="h-9 w-full"
+              className="h-10 w-full"
             />
           </div>
-          <CommandList>
-            <CommandEmpty>{emptyText}</CommandEmpty>
-            <CommandGroup className="max-h-64 overflow-y-auto">
+          <CommandSeparator className="my-1" />
+          <CommandList className="max-h-72 overflow-y-auto scrollbar-thin">
+            <CommandEmpty className="flex flex-col items-center justify-center py-8 gap-1.5 text-sm text-[var(--text-muted)]">
+              {emptyText}
+            </CommandEmpty>
+            <CommandGroup className="py-1">
               {options.map((opt) => (
                 <CommandItem
                   key={opt.value}
@@ -97,11 +123,20 @@ export function Combobox({
                     onValueChange(opt.value === value ? "" : opt.value);
                     setOpen(false);
                   }}
+                  className="relative flex cursor-pointer select-none items-center rounded-lg px-3 py-2.5 text-sm outline-none transition-all duration-150 hover:bg-[var(--bg-accent-blue)] data-[selected=true]:bg-[var(--bg-accent-blue)] data-[selected=true]:shadow-sm"
+                  style={{
+                    color:
+                      value === opt.value
+                        ? "var(--primary)"
+                        : "var(--text-primary)",
+                  }}
                 >
                   <Check
                     className={cn(
-                      "mr-2 h-4 w-4",
-                      value === opt.value ? "opacity-100" : "opacity-0"
+                      "mr-2 h-4 w-4 shrink-0 transition-opacity duration-150",
+                      value === opt.value
+                        ? "opacity-100 text-[var(--primary)]"
+                        : "opacity-0"
                     )}
                   />
                   <span className="truncate">{opt.label}</span>

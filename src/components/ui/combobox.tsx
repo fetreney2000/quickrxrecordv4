@@ -102,7 +102,7 @@ export function Combobox({
             return 0;
           }}
         >
-          <div className="relative w-full [&_[cmdk-input-wrapper]]:w-full [&_[cmdk-input-wrapper]]:rounded-lg [&_[cmdk-input-wrapper]]:bg-[var(--bg-secondary)] [&_[cmdk-input-wrapper]]:border-0 [&_[cmdk-input-wrapper]]:h-10 [&_[cmdk-input-wrapper]]:pl-9 [&_[cmdk-input-wrapper]]:pr-3 [&_[cmdk-input-wrapper]]:shadow-none [&_[cmdk-input-wrapper]]:focus-within:ring-1 [&_[cmdk-input-wrapper]]:focus-within:ring-[var(--primary)]/20 [&_[cmdk-input]]:text-sm [&_[cmdk-input]]:font-medium [&_[cmdk-input]]:placeholder:text-[var(--text-muted)]">
+          <div className="relative w-full [&_[cmdk-input]]:w-full [&_[cmdk-input]]:rounded-lg [&_[cmdk-input]]:bg-[var(--bg-secondary)] [&_[cmdk-input]]:border-0 [&_[cmdk-input]]:h-10 [&_[cmdk-input]]:pl-9 [&_[cmdk-input]]:pr-3 [&_[cmdk-input]]:shadow-none [&_[cmdk-input]]:text-sm [&_[cmdk-input]]:font-medium [&_[cmdk-input]]:placeholder:text-[var(--text-muted)] [&_[cmdk-input]]:outline-none [&_[cmdk-input]]:focus:ring-1 [&_[cmdk-input]]:focus:ring-[var(--primary)]/20">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)] pointer-events-none" />
             <CommandInput
               placeholder={searchPlaceholder}

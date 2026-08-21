@@ -4,7 +4,7 @@
 -- Replaces expiry tab query (ReportPage.tsx lines 410-445).
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION get_report_expiring_batches(p_days INTEGER DEFAULT 30)
+CREATE OR REPLACE FUNCTION get_report_expiring_batches(p_days BIGINT DEFAULT 30)
 RETURNS TABLE (
   id UUID, nombor_kelompok TEXT, tarikh_luput DATE, kuantiti INTEGER,
   kod_item TEXT, nama_item TEXT, nama_dagangan TEXT, kekuatan TEXT,
@@ -32,4 +32,4 @@ AS $$
   ORDER BY ib.tarikh_luput ASC;
 $$;
 
-GRANT EXECUTE ON FUNCTION get_report_expiring_batches(INTEGER) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_report_expiring_batches(BIGINT) TO anon, authenticated;

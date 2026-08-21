@@ -10,9 +10,9 @@
 -- automatically re-engage once the functions are removed.
 -- ============================================================================
 
-DROP FUNCTION IF EXISTS get_inventory_list(TEXT, TEXT, TEXT, INTEGER, INTEGER);
-DROP FUNCTION IF EXISTS get_patient_list(TEXT, BOOLEAN, TEXT, TEXT, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS get_inventory_list(TEXT, TEXT, TEXT, BIGINT, BIGINT);
+DROP FUNCTION IF EXISTS get_patient_list(TEXT, BOOLEAN, TEXT, TEXT, BIGINT, BIGINT);
 DROP FUNCTION IF EXISTS get_report_inventory();
-DROP FUNCTION IF EXISTS get_report_transactions(TIMESTAMPTZ, TIMESTAMPTZ, INTEGER);
-DROP FUNCTION IF EXISTS get_report_expiring_batches(INTEGER);
+DROP FUNCTION IF EXISTS get_report_transactions(TIMESTAMPTZ, TIMESTAMPTZ, BIGINT);
+DROP FUNCTION IF EXISTS get_report_expiring_batches(BIGINT);
 DROP FUNCTION IF EXISTS get_report_low_stock();

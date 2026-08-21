@@ -9,8 +9,8 @@ CREATE OR REPLACE FUNCTION get_patient_list(
   p_active BOOLEAN DEFAULT TRUE,
   p_sort_key TEXT DEFAULT 'nama',
   p_sort_dir TEXT DEFAULT 'asc',
-  p_offset INTEGER DEFAULT 0,
-  p_limit INTEGER DEFAULT 100
+  p_offset BIGINT DEFAULT 0,
+  p_limit BIGINT DEFAULT 100
 )
 RETURNS TABLE (
   id UUID, nama TEXT, nombor_kad_pengenalan TEXT,
@@ -83,4 +83,4 @@ BEGIN
   USING p_search, p_active;
 END; $$;
 
-GRANT EXECUTE ON FUNCTION get_patient_list(TEXT, BOOLEAN, TEXT, TEXT, INTEGER, INTEGER) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_patient_list(TEXT, BOOLEAN, TEXT, TEXT, BIGINT, BIGINT) TO anon, authenticated;

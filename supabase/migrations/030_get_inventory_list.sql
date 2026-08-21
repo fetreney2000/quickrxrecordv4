@@ -8,8 +8,8 @@ CREATE OR REPLACE FUNCTION get_inventory_list(
   p_search TEXT DEFAULT NULL,
   p_sort_key TEXT DEFAULT 'nama_item',
   p_sort_dir TEXT DEFAULT 'asc',
-  p_offset INTEGER DEFAULT 0,
-  p_limit INTEGER DEFAULT 50
+  p_offset BIGINT DEFAULT 0,
+  p_limit BIGINT DEFAULT 50
 )
 RETURNS TABLE (
   id UUID, kod_item TEXT, nama_item TEXT, nama_dagangan TEXT,
@@ -70,4 +70,4 @@ BEGIN
   USING p_search;
 END; $$;
 
-GRANT EXECUTE ON FUNCTION get_inventory_list(TEXT, TEXT, TEXT, INTEGER, INTEGER) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_inventory_list(TEXT, TEXT, TEXT, BIGINT, BIGINT) TO anon, authenticated;

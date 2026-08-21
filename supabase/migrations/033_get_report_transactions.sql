@@ -7,7 +7,7 @@
 CREATE OR REPLACE FUNCTION get_report_transactions(
   p_date_from TIMESTAMPTZ DEFAULT NULL,
   p_date_to TIMESTAMPTZ DEFAULT NULL,
-  p_limit INTEGER DEFAULT 500
+  p_limit BIGINT DEFAULT 500
 )
 RETURNS TABLE (
   id UUID, tarikh_dibekal TIMESTAMPTZ, dos TEXT, kuantiti INTEGER,
@@ -41,4 +41,4 @@ AS $$
   LIMIT p_limit;
 $$;
 
-GRANT EXECUTE ON FUNCTION get_report_transactions(TIMESTAMPTZ, TIMESTAMPTZ, INTEGER) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_report_transactions(TIMESTAMPTZ, TIMESTAMPTZ, BIGINT) TO anon, authenticated;

@@ -91,7 +91,7 @@ export default function StockListPage() {
                  <SortableHeader columnKey="stock" label="Stok" sort={sort} onSort={toggleSort} icon={Package} />
                  <SortableHeader columnKey="remaining" label="Baki Kuota" sort={sort} onSort={toggleSort} icon={BarChart3} />
               </div>
-              {items.map((it, idx) => <StockRow key={it.id} item={it as any} index={idx} onClick={() => handleItemClick(it)} />)}
+              {items.map((it: Item, idx: number) => <StockRow key={it.id} item={it as any} index={idx} onClick={() => handleItemClick(it)} />)}
             </>
           )}
         </div>

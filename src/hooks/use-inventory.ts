@@ -179,7 +179,8 @@ export function useItems({
           totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
         };
       }
-      if (!rpcErr.message?.includes("Could not find the function")) throw rpcErr;
+      // Fallback: function not yet deployed or any RPC error — use legacy client-side queries
+      if (rpcErr.code !== "42883" && !rpcErr.message?.includes("does not exist")) throw rpcErr;
 
       // Fallback: RPC not yet deployed — legacy client-side queries
       let query = supabase

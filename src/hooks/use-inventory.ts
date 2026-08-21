@@ -178,8 +178,11 @@ export function useItems({
           totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
         };
       }
-      // RPC unavailable for any reason (not deployed, type mismatch, SQL
-      // error) — fall through to the legacy client-side queries below.
+      // Prioritize RPC. Only fall back to legacy when the function truly
+      // isn't deployed (42883 / does not exist). Genuine RPC errors throw.
+      if (rpcErr.code !== "42883" && !rpcErr.message?.includes("does not exist")) {
+        throw rpcErr;
+      }
       // Fallback: RPC not yet deployed — legacy client-side queries
       let query = supabase
         .from("items")

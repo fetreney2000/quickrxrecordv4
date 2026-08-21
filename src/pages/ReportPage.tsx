@@ -373,7 +373,11 @@ export default function ReportPage() {
           item_batches: r.item_batches ?? [],
         })) as InventoryItem[];
       }
-      // Fallback: RPC unavailable — use legacy client-side queries below
+      // Prioritize RPC. Only fall back to legacy when the function truly
+      // isn't deployed (42883 / does not exist). Genuine RPC errors throw.
+      if (rpcErr.code !== "42883" && !rpcErr.message?.includes("does not exist")) {
+        throw rpcErr;
+      }
 
       // Fallback: RPC not yet deployed — legacy client-side queries
       const { data, error } = await supabase
@@ -417,7 +421,11 @@ export default function ReportPage() {
           staff: r.staff_nama ? { nama: r.staff_nama } : null,
         })) as TransactionRecord[];
       }
-      // Fallback: RPC unavailable — use legacy client-side queries below
+      // Prioritize RPC. Only fall back to legacy when the function truly
+      // isn't deployed (42883 / does not exist). Genuine RPC errors throw.
+      if (rpcErr.code !== "42883" && !rpcErr.message?.includes("does not exist")) {
+        throw rpcErr;
+      }
 
       // Fallback: RPC not yet deployed — legacy client-side queries
       const { data, error } = await supabase
@@ -469,7 +477,11 @@ export default function ReportPage() {
           },
         })) as ExpiringBatchRecord[];
       }
-      // Fallback: RPC unavailable — use legacy client-side queries below
+      // Prioritize RPC. Only fall back to legacy when the function truly
+      // isn't deployed (42883 / does not exist). Genuine RPC errors throw.
+      if (rpcErr.code !== "42883" && !rpcErr.message?.includes("does not exist")) {
+        throw rpcErr;
+      }
 
       // Fallback: RPC not yet deployed — legacy client-side queries
       const expiryStart = getTodayStrKL();
@@ -522,7 +534,11 @@ export default function ReportPage() {
           currentBalance: Number(r.current_balance),
         })) as LowStockRecord[];
       }
-      // Fallback: RPC unavailable — use legacy client-side queries below
+      // Prioritize RPC. Only fall back to legacy when the function truly
+      // isn't deployed (42883 / does not exist). Genuine RPC errors throw.
+      if (rpcErr.code !== "42883" && !rpcErr.message?.includes("does not exist")) {
+        throw rpcErr;
+      }
 
       // Fallback: RPC not yet deployed — legacy client-side queries
       const today = getTodayStrKL();

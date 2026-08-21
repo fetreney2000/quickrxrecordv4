@@ -56,17 +56,16 @@ export function usePatients({
       const sortKey = sort?.key ?? "nama";
       const sortDir = sort?.dir ?? "asc";
       const offset = page * pageSize;
-      const rpcParams: Record<string, unknown> = {
-        p_active: active,
-        p_sort_key: sortKey,
-        p_sort_dir: sortDir,
-        p_offset: offset,
-        p_limit: pageSize,
-      };
-      if (search.trim()) rpcParams.p_search = search.trim();
       const { data: rpcData, error: rpcErr } = await supabase.rpc(
         "get_patient_list",
-        rpcParams
+        {
+          p_search: search.trim(),
+          p_active: active,
+          p_sort_key: sortKey,
+          p_sort_dir: sortDir,
+          p_offset: offset,
+          p_limit: pageSize,
+        }
       );
       if (!rpcErr) {
         const totalCount =

@@ -65,7 +65,7 @@ BEGIN
          COUNT(*) OVER() AS _total_count
        FROM patients p
        LEFT JOIN profiles prof ON prof.id = p.dinyahaktif_oleh
-       WHERE p.aktif = p_active
+        WHERE p.aktif = $2
          AND p.merged_into IS NULL
          AND (
            $1 IS NULL OR $1 = ''''
@@ -80,7 +80,7 @@ BEGIN
   );
 
   RETURN QUERY EXECUTE v_sql
-  USING p_search;
+  USING p_search, p_active;
 END; $$;
 
 GRANT EXECUTE ON FUNCTION get_patient_list(TEXT, BOOLEAN, TEXT, TEXT, INTEGER, INTEGER) TO anon, authenticated;

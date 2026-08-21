@@ -138,6 +138,49 @@ export function useItems({
   return useQuery({
     queryKey: ["items", search, page, sort, pageSize],
     queryFn: async () => {
+      // RPC-first path: server handles stock/quota computation and sorting
+      const sortKey = sort?.key ?? "nama_item";
+      const sortDir = sort?.dir ?? "asc";
+      const offset = page * pageSize;
+      const { data: rpcData, error: rpcErr } = await supabase.rpc(
+        "get_inventory_list",
+        {
+          p_search: search.trim() || null,
+          p_sort_key: sortKey,
+          p_sort_dir: sortDir,
+          p_offset: offset,
+          p_limit: pageSize,
+        }
+      );
+      if (!rpcErr) {
+        const totalCount =
+          rpcData && rpcData.length > 0
+            ? Number(rpcData[0]._total_count)
+            : 0;
+        return {
+          items: (rpcData ?? []).map((r: any) => ({
+            id: r.id,
+            kod_item: r.kod_item,
+            nama_item: r.nama_item,
+            nama_dagangan: r.nama_dagangan,
+            kekuatan: r.kekuatan,
+            kuota: r.kuota,
+            id_bentuk: r.id_bentuk,
+            bentuk: r.bentuk,
+            item_batches: [{ kuantiti: Number(r.total_stock) }],
+            patient_item_assignments: Array.from(
+              { length: Number(r.bilangan_pesakit) },
+              (_, i) => ({ id: String(i) })
+            ),
+            item_forms: null,
+          })),
+          total: totalCount,
+          totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
+        };
+      }
+      if (!rpcErr.message?.includes("Could not find the function")) throw rpcErr;
+
+      // Fallback: RPC not yet deployed — legacy client-side queries
       let query = supabase
         .from("items")
         .select(

@@ -52,6 +52,56 @@ export function usePatients({
   return useQuery<PatientsData>({
     queryKey: ["patients", search, page, sort, pageSize, active],
     queryFn: async () => {
+      // RPC-first path: server handles counts, name resolution, and sorting
+      const sortKey = sort?.key ?? "nama";
+      const sortDir = sort?.dir ?? "asc";
+      const offset = page * pageSize;
+      const { data: rpcData, error: rpcErr } = await supabase.rpc(
+        "get_patient_list",
+        {
+          p_search: search.trim() || null,
+          p_active: active,
+          p_sort_key: sortKey,
+          p_sort_dir: sortDir,
+          p_offset: offset,
+          p_limit: pageSize,
+        }
+      );
+      if (!rpcErr) {
+        const totalCount =
+          rpcData && rpcData.length > 0
+            ? Number(rpcData[0]._total_count)
+            : 0;
+        return {
+          patients: (rpcData ?? []).map((r: any) => ({
+            id: r.id,
+            nama: r.nama,
+            nombor_kad_pengenalan: r.nombor_kad_pengenalan,
+            nombor_pendaftaran_hospital: r.nombor_pendaftaran_hospital,
+            dokumen_lain: r.dokumen_lain,
+            nombor_telefon: r.nombor_telefon,
+            alamat: r.alamat,
+            catatan: r.catatan,
+            aktif: r.aktif,
+            merged_into: r.merged_into,
+            tarikh_daftar: r.tarikh_daftar,
+            catatan_nyahaktif: r.catatan_nyahaktif,
+            tarikh_nyahaktif: r.tarikh_nyahaktif,
+            dinyahaktif_oleh: r.dinyahaktif_oleh,
+            created_at: r.created_at,
+            updated_at: r.updated_at,
+            bilangan_item: Number(r.bilangan_item || 0),
+            dinyahaktif_oleh_nama: active
+              ? undefined
+              : (r.dinyahaktif_oleh_nama ?? undefined),
+          })),
+          total: totalCount,
+          totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
+        };
+      }
+      if (!rpcErr.message?.includes("Could not find the function")) throw rpcErr;
+
+      // Fallback: RPC not yet deployed — legacy client-side queries
       let query = supabase
         .from("patients")
         .select("*", { count: "exact" })
@@ -68,9 +118,9 @@ export function usePatients({
       }
 
       // Isihan
-      const sortKey = sort?.key ?? "nama";
-      const sortDir = sort?.dir ?? "asc";
-      query = query.order(sortKey, { ascending: sortDir === "asc" });
+      const sortKeyFallback = sort?.key ?? "nama";
+      const sortDirFallback = sort?.dir ?? "asc";
+      query = query.order(sortKeyFallback, { ascending: sortDirFallback === "asc" });
 
       // Pagination
       const from = page * pageSize;

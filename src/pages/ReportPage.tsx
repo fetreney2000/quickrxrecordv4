@@ -360,6 +360,22 @@ export default function ReportPage() {
   const { data: inventoryData, isLoading: inventoryLoading } = useQuery({
     queryKey: ["report-inventory"],
     queryFn: async () => {
+      const { data: rpcData, error: rpcErr } = await supabase.rpc("get_report_inventory");
+      if (!rpcErr) {
+        return (rpcData ?? []).map((r: any) => ({
+          id: r.id,
+          kod_item: r.kod_item,
+          nama_item: r.nama_item,
+          nama_dagangan: r.nama_dagangan,
+          kekuatan: r.kekuatan,
+          kuota: r.kuota,
+          bentuk: r.bentuk,
+          item_batches: r.item_batches ?? [],
+        })) as InventoryItem[];
+      }
+      if (!rpcErr.message?.includes("Could not find the function")) throw rpcErr;
+
+      // Fallback: RPC not yet deployed — legacy client-side queries
       const { data, error } = await supabase
         .from("items")
         .select("*, item_batches(*)")
@@ -381,6 +397,29 @@ export default function ReportPage() {
   const { data: transactionsData, isLoading: transactionsLoading } = useQuery({
     queryKey: ["report-transactions", dateFrom, dateTo],
     queryFn: async () => {
+      const dateFromISO = dateFrom ? getKLDayStartISO(dateFrom) : null;
+      const dateToISO = dateTo ? getKLDayEndISO(dateTo) : null;
+      const { data: rpcData, error: rpcErr } = await supabase.rpc(
+        "get_report_transactions",
+        { p_date_from: dateFromISO, p_date_to: dateToISO, p_limit: 500 }
+      );
+      if (!rpcErr) {
+        return (rpcData ?? []).map((r: any) => ({
+          id: r.id,
+          tarikh_dibekal: r.tarikh_dibekal,
+          dos: r.dos,
+          kuantiti: r.kuantiti,
+          assignment: {
+            patient: r.patient_nama ? { nama: r.patient_nama } : null,
+            item: { nama_item: r.item_nama, kekuatan: r.item_kekuatan, bentuk: r.item_bentuk },
+          },
+          batch: r.batch_kelompok ? { nombor_kelompok: r.batch_kelompok } : null,
+          staff: r.staff_nama ? { nama: r.staff_nama } : null,
+        })) as TransactionRecord[];
+      }
+      if (!rpcErr.message?.includes("Could not find the function")) throw rpcErr;
+
+      // Fallback: RPC not yet deployed — legacy client-side queries
       const { data, error } = await supabase
         .from("supply_records")
         .select(
@@ -410,6 +449,29 @@ export default function ReportPage() {
   const { data: expiryData, isLoading: expiryLoading } = useQuery({
     queryKey: ["report-expiry", expiryDays],
     queryFn: async () => {
+      const { data: rpcData, error: rpcErr } = await supabase.rpc(
+        "get_report_expiring_batches",
+        { p_days: expiryDays }
+      );
+      if (!rpcErr) {
+        return (rpcData ?? []).map((r: any) => ({
+          id: r.id,
+          nombor_kelompok: r.nombor_kelompok,
+          tarikh_luput: r.tarikh_luput,
+          kuantiti: r.kuantiti,
+          item_id: "",
+          item: {
+            kod_item: r.kod_item,
+            nama_item: r.nama_item,
+            nama_dagangan: r.nama_dagangan,
+            kekuatan: r.kekuatan,
+            bentuk: r.bentuk,
+          },
+        })) as ExpiringBatchRecord[];
+      }
+      if (!rpcErr.message?.includes("Could not find the function")) throw rpcErr;
+
+      // Fallback: RPC not yet deployed — legacy client-side queries
       const expiryStart = getTodayStrKL();
       const expiryEnd = addDaysToDateInput(expiryStart, expiryDays);
       const { data: batches, error: batchError } = await supabase
@@ -447,6 +509,22 @@ export default function ReportPage() {
   const { data: lowStockData, isLoading: lowStockLoading } = useQuery({
     queryKey: ["report-low-stock"],
     queryFn: async () => {
+      const { data: rpcData, error: rpcErr } = await supabase.rpc("get_report_low_stock");
+      if (!rpcErr) {
+        return (rpcData ?? []).map((r: any) => ({
+          id: r.id,
+          kod_item: r.kod_item,
+          nama_item: r.nama_item,
+          nama_dagangan: r.nama_dagangan,
+          kekuatan: r.kekuatan,
+          bentuk: r.bentuk,
+          requiredFourWeeks: Number(r.required_four_weeks),
+          currentBalance: Number(r.current_balance),
+        })) as LowStockRecord[];
+      }
+      if (!rpcErr.message?.includes("Could not find the function")) throw rpcErr;
+
+      // Fallback: RPC not yet deployed — legacy client-side queries
       const today = getTodayStrKL();
       const usageStart = addDaysToDateInput(today, -84);
       const usageEnd = addDaysToDateInput(today, 1);

@@ -142,15 +142,16 @@ export function useItems({
       const sortKey = sort?.key ?? "nama_item";
       const sortDir = sort?.dir ?? "asc";
       const offset = page * pageSize;
+      const rpcParams: Record<string, unknown> = {
+        p_sort_key: sortKey,
+        p_sort_dir: sortDir,
+        p_offset: offset,
+        p_limit: pageSize,
+      };
+      if (search.trim()) rpcParams.p_search = search.trim();
       const { data: rpcData, error: rpcErr } = await supabase.rpc(
         "get_inventory_list",
-        {
-          p_search: search.trim() || null,
-          p_sort_key: sortKey,
-          p_sort_dir: sortDir,
-          p_offset: offset,
-          p_limit: pageSize,
-        }
+        rpcParams
       );
       if (!rpcErr) {
         const totalCount =

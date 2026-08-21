@@ -56,7 +56,7 @@ BEGIN
        FROM items i
        LEFT JOIN item_forms f ON f.id = i.id_bentuk
        WHERE i.aktif = true
-         AND ($1 IS NULL OR $1 = ''
+         AND ($1 IS NULL OR $1 = ''''
            OR i.kod_item ILIKE ''%%'' || $1 || ''%%''
            OR i.nama_item ILIKE ''%%'' || $1 || ''%%''
            OR i.nama_dagangan ILIKE ''%%'' || $1 || ''%%'')

@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS items (
   kekuatan TEXT,
   id_kategori UUID,
   id_bentuk UUID,
-  quota INTEGER,
+  kuota INTEGER,
   catatan TEXT,
   aktif BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),

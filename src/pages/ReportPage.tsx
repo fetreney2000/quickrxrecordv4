@@ -1,13 +1,11 @@
 /**
- * ReportPage — Halaman Laporan dengan 2 tab (Inventori / Transaksi) dan eksport Excel/PDF.
+ * ReportPage — Halaman Laporan dengan 5 tab (Inventori / Transaksi / Penggunaan Tahunan / Akan Luput / Stok Rendah) dan eksport Excel/PDF.
  *
  * Tema: Merah (#f43f5e)
  * Ciri:
- *  - Tab segmented control (Inventori / Transaksi)
- *  - Jadual 6 lajur inventori (Kod, Nama, Kekuatan, Kuota, Jumlah Stok, Status)
- *  - Jadual 7 lajur transaksi (Tarikh, Pesakit, Item, Dos, Kuantiti, Kelompok, Kakitangan)
- *  - Eksport Excel (exceljs) dan PDF (jspdf + jspdf-autotable)
- *  - Fungsi eksport generik (exportToExcel, exportToPDF)
+ *  - Tab segmented control (5 tab)
+ *  - Eksport Excel (exceljs) dan PDF (jspdf + jspdf-autotable) untuk semua tab
+ *  - Fungsi eksport generik profesional (exportToExcel, exportToPDF)
  *  - Animasi framer-motion, badge Stok Rendah
  *  - Orb merah, breadcrumb, header dengan ikon BarChart3
  */
@@ -80,114 +78,152 @@ function daysBetween(start: string, end: string) {
 
 // ─── Generic Export Helpers ──────────────────────────────────────────────────
 
+function colLetter(idx: number): string {
+  let s = "";
+  let n = idx;
+  while (n >= 0) {
+    s = String.fromCharCode(65 + (n % 26)) + s;
+    n = Math.floor(n / 26) - 1;
+  }
+  return s;
+}
+
 async function exportToExcel(
   data: any[],
   filename: string,
-  columnLabels?: Record<string, string>
+  options?: {
+    columnLabels?: Record<string, string>;
+    subtitle?: string;
+    filterInfo?: string;
+    numericColumns?: string[];
+  }
 ) {
+  if (data.length === 0) return;
+
   const ExcelJS = await import("exceljs");
   const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet("Data");
+  workbook.creator = "QuickRxRecord";
+  workbook.created = new Date();
+  const sheet = workbook.addWorksheet(filename.replace(/_/g, " "));
 
-  // Determine columns from first data row
-  const keys = data.length > 0 ? Object.keys(data[0]) : [];
-
-  // Auto-generate labels from keys if not provided
+  const keys = Object.keys(data[0]);
   const labels =
-    columnLabels ??
+    options?.columnLabels ??
     keys.reduce((acc, k) => {
-      acc[k] = k
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase());
+      acc[k] = k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
       return acc;
     }, {} as Record<string, string>);
 
-  // Title row
+  const now = formatWithLiteralAMPM(new Date(), {
+    day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
+  });
+  const subtitle = options?.subtitle || "Laporan";
+  const metadataParts = [`Dijana pada: ${now} | Jumlah rekod: ${data.length}`];
+  if (options?.filterInfo) metadataParts.push(options.filterInfo);
+  const metadata = metadataParts.join(" | ");
+
+  // Row 1: Title
   sheet.mergeCells(1, 1, 1, keys.length);
   const titleCell = sheet.getCell("A1");
-  titleCell.value = `Laporan — QuickRxRecord`;
-  titleCell.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
-  titleCell.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: "FF1877F2" },
-  };
+  titleCell.value = "QuickRxRecord";
+  titleCell.font = { bold: true, size: 16, color: { argb: "FFFFFFFF" } };
+  titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1B3A5C" } };
   titleCell.alignment = { horizontal: "center", vertical: "middle" };
-  sheet.getRow(1).height = 28;
+  sheet.getRow(1).height = 32;
 
-  // Date row
+  // Row 2: Subtitle
   sheet.mergeCells(2, 1, 2, keys.length);
-  const dateCell = sheet.getCell("A2");
-  dateCell.value = `Dijana pada: ${formatWithLiteralAMPM(new Date(), {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  })}`;
-  dateCell.font = { italic: true, size: 10, color: { argb: "FF65676B" } };
-  dateCell.alignment = { horizontal: "center" };
+  const subtitleCell = sheet.getCell("A2");
+  subtitleCell.value = subtitle;
+  subtitleCell.font = { italic: true, size: 11, color: { argb: "FF6B7280" } };
+  subtitleCell.alignment = { horizontal: "left" };
   sheet.getRow(2).height = 20;
 
-  // Header row
-  const headerRow = sheet.getRow(3);
+  // Row 3: Metadata
+  sheet.mergeCells(3, 1, 3, keys.length);
+  const metaCell = sheet.getCell("A3");
+  metaCell.value = metadata;
+  metaCell.font = { size: 9, color: { argb: "FF9CA3AF" } };
+  metaCell.alignment = { horizontal: "left" };
+  sheet.getRow(3).height = 18;
+
+  // Row 4: Blank spacer
+  sheet.getRow(4).height = 6;
+
+  // Row 5: Headers
+  const headerRow = sheet.getRow(5);
+  headerRow.height = 24;
   keys.forEach((key, idx) => {
     const cell = headerRow.getCell(idx + 1);
     cell.value = labels[key] ?? key;
-    cell.font = { bold: true, size: 11, color: { argb: "FFFFFFFF" } };
-    cell.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: "FF374151" },
-    };
-    cell.border = {
-      bottom: { style: "thin", color: { argb: "FFD1D5DB" } },
-    };
+    cell.font = { bold: true, size: 10, color: { argb: "FFFFFFFF" } };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1B3A5C" } };
     cell.alignment = { horizontal: "center", vertical: "middle" };
+    cell.border = {
+      top: { style: "thin", color: { argb: "FFD1D5DB" } },
+      bottom: { style: "thin", color: { argb: "FFD1D5DB" } },
+      left: { style: "thin", color: { argb: "FFD1D5DB" } },
+      right: { style: "thin", color: { argb: "FFD1D5DB" } },
+    };
   });
-  headerRow.height = 22;
 
-  // Data rows
+  // Rows 6..N+5: Data
+  const numericSet = new Set(options?.numericColumns ?? []);
   data.forEach((row, rowIdx) => {
-    const excelRow = sheet.getRow(rowIdx + 4);
+    const excelRow = sheet.getRow(rowIdx + 6);
+    excelRow.height = 18;
     keys.forEach((key, colIdx) => {
       const cell = excelRow.getCell(colIdx + 1);
-      cell.value = row[key] ?? "-";
-      cell.font = { size: 10 };
+      const val = row[key];
+      cell.value = val ?? "-";
+      cell.font = { size: 10, color: { argb: "FF1F2937" } };
       cell.border = {
-        bottom: { style: "thin", color: { argb: "FFF0F2F5" } },
+        top: { style: "thin", color: { argb: "FFE5E7EB" } },
+        bottom: { style: "thin", color: { argb: "FFE5E7EB" } },
+        left: { style: "thin", color: { argb: "FFE5E7EB" } },
+        right: { style: "thin", color: { argb: "FFE5E7EB" } },
       };
+      if (numericSet.has(key)) {
+        cell.numFmt = "#,##0";
+        cell.alignment = { horizontal: "right" };
+      }
+      if (rowIdx % 2 === 1) {
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F4F8" } };
+      }
     });
-    // Alternating row color
-    if (rowIdx % 2 === 1) {
-      excelRow.eachCell((cell) => {
-        cell.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: "FFF8F9FA" },
-        };
-      });
-    }
   });
 
-  // Footer row
-  const footerRowIdx = data.length + 4;
+  // Footer row: record count
+  const footerRowIdx = data.length + 6;
   sheet.mergeCells(footerRowIdx, 1, footerRowIdx, keys.length);
   const footerCell = sheet.getCell(`A${footerRowIdx}`);
   footerCell.value = `Jumlah rekod: ${data.length}`;
-  footerCell.font = { bold: true, size: 10, color: { argb: "FF65676B" } };
+  footerCell.font = { bold: true, italic: true, size: 10, color: { argb: "FF6B7280" } };
   footerCell.alignment = { horizontal: "right" };
+  sheet.getRow(footerRowIdx).height = 20;
 
-  // Auto column widths
+  // Column widths
   keys.forEach((key, idx) => {
     const col = sheet.getColumn(idx + 1);
-    const maxLabel = labels[key]?.length ?? key.length;
-    const maxData = data.reduce(
-      (max, row) => Math.max(max, String(row[key] ?? "-").length),
-      0
-    );
-    col.width = Math.min(40, Math.max(12, Math.max(maxLabel, maxData) + 2));
+    if (numericSet.has(key)) {
+      col.width = 14;
+    } else {
+      const maxLabel = labels[key]?.length ?? key.length;
+      const maxData = data.reduce(
+        (max, row) => Math.max(max, String(row[key] ?? "-").length),
+        0
+      );
+      col.width = Math.min(45, Math.max(12, Math.max(maxLabel, maxData) + 2));
+    }
   });
+
+  // Workbook config
+  sheet.views = [{ state: "frozen", ySplit: 5 }];
+  sheet.autoFilter = { from: "A5", to: `${colLetter(keys.length - 1)}5` };
+  sheet.pageSetup.orientation = "landscape";
+  sheet.pageSetup.fitToPage = true;
+  sheet.pageSetup.fitToWidth = 1;
+  sheet.pageSetup.fitToHeight = 0;
 
   // Download
   const buffer = await workbook.xlsx.writeBuffer();
@@ -205,8 +241,15 @@ async function exportToExcel(
 async function exportToPDF(
   data: any[],
   filename: string,
-  columnLabels?: Record<string, string>
+  options?: {
+    columnLabels?: Record<string, string>;
+    subtitle?: string;
+    filterInfo?: string;
+    numericColumns?: string[];
+  }
 ) {
+  if (data.length === 0) return;
+
   const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
     import("jspdf"),
     import("jspdf-autotable"),
@@ -214,85 +257,99 @@ async function exportToPDF(
 
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
 
-  const keys = data.length > 0 ? Object.keys(data[0]) : [];
+  const keys = Object.keys(data[0]);
   const labels =
-    columnLabels ??
+    options?.columnLabels ??
     keys.reduce((acc, k) => {
-      acc[k] = k
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase());
+      acc[k] = k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
       return acc;
     }, {} as Record<string, string>);
 
-  // Header bar
-  doc.setFillColor(24, 119, 242);
-  doc.rect(0, 0, 297, 18, "F");
+  const subtitle = options?.subtitle || "Laporan";
+  const numericColIndices = new Set(
+    keys.map((k, i) => options?.numericColumns?.includes(k) ? i : -1).filter((i) => i >= 0)
+  );
+
+  // 1. Header bar
+  doc.setFillColor(27, 58, 92);
+  doc.rect(0, 0, 297, 22, "F");
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
-  doc.text("QuickRxRecord", 10, 8);
-  doc.setFontSize(10);
+  doc.setFontSize(16);
+  doc.text("QuickRxRecord", 14, 10);
   doc.setFont("helvetica", "normal");
-  doc.text(filename.replace(/_/g, " "), 10, 14);
+  doc.setFontSize(11);
+  doc.text(subtitle, 14, 17);
 
-  // Date + count
-  doc.setTextColor(100, 103, 107);
-  doc.setFontSize(8);
+  // 2. Metadata line
   const now = formatWithLiteralAMPM(new Date(), {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+    day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
   });
-  doc.text(`Dijana pada: ${now}   |   Jumlah rekod: ${data.length}`, 10, 24);
+  const metadataParts = [`Dijana pada: ${now} | Jumlah rekod: ${data.length}`];
+  if (options?.filterInfo) metadataParts.push(options.filterInfo);
+  doc.setTextColor(156, 163, 175);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "italic");
+  doc.text(metadataParts.join(" | "), 10, 28);
 
-  // Table
+  // 3. Separator line
+  doc.setDrawColor(209, 213, 219);
+  doc.line(10, 31, 287, 31);
+
+  // 4. Table
   const head = [keys.map((k) => labels[k] ?? k)];
   const body = data.map((row) => keys.map((k) => String(row[k] ?? "-")));
 
   autoTable(doc, {
     head,
     body,
-    startY: 28,
-    styles: {
-      fontSize: 8,
-      cellPadding: 2,
-      textColor: [28, 30, 33],
-    },
+    startY: 34,
     headStyles: {
-      fillColor: [55, 65, 81],
+      fillColor: [27, 58, 92],
       textColor: [255, 255, 255],
       fontStyle: "bold",
-      fontSize: 8,
+      fontSize: 9,
+      halign: "center",
+      lineWidth: 0.1,
+      lineColor: [209, 213, 219],
+    },
+    bodyStyles: {
+      fontSize: 8.5,
+      textColor: [31, 41, 55],
+      lineWidth: 0.1,
+      lineColor: [229, 231, 235],
+      cellPadding: 3,
     },
     alternateRowStyles: {
-      fillColor: [248, 249, 250],
+      fillColor: [240, 244, 248],
     },
-    margin: { top: 28, bottom: 15 },
-    // Footer on every page
+    margin: { top: 34, bottom: 15, left: 10, right: 10 },
+    didParseCell: (hookData) => {
+      if (hookData.section === "body" && numericColIndices.has(hookData.column.index)) {
+        hookData.cell.styles.halign = "right";
+      }
+    },
     didDrawPage: (hookData) => {
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      // Footer line
+      const pw = doc.internal.pageSize.getWidth();
+      const ph = doc.internal.pageSize.getHeight();
       doc.setDrawColor(221, 223, 226);
-      doc.line(10, pageHeight - 10, pageWidth - 10, pageHeight - 10);
-      // Footer text
+      doc.line(10, ph - 12, pw - 10, ph - 12);
       doc.setFontSize(7);
       doc.setTextColor(150, 153, 155);
-      doc.text(
-        `QuickRxRecord - ${filename.replace(/_/g, " ")}`,
-        10,
-        pageHeight - 6
-      );
+      doc.text(`QuickRxRecord — ${subtitle}`, 10, ph - 8);
       doc.text(
         `Halaman ${hookData.pageNumber} / ${(doc as any).getNumberOfPages?.() ?? hookData.pageNumber}`,
-        pageWidth - 10,
-        pageHeight - 6,
-        { align: "right" }
+        pw - 10, ph - 8, { align: "right" }
       );
     },
   });
+
+  // 5. Post-table summary
+  const finalY = (doc as any).lastAutoTable?.finalY ?? 50;
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(107, 114, 128);
+  doc.text(`Jumlah rekod: ${data.length}`, 10, finalY + 6);
 
   doc.save(`${filename}.pdf`);
 }
@@ -318,6 +375,27 @@ const TRANSACTION_COLUMN_LABELS: Record<string, string> = {
   kuantiti: "Kuantiti",
   kelompok: "Kelompok",
   kakitangan: "Kakitangan",
+};
+
+const ANNUAL_USAGE_COLUMN_LABELS: Record<string, string> = {
+  bulan: "Bulan",
+  jumlah_kuantiti: "Jumlah Kuantiti",
+};
+
+const EXPIRY_COLUMN_LABELS: Record<string, string> = {
+  kod_item: "Kod Item",
+  nama_item: "Nama Item",
+  nombor_kelompok: "Nombor Kelompok",
+  tarikh_luput: "Tarikh Luput",
+  baki_hari: "Baki Hari",
+  kuantiti: "Kuantiti",
+};
+
+const LOW_STOCK_COLUMN_LABELS: Record<string, string> = {
+  kod_item: "Kod Item",
+  nama_item: "Nama Item",
+  kuantiti_diperlukan: "Kuantiti Diperlukan (4 Minggu)",
+  baki_semasa: "Baki Semasa",
 };
 
 // ─── Main Component ─────────────────────────────────────────────────────────
@@ -667,7 +745,11 @@ export default function ReportPage() {
               },
             ]
       );
-      await exportToExcel(flat, "Laporan_Inventori", INVENTORY_COLUMN_LABELS);
+      await exportToExcel(flat, "Laporan_Inventori", {
+        columnLabels: INVENTORY_COLUMN_LABELS,
+        subtitle: "Paras Stok Inventori",
+        numericColumns: ["kuantiti"],
+      });
       toast.success("Fail Excel inventori berjaya dimuat turun!");
     } catch (err: any) {
       toast.error(`Gagal mengeksport Excel: ${err.message}`);
@@ -700,7 +782,11 @@ export default function ReportPage() {
               },
             ]
       );
-      await exportToPDF(flat, "Laporan_Inventori", INVENTORY_COLUMN_LABELS);
+      await exportToPDF(flat, "Laporan_Inventori", {
+        columnLabels: INVENTORY_COLUMN_LABELS,
+        subtitle: "Paras Stok Inventori",
+        numericColumns: ["kuantiti"],
+      });
       toast.success("Fail PDF inventori berjaya dimuat turun!");
     } catch (err: any) {
       toast.error(`Gagal mengeksport PDF: ${err.message}`);
@@ -720,7 +806,14 @@ const mapped = transactionsData.map((t) => ({
         kelompok: t.batch?.nombor_kelompok ?? "-",
         kakitangan: t.staff?.nama ?? "-",
       }));
-      await exportToExcel(mapped, "Laporan_Transaksi", TRANSACTION_COLUMN_LABELS);
+      await exportToExcel(mapped, "Laporan_Transaksi", {
+        columnLabels: TRANSACTION_COLUMN_LABELS,
+        subtitle: "Log Transaksi Bekalan",
+        filterInfo: (dateFrom || dateTo)
+          ? `Dari: ${dateFrom || "-"} | Hingga: ${dateTo || "-"}`
+          : "Semua tarikh",
+        numericColumns: ["kuantiti"],
+      });
       toast.success("Fail Excel transaksi berjaya dimuat turun!");
     } catch (err: any) {
       toast.error(`Gagal mengeksport Excel: ${err.message}`);
@@ -740,8 +833,155 @@ const mapped = transactionsData.map((t) => ({
         kelompok: t.batch?.nombor_kelompok ?? "-",
         kakitangan: t.staff?.nama ?? "-",
       }));
-      await exportToPDF(mapped, "Laporan_Transaksi", TRANSACTION_COLUMN_LABELS);
+      await exportToPDF(mapped, "Laporan_Transaksi", {
+        columnLabels: TRANSACTION_COLUMN_LABELS,
+        subtitle: "Log Transaksi Bekalan",
+        filterInfo: (dateFrom || dateTo)
+          ? `Dari: ${dateFrom || "-"} | Hingga: ${dateTo || "-"}`
+          : "Semua tarikh",
+        numericColumns: ["kuantiti"],
+      });
       toast.success("Fail PDF transaksi berjaya dimuat turun!");
+    } catch (err: any) {
+      toast.error(`Gagal mengeksport PDF: ${err.message}`);
+    }
+  };
+
+  // ── Annual Usage Export Handlers ──────────────────────────────────────────
+
+  const handleExportAnnualUsageExcel = async () => {
+    try {
+      if (!annualUsageData || !annualUsageId) return;
+      const selectedItem = allItems.find((i) => i.id === annualUsageId);
+      const mapped = annualUsageData.map((row) => ({
+        bulan: MALAY_MONTHS[row.month - 1],
+        jumlah_kuantiti: row.total,
+      }));
+      const opts = {
+        columnLabels: ANNUAL_USAGE_COLUMN_LABELS,
+        subtitle: `Penggunaan Tahunan — ${selectedItem ? formatItemDisplay(selectedItem) : ""} (${annualUsageYear})`,
+        filterInfo: `Item: ${selectedItem?.kod_item ?? "-"} | Tahun: ${annualUsageYear}`,
+        numericColumns: ["jumlah_kuantiti"],
+      };
+      await exportToExcel(mapped, `Laporan_Penggunaan_Tahunan_${annualUsageYear}`, opts);
+      toast.success("Fail Excel penggunaan tahunan berjaya dimuat turun!");
+    } catch (err: any) {
+      toast.error(`Gagal mengeksport Excel: ${err.message}`);
+    }
+  };
+
+  const handleExportAnnualUsagePDF = async () => {
+    try {
+      if (!annualUsageData || !annualUsageId) return;
+      const selectedItem = allItems.find((i) => i.id === annualUsageId);
+      const mapped = annualUsageData.map((row) => ({
+        bulan: MALAY_MONTHS[row.month - 1],
+        jumlah_kuantiti: row.total,
+      }));
+      const opts = {
+        columnLabels: ANNUAL_USAGE_COLUMN_LABELS,
+        subtitle: `Penggunaan Tahunan — ${selectedItem ? formatItemDisplay(selectedItem) : ""} (${annualUsageYear})`,
+        filterInfo: `Item: ${selectedItem?.kod_item ?? "-"} | Tahun: ${annualUsageYear}`,
+        numericColumns: ["jumlah_kuantiti"],
+      };
+      await exportToPDF(mapped, `Laporan_Penggunaan_Tahunan_${annualUsageYear}`, opts);
+      toast.success("Fail PDF penggunaan tahunan berjaya dimuat turun!");
+    } catch (err: any) {
+      toast.error(`Gagal mengeksport PDF: ${err.message}`);
+    }
+  };
+
+  // ── Expiry Export Handlers ───────────────────────────────────────────────
+
+  const handleExportExpiryExcel = async () => {
+    try {
+      if (!expiryData) return;
+      const today = getTodayStrKL();
+      const mapped = expiryData.map((batch) => ({
+        kod_item: batch.item?.kod_item ?? "-",
+        nama_item: formatItemDisplay(batch.item) || "-",
+        nombor_kelompok: batch.nombor_kelompok,
+        tarikh_luput: formatDate(batch.tarikh_luput),
+        baki_hari: daysBetween(today, batch.tarikh_luput),
+        kuantiti: batch.kuantiti,
+      }));
+      const opts = {
+        columnLabels: EXPIRY_COLUMN_LABELS,
+        subtitle: `Kelompok Akan Luput — ${expiryDays} Hari`,
+        filterInfo: `Tempoh: ${expiryDays} hari`,
+        numericColumns: ["kuantiti", "baki_hari"],
+      };
+      await exportToExcel(mapped, `Laporan_Akan_Luput_${expiryDays}Hari`, opts);
+      toast.success("Fail Excel akan luput berjaya dimuat turun!");
+    } catch (err: any) {
+      toast.error(`Gagal mengeksport Excel: ${err.message}`);
+    }
+  };
+
+  const handleExportExpiryPDF = async () => {
+    try {
+      if (!expiryData) return;
+      const today = getTodayStrKL();
+      const mapped = expiryData.map((batch) => ({
+        kod_item: batch.item?.kod_item ?? "-",
+        nama_item: formatItemDisplay(batch.item) || "-",
+        nombor_kelompok: batch.nombor_kelompok,
+        tarikh_luput: formatDate(batch.tarikh_luput),
+        baki_hari: daysBetween(today, batch.tarikh_luput),
+        kuantiti: batch.kuantiti,
+      }));
+      const opts = {
+        columnLabels: EXPIRY_COLUMN_LABELS,
+        subtitle: `Kelompok Akan Luput — ${expiryDays} Hari`,
+        filterInfo: `Tempoh: ${expiryDays} hari`,
+        numericColumns: ["kuantiti", "baki_hari"],
+      };
+      await exportToPDF(mapped, `Laporan_Akan_Luput_${expiryDays}Hari`, opts);
+      toast.success("Fail PDF akan luput berjaya dimuat turun!");
+    } catch (err: any) {
+      toast.error(`Gagal mengeksport PDF: ${err.message}`);
+    }
+  };
+
+  // ── Low Stock Export Handlers ────────────────────────────────────────────
+
+  const handleExportLowStockExcel = async () => {
+    try {
+      if (!lowStockData) return;
+      const mapped = lowStockData.map((item) => ({
+        kod_item: item.kod_item,
+        nama_item: formatItemDisplay(item),
+        kuantiti_diperlukan: Math.ceil(item.requiredFourWeeks),
+        baki_semasa: item.currentBalance,
+      }));
+      const opts = {
+        columnLabels: LOW_STOCK_COLUMN_LABELS,
+        subtitle: "Stok Rendah — Item Di Bawah Paras Minimum",
+        numericColumns: ["kuantiti_diperlukan", "baki_semasa"],
+      };
+      await exportToExcel(mapped, "Laporan_Stok_Rendah", opts);
+      toast.success("Fail Excel stok rendah berjaya dimuat turun!");
+    } catch (err: any) {
+      toast.error(`Gagal mengeksport Excel: ${err.message}`);
+    }
+  };
+
+  const handleExportLowStockPDF = async () => {
+    try {
+      if (!lowStockData) return;
+      const mapped = lowStockData.map((item) => ({
+        kod_item: item.kod_item,
+        nama_item: formatItemDisplay(item),
+        kuantiti_diperlukan: Math.ceil(item.requiredFourWeeks),
+        baki_semasa: item.currentBalance,
+      }));
+      const opts = {
+        columnLabels: LOW_STOCK_COLUMN_LABELS,
+        subtitle: "Stok Rendah — Item Di Bawah Paras Minimum",
+        numericColumns: ["kuantiti_diperlukan", "baki_semasa"],
+      };
+      await exportToPDF(mapped, "Laporan_Stok_Rendah", opts);
+      toast.success("Fail PDF stok rendah berjaya dimuat turun!");
     } catch (err: any) {
       toast.error(`Gagal mengeksport PDF: ${err.message}`);
     }
@@ -880,11 +1120,13 @@ const mapped = transactionsData.map((t) => ({
               selectedYear={annualUsageYear}
               onItemChange={setAnnualUsageId}
               onYearChange={setAnnualUsageYear}
+              onExportExcel={handleExportAnnualUsageExcel}
+              onExportPDF={handleExportAnnualUsagePDF}
             />
           ) : activeTab === "expiry" ? (
-            <ExpiryTab data={expiryData} loading={expiryLoading} days={expiryDays} onDaysChange={setExpiryDays} />
+            <ExpiryTab data={expiryData} loading={expiryLoading} days={expiryDays} onDaysChange={setExpiryDays} onExportExcel={handleExportExpiryExcel} onExportPDF={handleExportExpiryPDF} />
           ) : (
-            <LowStockTab data={lowStockData} loading={lowStockLoading} />
+            <LowStockTab data={lowStockData} loading={lowStockLoading} onExportExcel={handleExportLowStockExcel} onExportPDF={handleExportLowStockPDF} />
           )}
         </div>
     </div>
@@ -1099,6 +1341,8 @@ function AnnualUsageTab({
   selectedYear,
   onItemChange,
   onYearChange,
+  onExportExcel,
+  onExportPDF,
 }: {
   items: { id: string; kod_item: string; nama_item: string; kekuatan: string | null; bentuk: string | null }[];
   data: { month: number; total: number }[] | undefined;
@@ -1107,6 +1351,8 @@ function AnnualUsageTab({
   selectedYear: number;
   onItemChange: (id: string) => void;
   onYearChange: (year: number) => void;
+  onExportExcel?: () => void;
+  onExportPDF?: () => void;
 }) {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -1125,12 +1371,44 @@ function AnnualUsageTab({
       }}
     >
       <CardContent className="p-0 relative">
-        <div className="p-4 sm:p-5 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border-light)" }}>
-          <BarChart3 className="w-4 h-4" style={{ color: "#f43f5e" }} />
-          <div>
-            <h2 className="text-[15px] font-bold" style={{ color: "var(--text-primary)" }}>Jumlah Penggunaan Tahunan</h2>
-            <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Jumlah kuantiti dibekal mengikut bulan bagi item yang dipilih</p>
+        <div className="p-4 sm:p-5 flex items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--border-light)" }}>
+          <div className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" style={{ color: "#f43f5e" }} />
+            <div>
+              <h2 className="text-[15px] font-bold" style={{ color: "var(--text-primary)" }}>Jumlah Penggunaan Tahunan</h2>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Jumlah kuantiti dibekal mengikut bulan bagi item yang dipilih</p>
+            </div>
           </div>
+          {onExportExcel && onExportPDF && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onExportExcel}
+                disabled={loading || !selectedItemId || !data}
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-xs font-semibold transition-all disabled:opacity-40 sm:min-h-0"
+                style={{
+                  background: "rgba(34,197,94,0.08)",
+                  color: "var(--text-primary)",
+                  border: "1px solid rgba(34,197,94,0.2)",
+                }}
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                Excel
+              </button>
+              <button
+                onClick={onExportPDF}
+                disabled={loading || !selectedItemId || !data}
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-xs font-semibold transition-all disabled:opacity-40 sm:min-h-0"
+                style={{
+                  background: "rgba(239,68,68,0.08)",
+                  color: "var(--text-primary)",
+                  border: "1px solid rgba(239,68,68,0.2)",
+                }}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                PDF
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Filters */}
@@ -1459,11 +1737,15 @@ function ExpiryTab({
   loading,
   days,
   onDaysChange,
+  onExportExcel,
+  onExportPDF,
 }: {
   data: ExpiringBatchRecord[] | undefined;
   loading: boolean;
   days: number;
   onDaysChange: (days: number) => void;
+  onExportExcel?: () => void;
+  onExportPDF?: () => void;
 }) {
   const today = getTodayStrKL();
   const displayData = data ?? [];
@@ -1488,19 +1770,51 @@ function ExpiryTab({
               <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Stok yang akan luput dalam tempoh dipilih</p>
             </div>
           </div>
-          <label className="flex items-center gap-2 text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>
-            Tempoh
-            <select
-              value={days}
-              onChange={(event) => onDaysChange(Number(event.target.value))}
-              className="h-11 rounded-lg px-2 text-xs font-medium sm:h-9"
-              style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
-            >
-              {[7, 14, 30, 60, 90, 180].map((duration) => (
-                <option key={duration} value={duration}>{duration} hari</option>
-              ))}
-            </select>
-          </label>
+          <div className="flex items-center gap-2 flex-wrap">
+            <label className="flex items-center gap-2 text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>
+              Tempoh
+              <select
+                value={days}
+                onChange={(event) => onDaysChange(Number(event.target.value))}
+                className="h-11 rounded-lg px-2 text-xs font-medium sm:h-9"
+                style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+              >
+                {[7, 14, 30, 60, 90, 180].map((duration) => (
+                  <option key={duration} value={duration}>{duration} hari</option>
+                ))}
+              </select>
+            </label>
+            {onExportExcel && onExportPDF && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={onExportExcel}
+                  disabled={loading || !data || data.length === 0}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-xs font-semibold transition-all disabled:opacity-40 sm:min-h-0"
+                  style={{
+                    background: "rgba(34,197,94,0.08)",
+                    color: "var(--text-primary)",
+                    border: "1px solid rgba(34,197,94,0.2)",
+                  }}
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  Excel
+                </button>
+                <button
+                  onClick={onExportPDF}
+                  disabled={loading || !data || data.length === 0}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-xs font-semibold transition-all disabled:opacity-40 sm:min-h-0"
+                  style={{
+                    background: "rgba(239,68,68,0.08)",
+                    color: "var(--text-primary)",
+                    border: "1px solid rgba(239,68,68,0.2)",
+                  }}
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  PDF
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {loading ? (
@@ -1550,9 +1864,13 @@ function ExpiryTab({
 function LowStockTab({
   data,
   loading,
+  onExportExcel,
+  onExportPDF,
 }: {
   data: LowStockRecord[] | undefined;
   loading: boolean;
+  onExportExcel?: () => void;
+  onExportPDF?: () => void;
 }) {
   const displayData = data ?? [];
 
@@ -1568,12 +1886,44 @@ function LowStockTab({
       }}
     >
       <CardContent className="p-0 relative">
-        <div className="p-4 sm:p-5 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border-light)" }}>
-          <AlertTriangle className="w-4 h-4" style={{ color: "#dc2626" }} />
-          <div>
-            <h2 className="text-[15px] font-bold" style={{ color: "var(--text-primary)" }}>Stok Rendah</h2>
-            <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Item dengan baki semasa kurang daripada keperluan 4 minggu</p>
+        <div className="p-4 sm:p-5 flex items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--border-light)" }}>
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" style={{ color: "#dc2626" }} />
+            <div>
+              <h2 className="text-[15px] font-bold" style={{ color: "var(--text-primary)" }}>Stok Rendah</h2>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Item dengan baki semasa kurang daripada keperluan 4 minggu</p>
+            </div>
           </div>
+          {onExportExcel && onExportPDF && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onExportExcel}
+                disabled={loading || !data || data.length === 0}
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-xs font-semibold transition-all disabled:opacity-40 sm:min-h-0"
+                style={{
+                  background: "rgba(34,197,94,0.08)",
+                  color: "var(--text-primary)",
+                  border: "1px solid rgba(34,197,94,0.2)",
+                }}
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                Excel
+              </button>
+              <button
+                onClick={onExportPDF}
+                disabled={loading || !data || data.length === 0}
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-xs font-semibold transition-all disabled:opacity-40 sm:min-h-0"
+                style={{
+                  background: "rgba(239,68,68,0.08)",
+                  color: "var(--text-primary)",
+                  border: "1px solid rgba(239,68,68,0.2)",
+                }}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                PDF
+              </button>
+            </div>
+          )}
         </div>
 
         {loading ? (

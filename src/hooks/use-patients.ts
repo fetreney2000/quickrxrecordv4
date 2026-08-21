@@ -99,8 +99,8 @@ export function usePatients({
           totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
         };
       }
-      // Fallback: function not yet deployed or any RPC error — use legacy client-side queries
-      if (rpcErr.code !== "42883" && !rpcErr.message?.includes("does not exist")) throw rpcErr;
+      // RPC unavailable for any reason (not deployed, type mismatch, SQL
+      // error) — fall through to the legacy client-side queries below.
 
       // Fallback: RPC not yet deployed — legacy client-side queries
       let query = supabase

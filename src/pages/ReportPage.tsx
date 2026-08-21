@@ -373,7 +373,7 @@ export default function ReportPage() {
           item_batches: r.item_batches ?? [],
         })) as InventoryItem[];
       }
-      if (rpcErr.code !== "42883" && !rpcErr.message?.includes("does not exist")) throw rpcErr;
+      // Fallback: RPC unavailable — use legacy client-side queries below
 
       // Fallback: RPC not yet deployed — legacy client-side queries
       const { data, error } = await supabase
@@ -417,7 +417,7 @@ export default function ReportPage() {
           staff: r.staff_nama ? { nama: r.staff_nama } : null,
         })) as TransactionRecord[];
       }
-      if (rpcErr.code !== "42883" && !rpcErr.message?.includes("does not exist")) throw rpcErr;
+      // Fallback: RPC unavailable — use legacy client-side queries below
 
       // Fallback: RPC not yet deployed — legacy client-side queries
       const { data, error } = await supabase
@@ -469,7 +469,7 @@ export default function ReportPage() {
           },
         })) as ExpiringBatchRecord[];
       }
-      if (rpcErr.code !== "42883" && !rpcErr.message?.includes("does not exist")) throw rpcErr;
+      // Fallback: RPC unavailable — use legacy client-side queries below
 
       // Fallback: RPC not yet deployed — legacy client-side queries
       const expiryStart = getTodayStrKL();
@@ -522,7 +522,7 @@ export default function ReportPage() {
           currentBalance: Number(r.current_balance),
         })) as LowStockRecord[];
       }
-      if (rpcErr.code !== "42883" && !rpcErr.message?.includes("does not exist")) throw rpcErr;
+      // Fallback: RPC unavailable — use legacy client-side queries below
 
       // Fallback: RPC not yet deployed — legacy client-side queries
       const today = getTodayStrKL();

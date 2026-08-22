@@ -29,8 +29,8 @@ AS $$
   today_supply AS (
     SELECT count(*)::BIGINT AS c FROM supply_records, kl_today k
     WHERE voided_at IS NULL
-      AND tarikh_dibekal >= (k.today AT TIME ZONE 'Asia/Kuala_Lumpur')
-      AND tarikh_dibekal <  ((k.today + INTERVAL '1 day') AT TIME ZONE 'Asia/Kuala_Lumpur')
+      AND tarikh_dibekal >= (k.today::timestamp AT TIME ZONE 'Asia/Kuala_Lumpur')
+      AND tarikh_dibekal <  ((k.today::timestamp + INTERVAL '1 day') AT TIME ZONE 'Asia/Kuala_Lumpur')
   ),
   expiring AS (
     SELECT count(*)::BIGINT AS c FROM item_batches ib, kl_today k
@@ -48,8 +48,8 @@ AS $$
     JOIN patient_item_assignments pia ON pia.id = sr.assignment_id
     CROSS JOIN kl_today k
     WHERE sr.voided_at IS NULL
-      AND sr.tarikh_dibekal >= ((k.today - 84) AT TIME ZONE 'Asia/Kuala_Lumpur')
-      AND sr.tarikh_dibekal < ((k.today + 1) AT TIME ZONE 'Asia/Kuala_Lumpur')
+      AND sr.tarikh_dibekal >= ((k.today - 84)::timestamp AT TIME ZONE 'Asia/Kuala_Lumpur')
+      AND sr.tarikh_dibekal < ((k.today + 1)::timestamp AT TIME ZONE 'Asia/Kuala_Lumpur')
     GROUP BY pia.item_id
   ),
   stock_calc AS (

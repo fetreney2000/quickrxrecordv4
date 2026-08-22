@@ -23,12 +23,12 @@ export function useDashboardStats() {
       const { data, error } = await supabase.rpc("get_dashboard_stats").single() as { data: any; error: any };
       if (error) throw error;
       return {
-        totalPatients: data.total_patients,
-        totalItems: data.total_items,
-        supplyToday: data.supply_today,
-        expiringSoon: data.expiring_soon,
-        totalStock: data.total_stock,
-        lowStockCount: data.low_stock_count,
+        totalPatients: Number(data.total_patients),
+        totalItems: Number(data.total_items),
+        supplyToday: Number(data.supply_today),
+        expiringSoon: Number(data.expiring_soon),
+        totalStock: Number(data.total_stock),
+        lowStockCount: Number(data.low_stock_count),
       };
     },
     refetchOnWindowFocus: false,

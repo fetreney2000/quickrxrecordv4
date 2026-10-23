@@ -19,7 +19,7 @@ import {
   pwvFingerprint,
   recordAttempt,
   verifyToken,
-} from "./_lib/auth";
+} from "./_lib/auth.js";
 
 const VALID_ROLES = [
   "Pentadbir",

@@ -11,7 +11,7 @@ import {
   isRateLimited,
   json,
   recordAttempt,
-} from "./_lib/auth";
+} from "./_lib/auth.js";
 
 export async function OPTIONS(request: Request): Promise<Response> {
   return new Response("ok", { headers: corsHeadersFor(request) });

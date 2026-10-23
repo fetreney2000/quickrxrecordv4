@@ -19,7 +19,7 @@ import {
   recordAttempt,
   verifyPassword,
   verifyToken,
-} from "./_lib/auth";
+} from "./_lib/auth.js";
 
 export async function OPTIONS(request: Request): Promise<Response> {
   return new Response("ok", { headers: corsHeadersFor(request) });

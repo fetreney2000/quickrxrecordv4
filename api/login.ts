@@ -27,7 +27,7 @@ import {
   SESSION_TTL_MS,
   signToken,
   verifyPassword,
-} from "./_lib/auth";
+} from "./_lib/auth.js";
 
 // Hash bcrypt dummy (cost 12) — sentiasa gagal sepadan, guna utk padankan masa.
 const DUMMY_HASH =

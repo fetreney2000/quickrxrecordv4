@@ -24,6 +24,9 @@ import {
   User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
+import { useQuery } from "@tanstack/react-query";
 import {
   useSearchPatients,
   useMergePatients,
@@ -61,31 +64,133 @@ export function MergeDialog({ open, onOpenChange, primaryPatient }: MergeDialogP
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [step, setStep] = useState<"search" | "confirm">("search");
+  // LOW-3: cache pesakit yang pernah dipaparkan, supaya cip "Dipilih" dan
+  // senarai pengesahan tidak hilang apabila pertanyaan carian berubah.
+  const [patientCache, setPatientCache] = useState<
+    Map<string, { id: string; nama: string; nombor_kad_pengenalan: string | null; nombor_pendaftaran_hospital: string | null; aktif: boolean }>
+  >(new Map());
 
   const { data: searchResults = [], isLoading: searching } = useSearchPatients(searchQuery);
   const mergeMutation = useMergePatients();
+
+  useEffect(() => {
+    if (searchResults.length === 0) return;
+    setPatientCache((prev) => {
+      const next = new Map(prev);
+      for (const p of searchResults) next.set(p.id, p);
+      return next;
+    });
+  }, [searchResults]);
 
   useEffect(() => {
     if (!open) {
       setSearchQuery("");
       setSelectedIds(new Set());
       setStep("search");
+      setPatientCache(new Map());
     }
   }, [open]);
 
+  // LOW-4: had 10 pendua setiap gabungan — setiap sekunder memanjangkan
+  // satu transaksi yang memegang kunci baris; gabungan besar menyekat
+  // bekalan serentak pada baris tersebut.
+  const MAX_DUPLICATES = 10;
   const toggleSelect = (id: string) => {
+    let rejected = false;
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
       } else {
+        if (next.size >= MAX_DUPLICATES) {
+          rejected = true;
+          return prev;
+        }
         next.add(id);
       }
       return next;
     });
+    if (rejected) {
+      toast.warning(`Maksimum ${MAX_DUPLICATES} pesakit pendua setiap gabungan.`);
+    }
   };
 
-  const selectedPatients = searchResults.filter((p) => selectedIds.has(p.id));
+  const selectedIdList = [...selectedIds].sort();
+  // Selesaikan daripada cache (bukan hasil carian semasa) — pilihan kekal
+  // kelihatan walaupun pengguna menaip pertanyaan baharu.
+  const selectedPatients = selectedIdList.flatMap((id) => {
+    const cached = patientCache.get(id);
+    if (cached) return [cached];
+    const live = searchResults.find((p) => p.id === id);
+    return live ? [live] : [];
+  });
+  // MEDIUM-3: pengesahan eksplisit — pendua tidak aktif kekal tidak aktif
+  // selepas gabungan (tugasannya dipindahkan tanpa diaktifkan semula).
+  const inactiveSelected = selectedPatients.filter((p) => !p.aktif);
+
+  // MEDIUM-2: kesan konflik dos — tugasan aktif untuk item yang sama di
+  // kedua-dua pihak. Pelayan mengekalkan dos UTAMA (lihat merge_patients);
+  // dedahkan di sini supaya klinisian membuat keputusan termaklum.
+  const { data: conflictRows = [] } = useQuery({
+    queryKey: ["merge-conflicts", primaryPatient.id, selectedIdList],
+    enabled: open && selectedIdList.length > 0,
+    staleTime: 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("patient_item_assignments")
+        .select("id, patient_id, item_id, dos, item:items(id, nama_item)")
+        .eq("aktif", true)
+        .in("patient_id", [primaryPatient.id, ...selectedIdList]);
+      if (error) throw error;
+      return ((data ?? []) as unknown as {
+        id: string;
+        patient_id: string;
+        item_id: string;
+        dos: string | null;
+        item:
+          | { id: string; nama_item: string }
+          | { id: string; nama_item: string }[]
+          | null;
+      }[]).map((a) => ({
+        ...a,
+        item: Array.isArray(a.item) ? (a.item[0] ?? null) : a.item,
+      }));
+    },
+  });
+  const dosConflicts = (() => {
+    const primaryByItem = new Map<string, { dos: string | null; name: string }>();
+    for (const a of conflictRows) {
+      if (a.patient_id === primaryPatient.id) {
+        primaryByItem.set(a.item_id, {
+          dos: a.dos,
+          name: a.item?.nama_item ?? "Ubat",
+        });
+      }
+    }
+    const out: {
+      itemName: string;
+      secondaryName: string;
+      secondaryDos: string;
+      primaryDos: string;
+    }[] = [];
+    const seen = new Set<string>();
+    for (const a of conflictRows) {
+      if (a.patient_id === primaryPatient.id) continue;
+      const prim = primaryByItem.get(a.item_id);
+      if (!prim) continue;
+      const key = `${a.patient_id}:${a.item_id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const sec = selectedPatients.find((p) => p.id === a.patient_id);
+      out.push({
+        itemName: prim.name,
+        secondaryName: sec?.nama ?? "Pendua",
+        secondaryDos: a.dos || "—",
+        primaryDos: prim.dos || "—",
+      });
+    }
+    return out;
+  })();
 
   const handleMerge = () => {
     if (selectedIds.size === 0) return;
@@ -140,11 +245,11 @@ export function MergeDialog({ open, onOpenChange, primaryPatient }: MergeDialogP
               </div>
             </div>
 
-            {selectedIds.size > 0 && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-2xs font-semibold" style={{ color: "var(--text-secondary)" }}>
-                  Dipilih:
-                </span>
+              {selectedIds.size > 0 && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-2xs font-semibold" style={{ color: "var(--text-secondary)" }}>
+                    Dipilih ({selectedIds.size}/{MAX_DUPLICATES}):
+                  </span>
                 {selectedPatients.map((p) => (
                   <span
                     key={p.id}
@@ -255,11 +360,50 @@ export function MergeDialog({ open, onOpenChange, primaryPatient }: MergeDialogP
               <div className="text-xs" style={{ color: "#92400e" }}>
                 <p className="font-semibold mb-1">Amaran: Tindakan ini tidak boleh dibatalkan.</p>
                 <p>
-                  Rekod bekalan dan sejarah dos pesakit pendua akan dipindahkan ke pesakit utama.
-                  Pesakit pendua akan dinyahaktifkan.
+                  Rekod bekalan, sejarah dos dan rekod penolakan pesakit pendua
+                  akan dipindahkan ke pesakit utama. Pesakit pendua akan
+                  dinyahaktifkan.
                 </p>
+                {inactiveSelected.length > 0 && (
+                  <p className="font-semibold mt-1" role="alert">
+                    {inactiveSelected.length} pendua yang dipilih telah dinyahaktifkan
+                    ({inactiveSelected.map((p) => p.nama).join(", ")}) — tugasan
+                    tidak aktifnya dipindahkan tanpa diaktifkan semula.
+                  </p>
+                )}
               </div>
             </div>
+
+            {dosConflicts.length > 0 && (
+              <div
+                className="flex items-start gap-2 p-3 rounded-xl"
+                style={{
+                  background: "rgba(220,38,38,0.06)",
+                  border: "1px solid rgba(220,38,38,0.25)",
+                }}
+              >
+                <AlertTriangle
+                  className="w-4 h-4 flex-shrink-0 mt-0.5"
+                  style={{ color: "#dc2626" }}
+                />
+                <div className="text-xs" style={{ color: "#7f1d1d" }}>
+                  <p className="font-semibold mb-1">
+                    Konflik dos ({dosConflicts.length}) — dos utama dikekalkan:
+                  </p>
+                  <ul className="space-y-1 list-disc pl-4">
+                    {dosConflicts.map((c, i) => (
+                      <li key={i}>
+                        <strong>{c.itemName}</strong>: {c.secondaryName} (
+                        {c.secondaryDos}) → utama ({c.primaryDos})
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-1">
+                    Semak dos utama dahulu — ubah jika perlu sebelum menggabungkan.
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
               Pesakit Utama:
@@ -293,6 +437,17 @@ export function MergeDialog({ open, onOpenChange, primaryPatient }: MergeDialogP
                   <span style={{ color: "var(--text-secondary)" }}>
                     — {p.nombor_kad_pengenalan || "Tiada KP"}
                   </span>
+                  {!p.aktif && (
+                    <span
+                      className="text-2xs font-semibold px-2 py-0.5 rounded-full"
+                      style={{
+                        background: "rgba(107,114,128,0.1)",
+                        color: "#6b7280",
+                      }}
+                    >
+                      Tidak Aktif
+                    </span>
+                  )}
                 </div>
               ))}
             </div>

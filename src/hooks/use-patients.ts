@@ -11,8 +11,12 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { useNavStore } from "@/lib/nav-store";
 import { useAuth } from "@/hooks/use-auth";
-import { getTodayStrKL } from "@/lib/utils";
+import { digitsOnly, formatMyKad, formatPhone, getTodayStrKL } from "@/lib/utils";
+import { escapeLikeTerm } from "@/lib/postgrest";
 import type { Patient } from "@/types";
+
+const PATIENT_COLUMNS =
+  "id, nama, nombor_kad_pengenalan, nombor_pendaftaran_hospital, dokumen_lain, nombor_telefon, alamat, catatan, aktif, merged_into, tarikh_daftar, catatan_nyahaktif, tarikh_nyahaktif, dinyahaktif_oleh, didaftar_oleh, created_at, updated_at";
 
 export type SortDir = "asc" | "desc";
 
@@ -106,25 +110,31 @@ export function usePatients({
       }
 
       // Fallback: RPC not yet deployed — legacy client-side queries
+      // (lajur eksplisit — elak SELECT * ke atas PHI).
       let query = supabase
         .from("patients")
-        .select("*", { count: "exact" })
+        .select(PATIENT_COLUMNS, { count: "exact" })
         .eq("aktif", active)
         .is("merged_into", null);
 
-      // Carian (nama, KP, hospital)
+      // Carian (nama, KP, hospital) — istilah dibersihkan (PostgREST injection).
       const trimmed = search.trim();
       if (trimmed) {
-        const like = `%${trimmed}%`;
+        const like = `%${escapeLikeTerm(trimmed)}%`;
         query = query.or(
           `nama.ilike.${like},nombor_kad_pengenalan.ilike.${like},nombor_pendaftaran_hospital.ilike.${like}`
         );
       }
 
-      // Isihan
+      // Isihan + pemecah seri updated_at (LOW-5): tarikh_nyahaktif hanya
+      // berketepatan hari, manakala nyahaktif menulis updated_at=now() dalam
+      // kenyataan yang sama — jadi updated_at menghampiri tertib masa
+      // nyahaktif sebenar untuk baris yang berkongsi tarikh yang sama.
       const sortKeyFallback = sort?.key ?? "nama";
       const sortDirFallback = sort?.dir ?? "asc";
-      query = query.order(sortKeyFallback, { ascending: sortDirFallback === "asc" });
+      query = query
+        .order(sortKeyFallback, { ascending: sortDirFallback === "asc" })
+        .order("updated_at", { ascending: sortDirFallback === "asc" });
 
       // Pagination
       const from = page * pageSize;
@@ -217,24 +227,50 @@ export function useAddPatient({
 
   return useMutation({
     mutationFn: async (form: NewPatientForm) => {
+      // MEDIUM-4: jangan daftar tanpa pelaku direkodkan.
+      if (!profile?.id) {
+        throw new Error("Sesi tamat tempoh. Sila log masuk semula.");
+      }
+      // HIGH-2: normalkan di titik cekik (bukan hanya onBlur dialog) supaya
+      // nilai tersimpan kanonik walau dari mana pun mutasi dipanggil —
+      // supaya nilai tersimpan kanonik walau dari mana pun mutasi dipanggil.
+      const kpDigits = digitsOnly(form.nombor_kad_pengenalan);
+      const kpNorm = kpDigits ? formatMyKad(kpDigits) : null;
+      if (form.nombor_kad_pengenalan.trim() && kpDigits.length !== 12) {
+        throw new Error("No. KP mesti 12 digit.");
+      }
+      const hospNorm = form.nombor_pendaftaran_hospital.trim()
+        ? form.nombor_pendaftaran_hospital.trim().toUpperCase()
+        : null;
       const { data, error } = await supabase
         .from("patients")
         .insert({
           nama: form.nama.trim(),
-          nombor_kad_pengenalan: form.nombor_kad_pengenalan.trim() || null,
-          nombor_pendaftaran_hospital:
-            form.nombor_pendaftaran_hospital.trim() || null,
+          nombor_kad_pengenalan: kpNorm,
+          nombor_pendaftaran_hospital: hospNorm,
           dokumen_lain: form.dokumen_lain.trim() || null,
-          nombor_telefon: form.nombor_telefon.trim() || null,
+          nombor_telefon: form.nombor_telefon.trim()
+            ? formatPhone(form.nombor_telefon)
+            : null,
           alamat: form.alamat.trim() || null,
           catatan: form.catatan.trim() || null,
           aktif: true,
           tarikh_daftar: getTodayStrKL(),
+          didaftar_oleh: profile.id,
         })
         .select("id")
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Jaring keselamatan: terjemah 23505 samar jika kekangan unik
+        // ditambah pada masa hadapan.
+        if ((error as { code?: string }).code === "23505") {
+          throw new Error(
+            "No. KP / No. Pendaftaran Hospital ini telah didaftarkan pada rekod aktif — semak amaran pendua atau gunakan carian."
+          );
+        }
+        throw error;
+      }
       if (!data) throw new Error("Tiada respons daripada pangkalan data.");
       return data as { id: string };
     },
@@ -259,6 +295,10 @@ export type DuplicateMatchType = "kad_pengenalan" | "hospital";
 export interface DuplicateMatch {
   type: DuplicateMatchType;
   patient: Patient;
+  /** Rekod padanan tidak aktif (boleh digabungkan, tidak boleh diaktifkan semula). */
+  isInactive: boolean;
+  /** Jika padanan telah digabungkan — pautan harus ke primer, bukan sekunder. */
+  primary: { id: string; nama: string } | null;
 }
 
 /** Carian pendua masa nyata dengan debounce 600ms. */
@@ -283,13 +323,22 @@ export function useCheckDuplicate(form: NewPatientForm) {
 
     let cancelled = false;
     (async () => {
+      // HIGH-2: bandingkan dalam bentuk kanonik (sama seperti simpanan) —
+      // jika tidak, varian format (mentah vs bersempang, huruf kecil)
+      // terlepas daripada semakan.
+      const kpNorm = kp ? formatMyKad(digitsOnly(kp)) : "";
+      const hospNorm = hosp ? hosp.trim().toUpperCase() : "";
+      if (!kpNorm && !hospNorm) {
+        if (!cancelled) setResult(null);
+        return;
+      }
       const orParts: string[] = [];
-      if (kp) orParts.push(`nombor_kad_pengenalan.eq.${kp}`);
-      if (hosp) orParts.push(`nombor_pendaftaran_hospital.eq.${hosp}`);
+      if (kpNorm) orParts.push(`nombor_kad_pengenalan.eq.${escapeLikeTerm(kpNorm)}`);
+      if (hospNorm) orParts.push(`nombor_pendaftaran_hospital.eq.${escapeLikeTerm(hospNorm)}`);
 
       const { data, error } = await supabase
         .from("patients")
-        .select("*")
+        .select("id, nama, nombor_kad_pengenalan, nombor_pendaftaran_hospital, aktif, merged_into")
         .or(orParts.join(","))
         .limit(1)
         .maybeSingle();
@@ -302,10 +351,28 @@ export function useCheckDuplicate(form: NewPatientForm) {
       }
       if (data) {
         const p = data as Patient;
-        const type: DuplicateMatchType = p.nombor_kad_pengenalan === kp
-          ? "kad_pengenalan"
-          : "hospital";
-        setResult({ type, patient: p });
+        const type: DuplicateMatchType =
+          kpNorm && p.nombor_kad_pengenalan === kpNorm
+            ? "kad_pengenalan"
+            : "hospital";
+        // LOW-5: selesaikan primer untuk pautan yang betul — amaran tidak
+        // harus menghala ke sekunder yang telah digabungkan.
+        let primary: { id: string; nama: string } | null = null;
+        if (p.merged_into) {
+          const { data: prim } = await supabase
+            .from("patients")
+            .select("id, nama")
+            .eq("id", p.merged_into)
+            .maybeSingle();
+          if (cancelled) return;
+          if (prim) primary = prim as { id: string; nama: string };
+        }
+        setResult({
+          type,
+          patient: p,
+          isInactive: !p.aktif,
+          primary,
+        });
       } else {
         setResult(null);
       }

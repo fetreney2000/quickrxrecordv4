@@ -207,9 +207,21 @@ interface SortableHeaderProps { columnKey: string; label: string; sort: SortStat
 function SortableHeader({ columnKey, label, sort, onSort, icon: Icon }: SortableHeaderProps) {
   const isActive = sort?.key === columnKey;
   return (
-    <button type="button" onClick={() => onSort(columnKey)} title={`Isih mengikut ${label}`} className="flex items-center gap-1.5 hover:text-foreground transition-colors text-left" style={{ color: isActive ? "#1877f2" : "var(--text-secondary)" }}>
-      <Icon className="w-3 h-3" /><span>{label}</span><SortIcon active={isActive} dir={sort?.dir ?? "asc"} />
-    </button>
+    <span
+      role="columnheader"
+      aria-sort={isActive ? (sort?.dir === "asc" ? "ascending" : "descending") : "none"}
+    >
+      <button
+        type="button"
+        onClick={() => onSort(columnKey)}
+        title={`Isih mengikut ${label}`}
+        aria-label={isActive ? `Isih mengikut ${label}, diisih ${sort?.dir === "asc" ? "menaik" : "menurun"}` : `Isih mengikut ${label}`}
+        className="flex items-center gap-1.5 hover:text-foreground transition-colors text-left"
+        style={{ color: isActive ? "#1877f2" : "var(--text-secondary)" }}
+      >
+        <Icon className="w-3 h-3" /><span>{label}</span><SortIcon active={isActive} dir={sort?.dir ?? "asc"} />
+      </button>
+    </span>
   );
 }
 
@@ -294,20 +306,20 @@ function PatientListContent({
         {!isLoading && patients.length > 0 && (
           <>
             {isDeactivated ? (
-              <div className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "3fr 3fr 3fr 2fr 2fr", gap: 12, color: "var(--text-secondary)", background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-medium)" }}>
+              <div role="row" className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "3fr 3fr 3fr 2fr 2fr", gap: 12, color: "var(--text-secondary)", background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-medium)" }}>
                 <SortableHeader columnKey="nama" label="Nama" sort={sort} onSort={toggleSort} icon={User} />
                 <SortableHeader columnKey="nombor_kad_pengenalan" label="No. Kad Pengenalan" sort={sort} onSort={toggleSort} icon={IdCard} />
                 <SortableHeader columnKey="nombor_pendaftaran_hospital" label="No. Pendaftaran Hospital" sort={sort} onSort={toggleSort} icon={Activity} />
                 <SortableHeader columnKey="tarikh_nyahaktif" label="Tarikh Nyahaktif" sort={sort} onSort={toggleSort} icon={Calendar} />
-                <div>Dinyahaktif Oleh</div>
+                <div role="columnheader">Dinyahaktif Oleh</div>
               </div>
             ) : (
-              <div className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "3fr 3fr 3fr 2fr 2fr", gap: 12, color: "var(--text-secondary)", background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-medium)" }}>
+              <div role="row" className="hidden sm:grid px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider" style={{ gridTemplateColumns: "3fr 3fr 3fr 2fr 2fr", gap: 12, color: "var(--text-secondary)", background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-medium)" }}>
                 <SortableHeader columnKey="nama" label="Nama" sort={sort} onSort={toggleSort} icon={User} />
                 <SortableHeader columnKey="nombor_kad_pengenalan" label="No. Kad Pengenalan" sort={sort} onSort={toggleSort} icon={IdCard} />
                 <SortableHeader columnKey="nombor_pendaftaran_hospital" label="No. Pendaftaran Hospital" sort={sort} onSort={toggleSort} icon={Activity} />
                 <SortableHeader columnKey="dokumen_lain" label="Dokumen Lain" sort={sort} onSort={toggleSort} icon={FileText} />
-                <div>Bilangan Item</div>
+                <div role="columnheader">Bilangan Item</div>
               </div>
             )}
             {patients.map((p, idx) => isDeactivated ? (
@@ -334,7 +346,7 @@ function PatientListContent({
           <div className="flex items-center justify-end gap-1">
             <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))} title="Halaman sebelumnya" className="h-11 w-11 p-0 sm:h-8 sm:w-auto sm:px-2" style={{ opacity: page === 0 ? 0.4 : 1, cursor: page === 0 ? "default" : "pointer" }}><ChevronLeft className="w-3.5 h-3.5" /></Button>
             {pageButtons.map((b, i) => b === "..." ? <span key={`dots-${i}`} className="px-1.5 text-xs" style={{ color: "var(--text-muted)" }}>…</span> : (
-               <button key={b} onClick={() => setPage(b - 1)} title={`Pergi ke halaman ${b}`} className="min-h-11 min-w-11 px-2 text-xs font-semibold rounded-lg transition-colors sm:h-7 sm:min-h-0 sm:min-w-[28px]" style={b === page + 1 ? { background: "linear-gradient(135deg, #1877f2, #0d5bd4)", color: "white", fontWeight: 600, border: "1px solid transparent" } : { background: "var(--card)", color: "var(--text-primary)", border: "1px solid var(--border)", fontWeight: 400 }}>{b}</button>
+               <button key={b} onClick={() => setPage(b - 1)} title={`Pergi ke halaman ${b}`} aria-label={`Halaman ${b}`} aria-current={b === page + 1 ? "page" : undefined} className="min-h-11 min-w-11 px-2 text-xs font-semibold rounded-lg transition-colors sm:h-7 sm:min-h-0 sm:min-w-[28px]" style={b === page + 1 ? { background: "linear-gradient(135deg, #1877f2, #0d5bd4)", color: "white", fontWeight: 600, border: "1px solid transparent" } : { background: "var(--card)", color: "var(--text-primary)", border: "1px solid var(--border)", fontWeight: 400 }}>{b}</button>
             ))}
             <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} title="Halaman seterusnya" className="h-11 w-11 p-0 sm:h-8 sm:w-auto sm:px-2" style={{ opacity: page >= totalPages - 1 ? 0.4 : 1, cursor: page >= totalPages - 1 ? "default" : "pointer" }}><ChevronRight className="w-3.5 h-3.5" /></Button>
           </div>

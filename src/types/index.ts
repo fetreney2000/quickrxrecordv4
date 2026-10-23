@@ -91,6 +91,7 @@ export interface Patient {
   catatan_nyahaktif: string | null;
   tarikh_nyahaktif: string | null;
   dinyahaktif_oleh: string | null;
+  didaftar_oleh: string | null;
   created_at: string;
   updated_at: string;
 }

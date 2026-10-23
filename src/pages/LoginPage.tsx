@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Loader2,
@@ -24,10 +24,11 @@ export default function LoginPage() {
     null
   );
 
-  // If already logged in, redirect to dashboard
-  if (profile) {
-    navigate("/", { replace: true });
-  }
+  // If already logged in, redirect to dashboard (kesan sampingan dalam
+  // useEffect — bukan semasa render — elak isu StrictMode/double-invoke).
+  useEffect(() => {
+    if (profile) navigate("/", { replace: true });
+  }, [profile, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

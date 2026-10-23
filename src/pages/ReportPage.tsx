@@ -6,7 +6,7 @@
  *  - Tab segmented control (5 tab)
  *  - Eksport Excel (exceljs) dan PDF (jspdf + jspdf-autotable) untuk semua tab
  *  - Fungsi eksport generik profesional (exportToExcel, exportToPDF)
- *  - Animasi framer-motion, badge Stok Rendah
+ *  - Badge Stok Rendah
  *  - Orb merah, breadcrumb, header dengan ikon BarChart3
  */
 import { useEffect, useState } from "react";
@@ -27,6 +27,7 @@ import { DateInput } from "@/components/ui/date-input";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { supabase } from "@/lib/supabase";
 import { addDaysToDateInput, formatDate, formatItemDisplay, formatTime, formatWithLiteralAMPM, getKLDayEndISO, getKLDayStartISO, getTodayStrKL } from "@/lib/utils";
+import { sanitizeExportValue } from "@/lib/postgrest";
 import { toast } from "sonner";
 import type { ItemBatch } from "@/types";
 
@@ -168,14 +169,16 @@ async function exportToExcel(
   });
 
   // Rows 6..N+5: Data
+  // (nilai teks disanitasi — elak formula injection `= + - @` dalam Excel)
   const numericSet = new Set(options?.numericColumns ?? []);
   data.forEach((row, rowIdx) => {
     const excelRow = sheet.getRow(rowIdx + 6);
     excelRow.height = 18;
     keys.forEach((key, colIdx) => {
       const cell = excelRow.getCell(colIdx + 1);
-      const val = row[key];
-      cell.value = val ?? "-";
+      const raw = row[key] ?? "-";
+      const val = numericSet.has(key) ? raw : sanitizeExportValue(raw);
+      cell.value = val as never;
       cell.font = { size: 10, color: { argb: "FF1F2937" } };
       cell.border = {
         top: { style: "thin", color: { argb: "FFE5E7EB" } },
@@ -296,9 +299,11 @@ async function exportToPDF(
   doc.setDrawColor(209, 213, 219);
   doc.line(10, 31, 287, 31);
 
-  // 4. Table
+  // 4. Table (nilai disanitasi — elak formula injection bila disalin ke Excel)
   const head = [keys.map((k) => labels[k] ?? k)];
-  const body = data.map((row) => keys.map((k) => String(row[k] ?? "-")));
+  const body = data.map((row) =>
+    keys.map((k) => String(sanitizeExportValue(row[k]) ?? "-"))
+  );
 
   autoTable(doc, {
     head,
@@ -435,7 +440,7 @@ export default function ReportPage() {
 
   // ── Queries ────────────────────────────────────────────────────────────────
 
-  const { data: inventoryData, isLoading: inventoryLoading } = useQuery({
+  const { data: inventoryData, isLoading: inventoryLoading, isError: inventoryError, refetch: refetchInventory } = useQuery({
     queryKey: ["report-inventory"],
     queryFn: async () => {
       const { data: rpcData, error: rpcErr } = await supabase.rpc("get_report_inventory");
@@ -458,9 +463,13 @@ export default function ReportPage() {
       }
 
       // Fallback: RPC not yet deployed — legacy client-side queries
+      // (lajur eksplisit — elak SELECT *; tarikh_luput diperlukan untuk
+      // membezakan stok boleh dibekal — MEDIUM-1).
       const { data, error } = await supabase
         .from("items")
-        .select("*, item_batches(*)")
+        .select(
+          "id, kod_item, nama_item, nama_dagangan, kekuatan, kuota, id_bentuk, aktif, item_batches(id, kuantiti, tarikh_luput, dilupuskan)"
+        )
         .eq("aktif", true)
         .order("nama_item");
       if (error) throw error;
@@ -472,11 +481,11 @@ export default function ReportPage() {
         (forms ?? []).forEach((form) => formMap.set(form.id, form.nama));
       }
       (data ?? []).forEach((item: any) => { item.bentuk = formMap.get(item.id_bentuk) ?? null; });
-      return data as InventoryItem[];
+      return data as unknown as InventoryItem[];
     },
   });
 
-  const { data: transactionsData, isLoading: transactionsLoading } = useQuery({
+  const { data: transactionsData, isLoading: transactionsLoading, isError: transactionsError, refetch: refetchTransactions } = useQuery({
     queryKey: ["report-transactions", dateFrom, dateTo],
     queryFn: async () => {
       const dateFromISO = dateFrom ? getKLDayStartISO(dateFrom) : null;
@@ -506,10 +515,11 @@ export default function ReportPage() {
       }
 
       // Fallback: RPC not yet deployed — legacy client-side queries
+      // (lajur eksplisit — elak SELECT * ke atas supply_records).
       const { data, error } = await supabase
         .from("supply_records")
         .select(
-          "*, assignment:patient_item_assignments(patient:patients(nama), item:items(id, nama_item, kekuatan, id_bentuk)), batch:item_batches(nombor_kelompok), staff:profiles!kakitangan_pembekal(nama)"
+          "id, tarikh_dibekal, dos, kuantiti, tempoh_dibekal, catatan_bekalan, assignment:patient_item_assignments(patient:patients(nama), item:items(id, nama_item, kekuatan, id_bentuk)), batch:item_batches(nombor_kelompok), staff:profiles!kakitangan_pembekal(nama)"
         )
        .order("created_at", { ascending: false })
         .is("voided_at", null)
@@ -528,11 +538,11 @@ export default function ReportPage() {
         const item = record.assignment?.item;
         if (item) item.bentuk = formMap.get(item.id_bentuk) ?? null;
       });
-      return data as TransactionRecord[];
+      return data as unknown as TransactionRecord[];
     },
   });
 
-  const { data: expiryData, isLoading: expiryLoading } = useQuery({
+  const { data: expiryData, isLoading: expiryLoading, isError: expiryError, refetch: refetchExpiry } = useQuery({
     queryKey: ["report-expiry", expiryDays],
     queryFn: async () => {
       const { data: rpcData, error: rpcErr } = await supabase.rpc(
@@ -566,7 +576,7 @@ export default function ReportPage() {
       const expiryEnd = addDaysToDateInput(expiryStart, expiryDays);
       const { data: batches, error: batchError } = await supabase
         .from("item_batches")
-        .select("*")
+        .select("id, item_id, nombor_kelompok, tarikh_luput, kuantiti, dilupuskan")
         .eq("dilupuskan", false)
         .gt("kuantiti", 0)
         .gte("tarikh_luput", expiryStart)
@@ -574,7 +584,7 @@ export default function ReportPage() {
         .order("tarikh_luput", { ascending: true });
       if (batchError) throw batchError;
 
-      const itemIds = [...new Set((batches ?? []).map((batch: ItemBatch) => batch.item_id))];
+      const itemIds = [...new Set((batches ?? []).map((batch: { item_id: string }) => batch.item_id))];
       if (itemIds.length === 0) return [] as ExpiringBatchRecord[];
       const { data: items, error: itemError } = await supabase
         .from("items")
@@ -589,14 +599,14 @@ export default function ReportPage() {
         const formMap = new Map((forms ?? []).map((form) => [form.id, form.nama]));
         (items ?? []).forEach((item: any) => { item.bentuk = formMap.get(item.id_bentuk) ?? null; });
       }
-      return (batches ?? []).map((batch: ItemBatch) => ({
+      return (batches ?? []).map((batch: any) => ({
         ...batch,
         item: itemMap.get(batch.item_id) ?? null,
       })) as ExpiringBatchRecord[];
     },
   });
 
-  const { data: lowStockData, isLoading: lowStockLoading } = useQuery({
+  const { data: lowStockData, isLoading: lowStockLoading, isError: lowStockError, refetch: refetchLowStock } = useQuery({
     queryKey: ["report-low-stock"],
     queryFn: async () => {
       const { data: rpcData, error: rpcErr } = await supabase.rpc("get_report_low_stock");
@@ -695,7 +705,7 @@ export default function ReportPage() {
     total: number;
   }
 
-  const { data: annualUsageData, isLoading: annualUsageLoading } = useQuery({
+  const { data: annualUsageData, isLoading: annualUsageLoading, isError: annualUsageError, refetch: refetchAnnualUsage } = useQuery({
     queryKey: ["report-annual-usage", annualUsageId, annualUsageYear],
     enabled: !!annualUsageId,
     queryFn: async () => {
@@ -1089,6 +1099,30 @@ const mapped = transactionsData.map((t) => ({
         </div>
       </div>
 
+      {/* Ralat query — sebelum ini senyap (skrin kosong). */}
+      {((activeTab === "inventory" && inventoryError) ||
+        (activeTab === "transactions" && transactionsError) ||
+        (activeTab === "annual-usage" && annualUsageError) ||
+        (activeTab === "expiry" && expiryError) ||
+        (activeTab === "low-stock" && lowStockError)) && (
+        <div className="rounded-xl p-4 text-sm border" role="alert" style={{ background: "rgba(220,38,38,0.06)", borderColor: "rgba(220,38,38,0.2)" }}>
+          <p className="font-semibold">Gagal memuatkan data laporan.</p>
+          <button
+            onClick={() => {
+              if (activeTab === "inventory") refetchInventory();
+              else if (activeTab === "transactions") refetchTransactions();
+              else if (activeTab === "annual-usage") refetchAnnualUsage();
+              else if (activeTab === "expiry") refetchExpiry();
+              else refetchLowStock();
+            }}
+            className="mt-2 min-h-10 px-4 rounded-lg text-sm font-semibold text-white"
+            style={{ background: "#dc2626" }}
+          >
+            Cuba Semula
+          </button>
+        </div>
+      )}
+
       {/* Tab Content */}
         <div
           key={activeTab}
@@ -1250,12 +1284,21 @@ function InventoryTab({
               </thead>
               <tbody>
                 {data.map((item) => {
+                  const today = getTodayStrKL();
                   const totalStock = item.item_batches.reduce(
-                    (s, b) => s + b.kuantiti,
+                    (s, b) => s + (b.dilupuskan ? 0 : b.kuantiti),
+                    0
+                  );
+                  // MEDIUM-1: amaran berdasarkan stok BOLEH DIBEKAL (bukan
+                  // lupus + belum luput) — selari dengan is_low_stock 042.
+                  const dispensableStock = item.item_batches.reduce(
+                    (s, b) =>
+                      s +
+                      (!b.dilupuskan && b.tarikh_luput >= today ? b.kuantiti : 0),
                     0
                   );
                   const isLowStock =
-                    item.kuota != null && totalStock < item.kuota;
+                    item.kuota != null && dispensableStock < item.kuota;
                   return (
                     <tr
                       key={item.id}
@@ -1302,6 +1345,11 @@ function InventoryTab({
                         }}
                       >
                         {totalStock.toLocaleString("ms-MY")}
+                        {dispensableStock < totalStock && (
+                          <span className="block text-2xs font-normal" style={{ color: "#ea580c" }}>
+                            {dispensableStock.toLocaleString("ms-MY")} boleh dibekal
+                          </span>
+                        )}
                       </td>
                       <td
                         className="px-3 py-3"
@@ -1767,7 +1815,7 @@ function ExpiryTab({
             <AlertTriangle className="w-4 h-4" style={{ color: "#ea580c" }} />
             <div>
               <h2 className="text-[15px] font-bold" style={{ color: "var(--text-primary)" }}>Kelompok Akan Luput</h2>
-              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Stok yang akan luput dalam tempoh dipilih</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Stok yang akan luput dalam tempoh dipilih — termasuk yang telah luput (baki negatif) untuk tindakan pelupusan</p>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -1826,7 +1874,7 @@ function ExpiryTab({
           <div className="flex flex-col items-center justify-center py-12 gap-2" style={{ color: "var(--text-muted)" }}>
             <AlertTriangle className="w-10 h-10 opacity-40" />
             <p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Tiada kelompok akan luput.</p>
-            <p className="text-xs">Tiada stok aktif dalam {days} hari akan datang.</p>
+            <p className="text-xs">Tiada stok luput atau akan luput dalam {days} hari akan datang.</p>
           </div>
         ) : (
           <div className="overflow-x-auto" role="region" aria-label="Jadual paras stok inventori" tabIndex={0}>
@@ -1847,7 +1895,7 @@ function ExpiryTab({
                       <td className="px-3 py-3 text-sm" style={{ borderBottom: "1px solid var(--border-light)" }}>{formatItemDisplay(batch.item) || "-"}</td>
                       <td className="px-3 py-3 text-sm font-mono font-semibold" style={{ borderBottom: "1px solid var(--border-light)", color: "#ea580c" }}>{batch.nombor_kelompok}</td>
                       <td className="px-3 py-3 text-sm" style={{ borderBottom: "1px solid var(--border-light)" }}>{formatDate(batch.tarikh_luput)}</td>
-                      <td className="px-3 py-3 text-sm font-semibold" style={{ borderBottom: "1px solid var(--border-light)", color: remainingDays <= 7 ? "#dc2626" : "#ea580c" }}>{remainingDays} hari</td>
+                      <td className="px-3 py-3 text-sm font-semibold" style={{ borderBottom: "1px solid var(--border-light)", color: remainingDays <= 7 ? "#dc2626" : "#ea580c" }}>{remainingDays < 0 ? `LUPUT ${Math.abs(remainingDays)} hari lalu` : `${remainingDays} hari`}</td>
                       <td className="px-3 py-3 text-sm font-semibold" style={{ borderBottom: "1px solid var(--border-light)" }}>{batch.kuantiti.toLocaleString("ms-MY")}</td>
                     </tr>
                   );

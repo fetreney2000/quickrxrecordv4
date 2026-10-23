@@ -10,6 +10,8 @@ interface StockRowProps {
     item_batches: { kuantiti: number }[];
     item_forms: { id: string; nama: string } | null;
     patient_item_assignments: { id: string }[];
+    /** MEDIUM-1: stok boleh dibekal (mungkin tiada pra-042) */
+    dispensable_stock?: number | null;
   };
   index: number;
   onClick: () => void;
@@ -24,6 +26,11 @@ function computeStock(item: StockRowProps["item"]): number {
 
 export function StockRow({ item, index, onClick }: StockRowProps) {
   const stock = computeStock(item);
+  // MEDIUM-1: paparkan stok boleh dibekal apabila ia kurang daripada jumlah
+  // fizikal (bakinya terperangkap dalam kelompok luput/dilupuskan).
+  const dispensable =
+    typeof item.dispensable_stock === "number" ? item.dispensable_stock : stock;
+  const hasTrapped = dispensable < stock;
   const displayName = formatItemDisplay(item);
 
   return (
@@ -66,6 +73,11 @@ export function StockRow({ item, index, onClick }: StockRowProps) {
             <span className="w-1.5 h-1.5 rounded-full" style={{ background: stock > 0 ? "#16a34a" : "#e41e3f" }} />
             {formatNumber(stock)}
           </span>
+          {hasTrapped && (
+            <p className="text-2xs mt-0.5" style={{ color: "#ea580c" }}>
+              {formatNumber(dispensable)} boleh dibekal
+            </p>
+          )}
         </div>
         <span className="text-sm font-medium tabular-nums" style={{ color: "var(--text-primary)" }}>
           {item.kuota != null ? formatNumber(Math.max(0, item.kuota - (item.patient_item_assignments?.length ?? 0))) : <em style={{ color: "var(--text-muted)" }}>-</em>}
@@ -97,9 +109,16 @@ export function StockRow({ item, index, onClick }: StockRowProps) {
             {item.nama_dagangan && <span>· {item.nama_dagangan}</span>}
           </div>
         </div>
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold flex-shrink-0"
-          style={stock > 0 ? { background: "rgba(22,163,74,0.10)", color: "#16a34a", border: "1px solid rgba(22,163,74,0.25)" } : { background: "rgba(228,30,63,0.10)", color: "#e41e3f", border: "1px solid rgba(228,30,63,0.25)" }}>
-          {formatNumber(stock)}
+        <span className="inline-flex flex-col items-end gap-0.5 flex-shrink-0">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold"
+            style={stock > 0 ? { background: "rgba(22,163,74,0.10)", color: "#16a34a", border: "1px solid rgba(22,163,74,0.25)" } : { background: "rgba(228,30,63,0.10)", color: "#e41e3f", border: "1px solid rgba(228,30,63,0.25)" }}>
+            {formatNumber(stock)}
+          </span>
+          {hasTrapped && (
+            <span className="text-2xs" style={{ color: "#ea580c" }}>
+              {formatNumber(dispensable)} boleh dibekal
+            </span>
+          )}
         </span>
         <ArrowRight className="w-4 h-4 flex-shrink-0" style={{ color: "var(--text-muted)" }} />
       </div>

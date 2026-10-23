@@ -1,7 +1,9 @@
 /**
  * Migration Script: SRQ.db3 (SQLite) → Supabase
  *
- * Usage: node _migrate_sqlite_to_supabase.cjs
+ * Usage:
+ *   node _migrate_sqlite_to_supabase.cjs --dry-run
+ *   node _migrate_sqlite_to_supabase.cjs --allow-destructive --yes [--with-fallback-stock]
  *
  * Prerequisites:
  *   1. .env file with SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY
@@ -9,14 +11,21 @@
  *   3. Apply supabase/migrations/014_user_theme_preference.sql first
  *   4. Dependencies: better-sqlite3 @supabase/supabase-js bcryptjs
  *
- * What this does:
- *   - Clears ALL data from Supabase
- *   - Migrates all data from SRQ.db3
- *   - Sets default password "password123" (bcrypt) for all staff
- *   - Sets Fetre as Pentadbir with password "972233"
- *   - Sets default username = cleaned staff name
- *   - Creates one fallback batch per item with kuantiti=1000 and expiry 2027-12-31
- *   - Preserves all relationships
+ * Keselamatan (audit HIGH):
+ *   - DESTRUKTIF: memadam SEMUA data Supabase. Wajib flag eksplisit
+ *     --allow-destructive --yes, jika tidak skrip berhenti sebelum sebarang
+ *     padaman. Sentiasa buat backup (Supabase Dashboard → Database →
+ *     Backups / pg_dump) dahulu dan sahkan URL sasaran BUKAN produksi
+ *     melainkan migrasi produksi yang dirancang.
+ *   - --dry-run: baca SQLite + kira baris + papar pelan TANPA menulis.
+ *   - Kata laluan TIDAK lagi hardcoded: admin mesti diberi melalui
+ *     MIGRATE_ADMIN_PASSWORD (env), pengguna lain mendapat kata laluan
+ *     rawak (atau MIGRATE_DEFAULT_PASSWORD) yang dicetak SEKALI sahaja —
+ *     putar selepas migrasi. Tiada lagi "password123"/"972233" dalam repo.
+ *   - Stok fallback 1000 unit/luput 2027-12-31 HANYA jika --with-fallback-stock;
+ *     lalai mencipta kelompok KOSONG (kuantiti=0) supaya stok sebenar tidak
+ *     ditutup dengan inventori rekaan.
+ *   - UUID dijana dengan crypto.randomUUID (CSPRNG), bukan Math.random.
  */
 
 const Database = require('better-sqlite3');
@@ -24,6 +33,19 @@ const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
+
+// ── Flag CLI keselamatan ────────────────────────────────────────────────────
+const ARGS = new Set(process.argv.slice(2));
+const DRY_RUN = ARGS.has('--dry-run');
+const ALLOW_DESTRUCTIVE = ARGS.has('--allow-destructive');
+const CONFIRMED = ARGS.has('--yes');
+const WITH_FALLBACK_STOCK = ARGS.has('--with-fallback-stock');
+
+function fail(msg) {
+  console.error(`\nRalat: ${msg}\n`);
+  process.exit(1);
+}
 
 // ── Load .env ────────────────────────────────────────────────────────────────
 const envPath = path.join(__dirname, '.env');
@@ -44,9 +66,28 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SQLITE_PATH = path.join(__dirname, 'SRQ.db3');
 
+// Kata laluan: WAJIB melalui env (tiada lagi hardcoded dalam repo).
+const ADMIN_NAME = 'fetre';
+const ADMIN_PASSWORD = process.env.MIGRATE_ADMIN_PASSWORD || null;
+const DEFAULT_PASSWORD = process.env.MIGRATE_DEFAULT_PASSWORD || crypto.randomBytes(9).toString('base64url').slice(0, 12);
+
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   console.error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in .env');
   process.exit(1);
+}
+if (!fs.existsSync(SQLITE_PATH)) {
+  fail(`SQLite tidak dijumpai: ${SQLITE_PATH}`);
+}
+// Pengadang destruktif: tanpa kedua-dua flag, berhenti SEBELUM sebarang tulis.
+if (!DRY_RUN && !(ALLOW_DESTRUCTIVE && CONFIRMED)) {
+  fail(
+    'Migrasi ini MEMADAM semua data Supabase. Sahkan sasaran + backup dahulu, kemudian jalankan semula dengan:\n' +
+    '  node _migrate_sqlite_to_supabase.cjs --allow-destructive --yes [--with-fallback-stock]\n' +
+    'Guna --dry-run untuk pratonton tanpa menulis.'
+  );
+}
+if (!DRY_RUN && !ADMIN_PASSWORD) {
+  fail('MIGRATE_ADMIN_PASSWORD (env) diperlukan untuk akaun admin — tiada lagi kata laluan lalai dalam kod.');
 }
 
 const sqlite = new Database(SQLITE_PATH, { readonly: true });
@@ -56,19 +97,14 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 });
 
 const BATCH_SIZE = 500;
-const FALLBACK_BATCH_QUANTITY = 1000;
+const FALLBACK_BATCH_QUANTITY = WITH_FALLBACK_STOCK ? 1000 : 0;
 const FALLBACK_BATCH_EXPIRY = '2027-12-31';
-const ADMIN_NAME = 'fetre';
-const ADMIN_PASSWORD = '972233';
-const DEFAULT_PASSWORD = 'password123';
 const DEFAULT_THEME = 'light';
 const MIGRATION_TIMESTAMP = new Date().toISOString();
 
+// CSPRNG — ganti Math.random (audit HIGH: UUID mesti tidak boleh diramal).
 function uuidv4() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-    const r = Math.random() * 16 | 0;
-    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-  });
+  return crypto.randomUUID();
 }
 
 function makeUsername(nama) {
@@ -124,10 +160,41 @@ async function deleteAllFromStaffLookup() {
 // ── Migration ─────────────────────────────────────────────────────────────────
 async function migrate() {
   console.log('\n=== SQLite to Supabase Migration ===\n');
+  console.log(`Sasaran: ${SUPABASE_URL}`);
+  console.log(`Mod: ${DRY_RUN ? 'DRY-RUN (tiada tulisan)' : 'DESTRUKTIF (padam + tulis semula)'}`);
+  console.log(`Stok fallback: ${WITH_FALLBACK_STOCK ? `kuantiti=${FALLBACK_BATCH_QUANTITY}` : 'DIMATIKAN — kelompok kosong (kuantiti=0)'}\n`);
 
-  const PASSWORD_HASH = await bcrypt.hash(DEFAULT_PASSWORD, 10);
-  const ADMIN_PASSWORD_HASH = await bcrypt.hash(ADMIN_PASSWORD, 10);
-  console.log(`Default password hash generated for "${DEFAULT_PASSWORD}"\n`);
+  if (DRY_RUN) {
+    // Pratonton sahaja: kira baris SQLite tanpa menyentuh Supabase.
+    const counts = {};
+    for (const [label, sql] of [
+      ['lookup_kategori', 'SELECT COUNT(*) AS c FROM tblSenaraiKategoriUbat'],
+      ['lookup_bentuk', 'SELECT COUNT(*) AS c FROM tblSenaraiBentukDos'],
+      ['lookup_durasi', 'SELECT COUNT(*) AS c FROM tblSenaraiDurasiBekalan'],
+      ['profiles', 'SELECT COUNT(*) AS c FROM tblKakitangan'],
+      ['items', 'SELECT COUNT(*) AS c FROM tblSenaraiUbat'],
+      ['patients', 'SELECT COUNT(*) AS c FROM tblPesakit'],
+      ['assignments', 'SELECT COUNT(*) AS c FROM tblRekodPenggunaanUbat'],
+      ['supplies', 'SELECT COUNT(*) AS c FROM tblRekodBekalan'],
+      ['doses', 'SELECT COUNT(*) AS c FROM tblDos'],
+    ]) {
+      try {
+        counts[label] = sqlite.prepare(sql).get().c;
+      } catch {
+        counts[label] = 'jadual tiada';
+      }
+    }
+    console.log('Pelan dry-run (baris sumber SQLite):');
+    for (const [k, v] of Object.entries(counts)) console.log(`  ${k}: ${v}`);
+    console.log('\nTiada data ditulis. Jalankan dengan --allow-destructive --yes untuk migrasi sebenar.\n');
+    sqlite.close();
+    return;
+  }
+
+  const PASSWORD_HASH = await bcrypt.hash(DEFAULT_PASSWORD, 12);
+  const ADMIN_PASSWORD_HASH = await bcrypt.hash(ADMIN_PASSWORD, 12);
+  console.log('Hash kata laluan dijana (bcrypt cost 12).');
+  console.log(`Kata laluan SEMENTARA pengguna biasa: ${DEFAULT_PASSWORD} — putar selepas migrasi!\n`);
 
   // ── Step 1: Truncate all tables ──
   console.log('Step 1: Clearing Supabase data...');
@@ -245,7 +312,10 @@ async function migrate() {
   console.log(`  items: ${itemRows.length} rows\n`);
 
   // ── Step 5: Item Batches ──
-  // SRQ.db3 has no batch table, so these are documented fallback opening batches.
+  // SRQ.db3 has no batch table. Lalai: kelompok KOSONG (kuantiti=0, tanpa
+  // jurnal stok awal) — stok sebenar mesti dimasukkan melalui UI selepas
+  // migrasi. Hanya dengan --with-fallback-stock baris fallback 1000 unit
+  // + jurnal dicipta (ditanda jelas sebagai rekaan).
   console.log(`Step 5: Item batches (kuantiti=${FALLBACK_BATCH_QUANTITY}, luput=${FALLBACK_BATCH_EXPIRY})...`);
   const batchMap = new Map();
   const batchRows = itemsList.map(item => {
@@ -263,34 +333,42 @@ async function migrate() {
      };
   });
   await insertBatched('item_batches', batchRows);
-  const batchAdditionRows = batchRows.map(batch => ({
-    batch_id: batch.id,
-    quantity: FALLBACK_BATCH_QUANTITY,
-    added_by: adminProfileId,
-    created_at: MIGRATION_TIMESTAMP,
-  }));
-  await insertBatched('batch_additions', batchAdditionRows);
-  const batchAdjustmentRows = batchRows.map(batch => ({
-    batch_id: batch.id,
-    previous_kuantiti: 0,
-    new_kuantiti: FALLBACK_BATCH_QUANTITY,
-    change: FALLBACK_BATCH_QUANTITY,
-    reason: 'Stok awal migrasi SRQ.db3',
-    adjusted_by: adminProfileId,
-    created_at: MIGRATION_TIMESTAMP,
-  }));
-  await insertBatched('batch_adjustments', batchAdjustmentRows);
-  const initialInventoryRows = batchRows.map(batch => ({
-    item_id: batch.item_id,
-    batch_id: batch.id,
-    jenis: 'masuk',
-    kuantiti: FALLBACK_BATCH_QUANTITY,
-    rujukan_id: batch.id,
-    rujukan_type: 'migration_initial_stock',
-    catatan: 'Stok awal migrasi SRQ.db3',
-    created_at: MIGRATION_TIMESTAMP,
-  }));
-  await insertBatched('inventory_transactions', initialInventoryRows);
+  let batchAdditionRows = [];
+  let batchAdjustmentRows = [];
+  let initialInventoryRows = [];
+  if (WITH_FALLBACK_STOCK) {
+    // Bendera eksplisit sahaja: stok rekaan + jurnal (ditanda jelas).
+    batchAdditionRows = batchRows.map(batch => ({
+      batch_id: batch.id,
+      kuantiti: FALLBACK_BATCH_QUANTITY,
+      added_by: adminProfileId,
+      created_at: MIGRATION_TIMESTAMP,
+    }));
+    await insertBatched('batch_additions', batchAdditionRows);
+    batchAdjustmentRows = batchRows.map(batch => ({
+      batch_id: batch.id,
+      previous_kuantiti: 0,
+      new_kuantiti: FALLBACK_BATCH_QUANTITY,
+      change: FALLBACK_BATCH_QUANTITY,
+      reason: 'Stok awal migrasi SRQ.db3 (REKAAN — sahkan stok fizikal)',
+      adjusted_by: adminProfileId,
+      created_at: MIGRATION_TIMESTAMP,
+    }));
+    await insertBatched('batch_adjustments', batchAdjustmentRows);
+    initialInventoryRows = batchRows.map(batch => ({
+      item_id: batch.item_id,
+      batch_id: batch.id,
+      jenis: 'masuk',
+      kuantiti: FALLBACK_BATCH_QUANTITY,
+      rujukan_id: batch.id,
+      rujukan_type: 'migration_initial_stock',
+      catatan: 'Stok awal migrasi SRQ.db3 (REKAAN)',
+      created_at: MIGRATION_TIMESTAMP,
+    }));
+    await insertBatched('inventory_transactions', initialInventoryRows);
+  } else {
+    console.log('  (dilangitkan: tiada jurnal stok awal — masukkan stok sebenar melalui UI)');
+  }
   console.log(`  item_batches: ${batchRows.length} rows`);
   console.log(`  batch_additions: ${batchAdditionRows.length} rows`);
   console.log(`  batch_adjustments: ${batchAdjustmentRows.length} rows`);
@@ -427,10 +505,11 @@ async function migrate() {
   console.log(`  Skipped invalid supplies: ${skippedInvalidSupplyCount}`);
   console.log(`  Dose History:         ${doseRows.length}`);
   console.log('');
-  console.log(`  Default password for all users: ${DEFAULT_PASSWORD}`);
-  console.log(`  Admin user: ${ADMIN_NAME} / ${ADMIN_PASSWORD}`);
+  console.log('  PENTING: putar semua kata laluan sementara SELEPAS migrasi (ManagementPage → Reset).');
+  console.log(`  Kata laluan sementara pengguna biasa: ${DEFAULT_PASSWORD} (dicetak sekali sahaja)`);
+  console.log(`  Admin: ${ADMIN_NAME} (kata laluan dari MIGRATE_ADMIN_PASSWORD)`);
   console.log('  Username set to sanitized staff name');
-  console.log(`  All item quantities initialized to ${FALLBACK_BATCH_QUANTITY}\n`);
+  console.log(`  Kuantiti awal kelompok: ${FALLBACK_BATCH_QUANTITY}${WITH_FALLBACK_STOCK ? ' (REKAAN)' : ' (kosong — masukkan stok sebenar)'}\n`);
 
   sqlite.close();
 }

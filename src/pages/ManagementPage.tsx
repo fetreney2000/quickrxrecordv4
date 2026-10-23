@@ -11,6 +11,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
+import { useAuthStore } from "@/lib/auth-store";
+import { friendlyDbError } from "@/lib/db-errors";
 import { formatDateTime, getNowISOKL, toTitleCase } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -64,6 +66,7 @@ interface ResetRequestWithProfile extends PasswordResetRequest {
 
 export default function ManagementPage() {
   const { profile } = useAuth();
+  const sessionToken = useAuthStore((s) => s.token);
   const queryClient = useQueryClient();
   const isAdmin = profile?.peranan === "Pentadbir";
 
@@ -102,10 +105,12 @@ export default function ManagementPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        // Lajur eksplisit — kata_laluan_hash tidak boleh dipilih klien
+        // (sekatan lajur dalam migrasi 039).
+        .select("id, nama, jawatan, nama_pengguna, peranan, aktif, created_at, updated_at, tema")
         .order("nama");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as Profile[];
     },
     enabled: isAdmin,
   });
@@ -142,11 +147,18 @@ export default function ManagementPage() {
   );
 
   // ── Mutations ─────────────────────────────────────────────────────────────
+  // Semua endpoint /api/* yang dilindungi memerlukan Bearer token sesi.
+  const authHeaders = {
+    "Content-Type": "application/json",
+    ...(sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {}),
+  };
+
   const addUserMutation = useMutation({
     mutationFn: async (userData: typeof newUser) => {
       const res = await fetch("/api/create-user", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders,
+        credentials: "include",
         body: JSON.stringify(userData),
       });
       if (!res.ok) {
@@ -162,7 +174,7 @@ export default function ManagementPage() {
       setNewUser({
         nama: "",
         nama_pengguna: "",
-        kata_laluan: "password123",
+        kata_laluan: "",
         jawatan: "",
         peranan: "Kakitangan Farmasi",
       });
@@ -210,7 +222,7 @@ export default function ManagementPage() {
       setEditData({});
     },
     onError: (err: Error) => {
-      toast.error(`Gagal mengemaskini: ${err.message}`);
+      toast.error(`Gagal mengemaskini: ${friendlyDbError(err, "Gagal mengemaskini.")}`);
     },
   });
 
@@ -232,7 +244,7 @@ export default function ManagementPage() {
       setConfirmToggle(null);
     },
     onError: (err: Error) => {
-      toast.error(`Gagal: ${err.message}`);
+      toast.error(`Gagal: ${friendlyDbError(err, "Operasi tidak dibenarkan.")}`);
     },
   });
 
@@ -240,17 +252,23 @@ export default function ManagementPage() {
     mutationFn: async (userId: string) => {
       const res = await fetch("/api/reset-password", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders,
+        credentials: "include",
         body: JSON.stringify({ userId }),
       });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || "Gagal reset kata laluan");
       }
-      return res.json();
+      return res.json() as Promise<{ tempPassword?: string }>;
     },
-    onSuccess: () => {
-      toast.success("Kata laluan telah diset semula ke password123");
+    onSuccess: (data) => {
+      toast.success(
+        data?.tempPassword
+          ? `Kata laluan sementara: ${data.tempPassword} — sila salin sekarang`
+          : "Kata laluan telah diset semula",
+        { duration: 10000 }
+      );
       setConfirmReset(null);
     },
     onError: (err: Error) => {
@@ -283,7 +301,8 @@ export default function ManagementPage() {
       if (status === "approved") {
         const res = await fetch("/api/reset-password", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders,
+          credentials: "include",
           body: JSON.stringify({ userId }),
         });
         if (!res.ok) {
@@ -301,7 +320,7 @@ export default function ManagementPage() {
       );
     },
     onError: (err: Error) => {
-      toast.error(`Gagal: ${err.message}`);
+      toast.error(`Gagal: ${friendlyDbError(err, "Operasi tidak dibenarkan.")}`);
     },
   });
 
@@ -322,6 +341,16 @@ export default function ManagementPage() {
   const handleAddUser = () => {
     if (!newUser.nama.trim() || !newUser.nama_pengguna.trim() || !newUser.kata_laluan.trim()) {
       toast.error("Sila isi semua medan wajib");
+      return;
+    }
+    // Semakan dasar kata laluan di klien (pelayan mengesahkan semula).
+    const pw = newUser.kata_laluan;
+    if (pw.length < 8 || pw.length > 128) {
+      toast.error("Kata laluan mestilah 8–128 aksara.");
+      return;
+    }
+    if (!/[A-Za-z]/.test(pw) || !/[0-9]/.test(pw)) {
+      toast.error("Kata laluan mestilah mengandungi huruf dan nombor.");
       return;
     }
     addUserMutation.mutate(newUser);
@@ -701,6 +730,10 @@ export default function ManagementPage() {
               <Input
                 type="password"
                 value={newUser.kata_laluan}
+                minLength={8}
+                maxLength={128}
+                autoComplete="new-password"
+                placeholder="8–128 aksara, huruf + nombor"
                 onChange={(e) =>
                   setNewUser({ ...newUser, kata_laluan: e.target.value })
                 }
@@ -866,7 +899,8 @@ export default function ManagementPage() {
               </p>
               <ul className="space-y-1 list-disc list-inside text-xs">
                 <li>
-                  Kata laluan baharu: <strong>password123</strong>
+                  Kata laluan sementara rawak akan dijana dan dipaparkan sekali
+                  sahaja — sila salin sejurus selepas reset
                 </li>
                 <li>Pengguna akan dipaksa log masuk semula</li>
                 <li>Tindakan ini tidak boleh dibatalkan</li>

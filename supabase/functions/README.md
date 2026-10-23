@@ -5,9 +5,14 @@ Gunakan mock API dalam `vite/api-mock.ts`.
 
 ## Fungsi yang Tersedia
 
+> ⛔ `login` telah DILUMPUHKAN (dipindah ke `_disabled_login_DO_NOT_DEPLOY`)
+> kerana tiada had laju, tiada claim pwv/RLS, tiada JWT sbToken dan sesi
+> in-memory yang tidak selamat. JANGAN deploy. Auth produksi adalah Vercel
+> serverless functions dalam `api/` (lihat `api/login.ts`).
+
 | Fungsi | Path | Kaedah | Tujuan |
 |--------|------|--------|--------|
-| `login` | `/functions/v1/login` | POST | Pengesahan tersuai |
+| `login` | ~~`/functions/v1/login`~~ | POST | DILUMPUHKAN — guna `api/login.ts` |
 | `session` | `/functions/v1/session` | GET | Dapatkan profil semasa |
 | `session-delete` | `/functions/v1/session` | DELETE | Log keluar |
 | `reset-request` | `/functions/v1/reset-request` | POST | Permintaan reset kata laluan |

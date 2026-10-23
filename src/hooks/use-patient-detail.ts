@@ -5,8 +5,20 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { isRpcMissing, runSupplyMulti } from "@/lib/supply";
 import { useAuth } from "@/hooks/use-auth";
-import { getNowISOKL, getTodayStrKL } from "@/lib/utils";
+import { digitsOnly, formatMyKad, formatPhone, getNowISOKL, getTodayStrKL } from "@/lib/utils";
+import { escapeLikeTerm } from "@/lib/postgrest";
+import { friendlyDbError } from "@/lib/db-errors";
+
+const PATIENT_COLUMNS =
+  "id, nama, nombor_kad_pengenalan, nombor_pendaftaran_hospital, dokumen_lain, nombor_telefon, alamat, catatan, aktif, merged_into, tarikh_daftar, catatan_nyahaktif, tarikh_nyahaktif, dinyahaktif_oleh, didaftar_oleh, created_at, updated_at";
+const ASSIGNMENT_COLUMNS =
+  "id, patient_id, item_id, dos, tarikh_mula_guna, dimulakan_oleh, tarikh_tamat_guna, ditamatkan_oleh, kakitangan_farmasi_perekod, aktif, sebab_tamat, catatan_penggunaan, created_at, updated_at";
+const BATCH_COLUMNS =
+  "id, item_id, nombor_kelompok, tarikh_luput, kuantiti, dilupuskan, dilupuskan_at, created_at, updated_at";
+const ITEM_COLUMNS =
+  "id, kod_item, nama_item, nama_dagangan, kekuatan, id_kategori, id_bentuk, kuota, catatan, aktif, created_at, updated_at";
 import type {
   Patient,
   PatientItemAssignment,
@@ -25,6 +37,7 @@ export type { SupplyActivityRow };
 
 export type PatientWithDeactivatedBy = Patient & {
   dinyahaktif_oleh_profile: Pick<Profile, "id" | "nama"> | null;
+  didaftar_oleh_profile: Pick<Profile, "id" | "nama"> | null;
 };
 
 // ============================================================================
@@ -39,8 +52,12 @@ export function usePatient(id: string | undefined) {
       const { data, error } = await supabase
         .from("patients")
         .select(`
-          *,
+          ${PATIENT_COLUMNS},
           dinyahaktif_oleh_profile:profiles!patients_dinyahaktif_oleh_fkey (
+            id,
+            nama
+          ),
+          didaftar_oleh_profile:profiles!patients_didaftar_oleh_fkey (
             id,
             nama
           )
@@ -73,7 +90,7 @@ export function usePatientAssignments(id: string | undefined) {
         .from("patient_item_assignments")
         .select(
           `
-          *,
+          ${ASSIGNMENT_COLUMNS},
           item:items (
             id,
             kod_item,
@@ -114,7 +131,7 @@ export function useItemForms() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("item_forms")
-        .select("*")
+        .select("id, nama")
         .order("nama", { ascending: true });
       if (error) throw error;
       return (data ?? []) as ItemForm[];
@@ -311,7 +328,7 @@ export function useLastDeclination(assignmentId: string | null) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("supply_declinations")
-        .select("*")
+        .select("id, assignment_id, tarikh, sebab, tempoh, catatan, direkod_oleh, created_at")
         .eq("assignment_id", assignmentId!)
         .order("tarikh", { ascending: false })
         .limit(1)
@@ -388,7 +405,7 @@ export function useAvailableBatches(itemId: string | null) {
       const today = getTodayStrKL();
       const { data, error } = await supabase
         .from("item_batches")
-        .select("*")
+        .select(BATCH_COLUMNS)
         .eq("item_id", itemId!)
         .eq("dilupuskan", false)
         .gt("kuantiti", 0)
@@ -410,7 +427,7 @@ export function useSupplyDurations() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("supply_durations")
-        .select("*")
+        .select("id, nama")
         .order("nama", { ascending: true });
       if (error) throw error;
       return (data ?? []) as SupplyDuration[];
@@ -429,6 +446,10 @@ export function useItemsWithStats() {
       const { data: counts, error: countErr } = await supabase.rpc(
         "count_active_assignments"
       );
+      // HIGH-2: gagal-tutup — jika kiraan tidak dapat disahkan, jangan
+      // paparkan baki kuota palsu (0). Dialog menyekat item berkuota
+      // selagi countsStale (pelayan kekal sebagai penguatkuasa muktamad).
+      const countsStale = !!countErr;
       if (countErr) {
         // eslint-disable-next-line no-console
         console.warn("RPC count_active_assignments failed", countErr);
@@ -440,14 +461,17 @@ export function useItemsWithStats() {
 
       const { data: items, error } = await supabase
         .from("items")
-        .select("*")
+        .select(ITEM_COLUMNS)
         .eq("aktif", true)
         .order("nama_item", { ascending: true });
       if (error) throw error;
-      return ((items as Item[]) ?? []).map((item) => ({
-        ...item,
-        active_assignments: countMap.get(item.id) ?? 0,
-      }));
+      return {
+        items: ((items as Item[]) ?? []).map((item) => ({
+          ...item,
+          active_assignments: countMap.get(item.id) ?? 0,
+        })),
+        countsStale,
+      };
     },
   });
 }
@@ -460,7 +484,7 @@ export function useSearchPatients(query: string) {
     queryKey: ["search-patients", query],
     enabled: query.trim().length >= 2,
     queryFn: async () => {
-      const term = query.trim();
+      const term = escapeLikeTerm(query.trim());
       const { data, error } = await supabase
         .from("patients")
         .select("id, nama, nombor_kad_pengenalan, nombor_pendaftaran_hospital, aktif")
@@ -485,14 +509,47 @@ export function useUpdatePatient(patientId: string | undefined) {
 
   return useMutation({
     mutationFn: async (data: Partial<Patient>) => {
+      // MEDIUM-3: normalkan di titik cekik (cermin useAddPatient) supaya
+      // suntingan tidak memasukkan semula varian format yang terlepas
+      // daripada semakan pendua (tiada indeks unik DB — ulangan adalah sah).
+      const norm: Partial<Patient> = { ...data };
+      const rawKp = norm.nombor_kad_pengenalan;
+      if (rawKp !== undefined) {
+        const digits = digitsOnly(rawKp);
+        if ((rawKp ?? "").trim() && digits.length !== 12) {
+          throw new Error("No. KP mesti 12 digit.");
+        }
+        norm.nombor_kad_pengenalan = digits ? formatMyKad(digits) : null;
+      }
+      const rawHosp = norm.nombor_pendaftaran_hospital;
+      if (rawHosp !== undefined) {
+        norm.nombor_pendaftaran_hospital = (rawHosp ?? "").trim()
+          ? (rawHosp ?? "").trim().toUpperCase()
+          : null;
+      }
+      const rawPhone = norm.nombor_telefon;
+      if (rawPhone !== undefined) {
+        norm.nombor_telefon = (rawPhone ?? "").trim()
+          ? formatPhone(rawPhone)
+          : null;
+      }
       const { error } = await supabase
         .from("patients")
         .update({
-          ...data,
+          ...norm,
           updated_at: getNowISOKL(),
         })
         .eq("id", patientId!);
-      if (error) throw error;
+      if (error) {
+        // Jaring keselamatan: terjemah 23505 samar jika kekangan unik
+        // ditambah pada masa hadapan.
+        if ((error as { code?: string }).code === "23505") {
+          throw new Error(
+            "No. KP / No. Pendaftaran Hospital ini telah digunakan oleh rekod aktif lain."
+          );
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       toast.success("Maklumat pesakit dikemaskini.");
@@ -512,6 +569,12 @@ export function useDeactivatePatient(patientId: string | undefined) {
 
   return useMutation({
     mutationFn: async ({ catatan }: { catatan: string }) => {
+      // LOW-5: jangan tulis jejak audit tanpa pelaku. NULL sebelum ini
+      // diselitkan secara senyap jika profil tiada (sesi tamat) — gagalkan
+      // dengan jelas supaya rekod tidak kehilangan "dinyahaktif oleh".
+      if (!profile?.id) {
+        throw new Error("Sesi tamat tempoh. Sila log masuk semula.");
+      }
       const { error } = await supabase
         .from("patients")
         .update({
@@ -519,7 +582,7 @@ export function useDeactivatePatient(patientId: string | undefined) {
           updated_at: getNowISOKL(),
           catatan_nyahaktif: catatan || null,
           tarikh_nyahaktif: getTodayStrKL(),
-          dinyahaktif_oleh: profile?.id ?? null,
+          dinyahaktif_oleh: profile.id,
         })
         .eq("id", patientId!);
       if (error) throw error;
@@ -559,7 +622,25 @@ export function useAddAssignment(patientId: string | undefined) {
       if (!rpcErr) return { id: newId as string };
       if (!rpcErr.message?.includes("Could not find the function")) throw rpcErr;
 
-      // Fallback: RPC belum deployed — manual 2-step insert
+      // Fallback: RPC belum deployed — manual 2-step insert.
+      // HIGH-2: semakan kuota klien (pelayan 041 menguatkuasakan perkara sama).
+      const { data: quotaItem } = await supabase
+        .from("items")
+        .select("kuota")
+        .eq("id", data.item_id)
+        .maybeSingle();
+      if (quotaItem?.kuota != null && quotaItem.kuota > 0) {
+        const { count: activeCount } = await supabase
+          .from("patient_item_assignments")
+          .select("id", { count: "exact", head: true })
+          .eq("item_id", data.item_id)
+          .eq("aktif", true);
+        if ((activeCount ?? 0) >= quotaItem.kuota) {
+          throw new Error(
+            `Kuota item telah penuh (${activeCount}/${quotaItem.kuota}) — tamatkan tugasan sedia ada dahulu.`
+          );
+        }
+      }
       const today = getTodayStrKL();
       const { data: assignment, error: assignError } = await supabase
         .from("patient_item_assignments")
@@ -613,17 +694,31 @@ export function useStopAssignment(patientId: string | undefined) {
       assignmentId: string;
       sebab: string;
     }) => {
+      // MEDIUM-3: jangan tulis jurnal tanpa pelaku; jangan tulis ganti
+      // sejarah pemberhentian sedia ada.
+      if (!profile?.id) {
+        throw new Error("Sesi tamat tempoh. Sila log masuk semula.");
+      }
+      if (!sebab || !sebab.trim()) {
+        throw new Error("Sebab penamatan diperlukan.");
+      }
       const today = getTodayStrKL();
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("patient_item_assignments")
         .update({
           aktif: false,
           tarikh_tamat_guna: today,
-          sebab_tamat: sebab,
-          ditamatkan_oleh: profile?.id ?? null,
+          sebab_tamat: sebab.trim(),
+          ditamatkan_oleh: profile.id,
         })
-        .eq("id", assignmentId);
+        .eq("id", assignmentId)
+        .eq("aktif", true)
+        .select("id")
+        .maybeSingle();
       if (error) throw error;
+      if (!data) {
+        throw new Error("Tugasan telah ditamatkan atau tidak dijumpai.");
+      }
     },
     onSuccess: () => {
       toast.success("Item ditamatkan.");
@@ -658,25 +753,20 @@ export function useUpdateDose(patientId: string | undefined) {
         p_dikemaskini_oleh: profile?.id ?? null,
       });
       if (!rpcErr) return;
-      if (!rpcErr.message?.includes("Could not find the function")) throw rpcErr;
 
-      // Fallback: RPC belum deployed — manual 2-step
-      const { error: updateError } = await supabase
-        .from("patient_item_assignments")
-        .update({ dos })
-        .eq("id", assignmentId);
-      if (updateError) throw updateError;
-      const { error: historyError } = await supabase
-        .from("dose_history")
-        .insert({
-          assignment_id: assignmentId,
-          tarikh: getNowISOKL(),
-          dos,
-          aktif: true,
-          catatan: catatan || null,
-          dikemaskini_oleh: profile?.id ?? null,
-        });
-      if (historyError) throw historyError;
+      // LOW-4: fallback lama DIPADAM — ia menulis dos + sejarah secara terus
+      // tanpa pengawal tugasan-mati 046 (boleh mencipta fakta dos pada rekod
+      // yang ditamatkan). Gagalkan dengan jelas dan bukannya menulis senyap.
+      if (
+        rpcErr.code === "42883" ||
+        rpcErr.message?.includes("Could not find the function") ||
+        rpcErr.message?.includes("does not exist")
+      ) {
+        throw new Error(
+          "Fungsi update_dose_with_history tiada di pangkalan data — kemas kini migrasi (029/039) diperlukan sebelum kemas kini dos."
+        );
+      }
+      throw rpcErr;
     },
     onSuccess: (_data, vars) => {
       toast.success("Dos dikemaskini.");
@@ -703,83 +793,7 @@ export function useSupplyMedicationMulti(patientId: string | undefined) {
       catatan: string;
       itemId: string;
       allocations: Array<{ batchId: string; kuantiti: number }>;
-    }) => {
-      // 1. Cuba RPC process_supply_multi (atomik + jurnal baki)
-      const { data: rpcData, error: rpcError } = await supabase.rpc("process_supply_multi", {
-        p_assignment_id: data.assignmentId,
-        p_dos: data.dos,
-        p_tempoh_dibekal: data.tempoh,
-        p_allocations: JSON.stringify(data.allocations),
-        p_kakitangan_pembekal: profile?.id ?? null,
-        p_catatan_bekalan: data.catatan ?? null,
-      });
-      if (!rpcError) return { success: true, id: (rpcData as string) ?? null };
-
-      // 2. Fallback: RPC belum deployed — loop per allocation memanggil process_supply
-      let firstId: string | null = null;
-      for (const alloc of data.allocations) {
-        const { data: perBatchData, error: perBatchError } = await supabase.rpc("process_supply", {
-          p_assignment_id: data.assignmentId,
-          p_dos: data.dos,
-          p_tempoh_dibekal: data.tempoh,
-          p_kuantiti: alloc.kuantiti,
-          p_batch_id: alloc.batchId,
-          p_kakitangan_pembekal: profile?.id ?? null,
-          p_catatan_bekalan: data.catatan ?? null,
-        });
-        if (perBatchError) throw perBatchError;
-        if (!firstId && perBatchData) firstId = perBatchData as string;
-      }
-      if (firstId) return { success: true, id: firstId };
-
-      // 3. Fallback: manual per allocation
-      for (const alloc of data.allocations) {
-        const { data: batch, error: bErr } = await supabase
-          .from("item_batches")
-          .select("kuantiti, dilupuskan")
-          .eq("id", alloc.batchId)
-          .single();
-        if (bErr) throw bErr;
-        if (batch?.dilupuskan) throw new Error("Kelompok ini telah dilupuskan.");
-        if (!batch || batch.kuantiti < alloc.kuantiti) {
-          throw new Error("Stok tidak mencukupi.");
-        }
-        const { error: updErr } = await supabase
-          .from("item_batches")
-          .update({ kuantiti: batch.kuantiti - alloc.kuantiti })
-          .eq("id", alloc.batchId);
-        if (updErr) throw updErr;
-
-        const { data: supply, error: sErr } = await supabase
-          .from("supply_records")
-          .insert({
-            assignment_id: data.assignmentId,
-            dos: data.dos,
-            tempoh_dibekal: data.tempoh,
-            kuantiti: alloc.kuantiti,
-            batch_id: alloc.batchId,
-            kakitangan_pembekal: profile?.id!,
-            catatan_bekalan: data.catatan || null,
-          })
-          .select("id")
-          .single();
-        if (sErr) throw sErr;
-
-        if (supply) {
-          await supabase.from("inventory_transactions").insert({
-            item_id: data.itemId,
-            batch_id: alloc.batchId,
-            jenis: "keluar",
-            kuantiti: alloc.kuantiti,
-            rujukan_id: supply.id,
-            rujukan_type: "supply",
-            catatan: data.catatan || null,
-          });
-          if (!firstId) firstId = supply.id;
-        }
-      }
-      return { success: true, id: firstId };
-    },
+    }) => runSupplyMulti(data, profile?.id ?? null),
     onSuccess: (_data, vars) => {
       toast.success("Ubat berjaya dibekalkan.");
       queryClient.invalidateQueries({ queryKey: ["assignments", patientId] });
@@ -788,6 +802,11 @@ export function useSupplyMedicationMulti(patientId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ["latest-supply-dates"] });
       queryClient.invalidateQueries({ queryKey: ["batches", vars.itemId] });
       queryClient.invalidateQueries({ queryKey: ["transaction-history", vars.itemId] });
+      // Cross-invalidate kunci yang digunakan oleh Dispen Pantas + papan pemuka
+      queryClient.invalidateQueries({ queryKey: ["patient-assignments", patientId] });
+      queryClient.invalidateQueries({ queryKey: ["frequent-items"] });
+      queryClient.invalidateQueries({ queryKey: ["pantas-batches"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
     },
     onError: (err: any) => {
       toast.error(err?.message || "Gagal membekalkan ubat.");
@@ -810,12 +829,19 @@ export function useDeleteSupplyRecord(patientId: string | undefined) {
       });
       if (!rpcError) return;
 
-      // Fallback: mark as voided directly (RPC not deployed)
-      const { error } = await supabase
-        .from("supply_records")
-        .update({ voided_at: new Date().toISOString() })
-        .eq("id", supplyId);
-      if (error) throw error;
+      // MEDIUM-3 (audit bekalan): fallback lama DIPADAM — ia menanda void
+      // TANPA memulangkan stok (kehilangan stok senyap). Gagalkan dengan
+      // jelas supaya pangkalan data dikemas kini (migrasi 022/039).
+      if (
+        rpcError.code === "42883" ||
+        rpcError.message?.includes("Could not find the function") ||
+        rpcError.message?.includes("does not exist")
+      ) {
+        throw new Error(
+          "Fungsi reverse_supply tiada di pangkalan data — kemas kini migrasi (022/039) diperlukan sebelum pembatalan."
+        );
+      }
+      throw rpcError;
     },
     onSuccess: (_data, vars) => {
       toast.success("Rekod bekalan dibatalkan dan stok dikembalikan.");
@@ -829,6 +855,63 @@ export function useDeleteSupplyRecord(patientId: string | undefined) {
     },
     onError: (err: any) => {
       toast.error(err?.message || "Gagal memadam rekod bekalan.");
+    },
+  });
+}
+
+/**
+ * LOW-4: pembatalan pukal atomik — baris bekalan bergabung (multi-kelompok)
+ * dibatalkan dalam SATU transaksi RPC dengan SATU toast ringkasan, bukan
+ * N mutasi berasingan yang boleh berjaya separuh.
+ */
+export function useBulkDeleteSupplyRecords(patientId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      supplyIds,
+      assignmentId,
+    }: {
+      supplyIds: string[];
+      assignmentId: string;
+    }) => {
+      if (supplyIds.length === 0) throw new Error("Tiada rekod dipilih.");
+      const { error } = await supabase.rpc("reverse_supplies", {
+        p_supply_ids: supplyIds,
+        p_catatan: "Pembatalan pukal rekod bergabung",
+      });
+      if (!error) return { count: supplyIds.length, assignmentId };
+      if (!isRpcMissing(error)) throw error;
+
+      // Fallback pra-047: batal satu demi satu (tidak atomik — laporkan
+      // separa supaya pengguna menyemak bakinya).
+      const failed: string[] = [];
+      for (const sid of supplyIds) {
+        const { error: e } = await supabase.rpc("reverse_supply", {
+          p_supply_id: sid,
+        });
+        if (e) failed.push(sid);
+      }
+      if (failed.length > 0) {
+        throw new Error(
+          `Sebahagian gagal dibatalkan (${failed.length}/${supplyIds.length}) — semak sejarah bekalan sebelum cuba lagi.`
+        );
+      }
+      return { count: supplyIds.length, assignmentId };
+    },
+    onSuccess: (data) => {
+      toast.success(
+        `${data.count} rekod bekalan dibatalkan dan stok dikembalikan.`
+      );
+      queryClient.invalidateQueries({ queryKey: ["assignments", patientId] });
+      queryClient.invalidateQueries({ queryKey: ["supply-history", data.assignmentId] });
+      queryClient.invalidateQueries({ queryKey: ["assignment-activity", data.assignmentId] });
+      queryClient.invalidateQueries({ queryKey: ["latest-supply-dates"] });
+      queryClient.invalidateQueries({ queryKey: ["batches"] });
+      queryClient.invalidateQueries({ queryKey: ["pantas-batches"] });
+      queryClient.invalidateQueries({ queryKey: ["items-with-stats"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Gagal membatalkan rekod bekalan.");
     },
   });
 }
@@ -861,17 +944,19 @@ export function useUpdateSupplyRecord(patientId: string | undefined) {
       });
       if (!rpcError) return;
 
-      // 2. Fallback: direct update (RPC not deployed) — tanpa larasan stok
-      const { error } = await supabase
-        .from("supply_records")
-        .update({
-          dos,
-          kuantiti,
-          tempoh_dibekal: tempoh,
-          catatan_bekalan: catatan || null,
-        })
-        .eq("id", supplyId);
-      if (error) throw error;
+      // MEDIUM-3 (audit bekalan): fallback lama DIPADAM — ia menulis kuantiti
+      // baharu TANPA melaraskan stok/jurnal (penyelewengan stok senyap).
+      // Gagalkan dengan jelas supaya pangkalan data dikemas kini (023/039).
+      if (
+        rpcError.code === "42883" ||
+        rpcError.message?.includes("Could not find the function") ||
+        rpcError.message?.includes("does not exist")
+      ) {
+        throw new Error(
+          "Fungsi update_supply tiada di pangkalan data — kemas kini migrasi (023/039) diperlukan sebelum penyuntingan."
+        );
+      }
+      throw rpcError;
     },
     onSuccess: (_data, vars) => {
       toast.success("Rekod bekalan dikemaskini.");
@@ -951,7 +1036,8 @@ export function useDeleteDeclination(patientId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ["last-declination", vars.assignmentId] });
     },
     onError: (err: any) => {
-      toast.error(err?.message || "Gagal menghapuskan rekod.");
+      // LOW-5: RLS 048 hanya membenarkan Pentadbir memadam — terjemahkan 42501.
+      toast.error(friendlyDbError(err, "Gagal menghapuskan rekod."));
     },
   });
 }
@@ -971,11 +1057,17 @@ export function useMergePatients() {
       primaryPatientId: string;
       duplicateIds: string[];
     }) => {
+      // MEDIUM-1 (audit gabungan): jangan tulis jejak audit tanpa pelaku.
+      // NULL sebelum ini diselitkan secara senyap jika profil tiada (sesi
+      // tamat) — gagalkan dengan jelas, selari dengan useDeactivatePatient.
+      if (!profile?.id) {
+        throw new Error("Sesi tamat tempoh. Sila log masuk semula.");
+      }
       const { error } = await supabase.rpc("merge_patients", {
         p_primary_id: primaryPatientId,
         p_secondary_ids: duplicateIds,
         p_merge_date: getTodayStrKL(),
-        p_merged_by: profile?.id ?? null,
+        p_merged_by: profile.id,
       });
       if (error) throw error;
     },

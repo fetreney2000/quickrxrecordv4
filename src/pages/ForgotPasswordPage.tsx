@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { AuthBackground } from "@/components/auth/auth-background";
 import { SuccessState } from "@/components/auth/success-state";
-import { supabase } from "@/lib/supabase";
 
 export default function ForgotPasswordPage() {
   const [namaPengguna, setNamaPengguna] = useState("");
@@ -21,40 +20,27 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      // Cari profil di Supabase
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("id, nama_pengguna")
-        .eq("nama_pengguna", namaPengguna.trim())
-        .maybeSingle();
-
-      if (profileError) throw profileError;
-
-      if (!profile) {
-        toast.error("Nama pengguna tidak dijumpai.");
-        setLoading(false);
-        return;
-      }
-
-      // Hantar permintaan reset
+      // Hantar permintaan reset — nama_pengguna diselesaikan di pelayan
+      // (anon tidak lagi boleh membaca profiles selepas RLS diaktifkan)
       const res = await fetch("/api/reset-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: profile.id }),
+        credentials: "include",
+        body: JSON.stringify({ nama_pengguna: namaPengguna.trim() }),
       });
 
-      if (res.ok || res.status === 409) {
-        // OK atau 409 (pendua) — papar skrin kejayaan untuk elakkan spam
+      if (res.ok) {
+        // Respons sentiasa seragam (200) — elak pengecaman nama pengguna
         setSent(true);
       } else {
         const data = await res.json().catch(() => ({}));
         toast.error(data?.error || "Gagal menghantar permintaan. Sila cuba lagi.");
       }
     } catch (err) {
-      // Jika Supabase tidak dapat dihubungi (offline/dev tanpa DB),
+      // Jika pelayan tidak dapat dihubungi (offline/dev tanpa API),
       // tetap tunjukkan skrin kejayaan untuk pembangunan
       // eslint-disable-next-line no-console
-      console.warn("Supabase error (dev mode):", err);
+      console.warn("API error (dev mode):", err);
       setSent(true);
     } finally {
       setLoading(false);

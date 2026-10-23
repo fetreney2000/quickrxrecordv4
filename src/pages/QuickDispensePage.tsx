@@ -139,6 +139,12 @@ export default function QuickDispensePage() {
     () => Object.values(batchAllocations).reduce((sum, v) => sum + v, 0),
     [batchAllocations]
   );
+  // Stok tersedia — elak permintaan melebihi jumlah kelompok (server RPC
+  // kekal sebagai pengesah muktamad; ini hanya maklum balas segera).
+  const totalStock = useMemo(
+    () => selectableBatches.reduce((sum, b) => sum + (b.kuantiti || 0), 0),
+    [selectableBatches]
+  );
   const { data: supplyDurations = [] } = useSupplyDurationsList();
   const supplyMut = useQuickSupplyMulti(selectedPatient?.id ?? null);
   const declineMut = useDeclineSupply(selectedPatient?.id);
@@ -254,10 +260,12 @@ export default function QuickDispensePage() {
   }
 
   const qtyNum = parseInt(quantity);
+  const exceedsStock = qtyNum > 0 && totalStock > 0 && qtyNum > totalStock;
   const canSubmit =
     !!selectedPatient &&
     !!selectedItem &&
     qtyNum > 0 &&
+    !exceedsStock &&
     totalAllocated === qtyNum &&
     dose.trim() !== "";
 
@@ -580,6 +588,11 @@ export default function QuickDispensePage() {
                 {totalAllocated > qtyNum && (
                   <p className="text-2xs mt-1" style={{ color: "#dc2626" }}>
                     Jumlah melebihi kuantiti yang diminta.
+                  </p>
+                )}
+                {exceedsStock && (
+                  <p className="text-2xs mt-1" role="alert" style={{ color: "#dc2626" }}>
+                    Stok tidak mencukupi (tersedia: {totalStock} unit). Kurangkan kuantiti.
                   </p>
                 )}
               </div>

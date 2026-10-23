@@ -2,6 +2,9 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import { VitePWA } from "vite-plugin-pwa";
+// Muat SEMUA var .env (bukan hanya VITE_*) ke process.env untuk api-mock
+// (SESSION_SECRET, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_JWT_SECRET).
+import "dotenv/config";
 import { apiMockPlugin } from "./vite/api-mock";
 
 // https://vitejs.dev/config/
@@ -47,6 +50,9 @@ export default defineConfig({
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
         navigateFallback: "index.html",
+        // Jangan sesekali cache/serving fallback untuk API — respons API
+        // (termasuk /api/session) mesti sentiasa segar dari rangkaian.
+        navigateFallbackDenylist: [/^\/api/],
       },
     }),
   ],

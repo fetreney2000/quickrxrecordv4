@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import { getTodayStrKL, getNowISOKL } from "@/lib/utils";
+import { escapeIlikeExact, escapeLikeTerm } from "@/lib/postgrest";
 import type {
   Item,
   ItemBatch,
@@ -15,6 +16,11 @@ import type {
   Patient,
   SupplyRecord,
 } from "@/types";
+
+const ITEM_COLUMNS =
+  "id, kod_item, nama_item, nama_dagangan, kekuatan, id_kategori, id_bentuk, kuota, catatan, aktif, created_at, updated_at";
+const BATCH_COLUMNS =
+  "id, item_id, nombor_kelompok, tarikh_luput, kuantiti, dilupuskan, dilupuskan_at, created_at, updated_at";
 
 // ============================================================================
 // ITEMS
@@ -27,6 +33,20 @@ export interface SortState {
   dir: SortDir;
 }
 
+/**
+ * LOW-5: baki jurnal untuk laluan fallback (pre-RPC). Mencerminkan
+ * inventory_item_baki() di pelayan — jumlah SEMUA kelompok item (termasuk
+ * lupus; kekal konsisten dengan baris yang ditulis RPC).
+ */
+async function fetchItemBaki(itemId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from("item_batches")
+    .select("kuantiti")
+    .eq("item_id", itemId);
+  if (error) throw error;
+  return (data ?? []).reduce((sum, b: any) => sum + (b.kuantiti || 0), 0);
+}
+
 export function useUpdateBatchQuantity(itemId: string | undefined) {
   const queryClient = useQueryClient();
   const { profile } = useAuth();
@@ -37,11 +57,16 @@ export function useUpdateBatchQuantity(itemId: string | undefined) {
       reason?: string;
       catatan?: string;
     }) => {
+      // MEDIUM-4: jangan tulis jurnal tanpa pelaku.
+      if (!profile?.id) {
+        throw new Error("Sesi tamat tempoh. Sila log masuk semula.");
+      }
+      const actorId = profile.id;
       const catatan = data.catatan?.trim();
       if (data.reason === "Pelupusan Stok") {
         const { error } = await supabase.rpc("process_batch_disposal", {
           p_batch_id: data.batchId,
-          p_adjusted_by: profile?.id ?? null,
+          p_adjusted_by: actorId,
           p_reason: data.reason,
           p_catatan: catatan || null,
         });
@@ -62,22 +87,38 @@ export function useUpdateBatchQuantity(itemId: string | undefined) {
           .eq("id", data.batchId)
           .eq("dilupuskan", false);
         if (updateError) throw updateError;
-        const { error: adjustmentError } = await supabase.from("batch_adjustments").insert({
-          batch_id: data.batchId,
-          previous_kuantiti: batch.kuantiti,
-          new_kuantiti: 0,
-          change: -batch.kuantiti,
-          reason: data.reason,
-          adjusted_by: profile?.id ?? null,
-        });
+        const { data: adjustment, error: adjustmentError } = await supabase
+          .from("batch_adjustments")
+          .insert({
+            batch_id: data.batchId,
+            previous_kuantiti: batch.kuantiti,
+            new_kuantiti: 0,
+            change: -batch.kuantiti,
+            reason: data.reason,
+            adjusted_by: actorId,
+          })
+          .select("id")
+          .single();
         if (adjustmentError) throw adjustmentError;
+        // LOW-5: jurnal pelupusan tiada dalam fallback lama — tulis dengan baki.
+        const { error: txError } = await supabase.from("inventory_transactions").insert({
+          item_id: batch.item_id,
+          batch_id: data.batchId,
+          jenis: "keluar",
+          kuantiti: batch.kuantiti,
+          rujukan_id: adjustment.id,
+          rujukan_type: "batch_disposal",
+          catatan: data.reason ?? null,
+          baki: await fetchItemBaki(batch.item_id),
+        });
+        if (txError) throw txError;
         return;
       }
       const { error: rpcErr } = await supabase.rpc("record_batch_adjustment", {
         p_batch_id: data.batchId,
         p_new_kuantiti: data.newKuantiti,
         p_reason: data.reason ?? null,
-        p_adjusted_by: profile?.id ?? null,
+        p_adjusted_by: actorId,
         p_catatan: catatan || null,
       });
       if (!rpcErr) return;
@@ -86,7 +127,7 @@ export function useUpdateBatchQuantity(itemId: string | undefined) {
       // Fallback: DB belum dinaik taraf ke migrasi 018
       const { data: existing, error: getErr } = await supabase
         .from("item_batches")
-        .select("kuantiti, dilupuskan")
+        .select("item_id, kuantiti, dilupuskan")
         .eq("id", data.batchId)
         .single();
       if (getErr) throw getErr;
@@ -101,15 +142,32 @@ export function useUpdateBatchQuantity(itemId: string | undefined) {
       if (updErr) throw updErr;
 
       const change = data.newKuantiti - existing.kuantiti;
-      const { error: adjustmentError } = await supabase.from("batch_adjustments").insert({
-        batch_id: data.batchId,
-        previous_kuantiti: existing.kuantiti,
-        new_kuantiti: data.newKuantiti,
-        change,
-        reason: data.reason,
-        adjusted_by: profile?.id ?? null,
-      });
+      if (change === 0) throw new Error("Tiada perubahan pada kuantiti.");
+      const { data: adjustment, error: adjustmentError } = await supabase
+        .from("batch_adjustments")
+        .insert({
+          batch_id: data.batchId,
+          previous_kuantiti: existing.kuantiti,
+          new_kuantiti: data.newKuantiti,
+          change,
+          reason: data.reason,
+          adjusted_by: actorId,
+        })
+        .select("id")
+        .single();
       if (adjustmentError) throw adjustmentError;
+      // LOW-5: jurnal pelarasan tiada dalam fallback lama — tulis dengan baki.
+      const { error: txError } = await supabase.from("inventory_transactions").insert({
+        item_id: existing.item_id,
+        batch_id: data.batchId,
+        jenis: change >= 0 ? "masuk" : "keluar",
+        kuantiti: Math.abs(change),
+        rujukan_id: adjustment.id,
+        rujukan_type: "adjustment",
+        catatan: data.reason ?? null,
+        baki: await fetchItemBaki(existing.item_id),
+      });
+      if (txError) throw txError;
     },
     onSuccess: () => {
       toast.success("Kuantiti kelompok dikemaskini.");
@@ -168,6 +226,11 @@ export function useItems({
             id_bentuk: r.id_bentuk,
             bentuk: r.bentuk,
             item_batches: [{ kuantiti: Number(r.total_stock) }],
+            // MEDIUM-1: stok boleh dibekal (bukan lupus + belum luput).
+            // Pra-042: lajur tiada → anggap semua boleh dibekal.
+            dispensable_stock: Number(
+              r.dispensable_stock ?? r.total_stock ?? 0
+            ),
             patient_item_assignments: Array.from(
               { length: Number(r.bilangan_pesakit) },
               (_, i) => ({ id: String(i) })
@@ -184,17 +247,18 @@ export function useItems({
         throw rpcErr;
       }
       // Fallback: RPC not yet deployed — legacy client-side queries
+      // (lajur eksplisit — elak SELECT *).
       let query = supabase
         .from("items")
         .select(
-          "*, item_batches(kuantiti), patient_item_assignments(id)",
+          `${ITEM_COLUMNS}, item_batches(kuantiti, tarikh_luput, dilupuskan), patient_item_assignments(id)`,
           { count: "exact" }
         )
         .eq("aktif", true);
 
-      // Search
+      // Search — istilah dibersihkan (PostgREST injection).
       if (search.trim()) {
-        const term = search.trim();
+        const term = escapeLikeTerm(search.trim());
         query = query.or(
           `kod_item.ilike.%${term}%,nama_item.ilike.%${term}%,nama_dagangan.ilike.%${term}%`
         );
@@ -217,7 +281,11 @@ export function useItems({
           (forms ?? []).forEach((form) => formMap.set(form.id, form.nama));
         }
 
-        const rows = (data ?? []).map((item: any) => ({ ...item, bentuk: formMap.get(item.id_bentuk) ?? null }));
+        const rows = (data ?? []).map((item: any) => ({
+          ...item,
+          bentuk: formMap.get(item.id_bentuk) ?? null,
+          dispensable_stock: computeDispensable(item),
+        }));
         rows.sort((a: any, b: any) => {
           const av = sort.key === "stock" ? computeStock(a) : computeRemaining(a);
           const bv = sort.key === "stock" ? computeStock(b) : computeRemaining(b);
@@ -268,7 +336,11 @@ export function useItems({
       }
 
       return {
-        items: (data ?? []).map((item: any) => ({ ...item, bentuk: formMap.get(item.id_bentuk) ?? null })),
+        items: (data ?? []).map((item: any) => ({
+          ...item,
+          bentuk: formMap.get(item.id_bentuk) ?? null,
+          dispensable_stock: computeDispensable(item),
+        })),
         total: count ?? 0,
         totalPages: Math.max(1, Math.ceil((count ?? 0) / pageSize)),
       };
@@ -277,8 +349,33 @@ export function useItems({
   });
 }
 
-function computeStock(item: { item_batches?: { kuantiti: number }[] }): number {
-  return (item.item_batches ?? []).reduce((sum, b) => sum + (b.kuantiti || 0), 0);
+function computeStock(item: { item_batches?: { kuantiti: number; dilupuskan?: boolean }[] }): number {
+  // Selari dengan total_stock pelayan: kelompok dilupuskan tidak dikira.
+  // (Laluan RPC membekalkan jumlah yang telah ditapis — medan tiada = dikira.)
+  return (item.item_batches ?? []).reduce(
+    (sum, b) => sum + (!b.dilupuskan ? b.kuantiti || 0 : 0),
+    0
+  );
+}
+
+/**
+ * MEDIUM-1: stok boleh dibekal — bukan lupus DAN belum luput.
+ * Perbandingan string YYYY-MM-DD adalah sah secara leksikografi.
+ */
+function computeDispensable(
+  item: {
+    item_batches?: { kuantiti: number; tarikh_luput?: string; dilupuskan?: boolean }[];
+  },
+  today = getTodayStrKL()
+): number {
+  return (item.item_batches ?? []).reduce(
+    (sum, b) =>
+      sum +
+      (!b.dilupuskan && (!b.tarikh_luput || b.tarikh_luput >= today)
+        ? b.kuantiti || 0
+        : 0),
+    0
+  );
 }
 
 function computeRemaining(item: { kuota?: number | null; patient_item_assignments?: { id: string }[] }): number | null {
@@ -300,7 +397,7 @@ export function useItem(id: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("items")
-        .select("*")
+        .select(ITEM_COLUMNS)
         .eq("id", id!)
         .maybeSingle();
       if (error) throw error;
@@ -335,7 +432,8 @@ export function useItem(id: string | undefined) {
 
 export function useItemForms() {
   return useQuery({
-    queryKey: ["item-forms"],
+    // Kunci dikongsi dengan use-patient-detail: satu cache untuk lookup sama.
+    queryKey: ["item_forms"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("item_forms")
@@ -370,7 +468,7 @@ export function useAddItem() {
       const { data, error } = await supabase
         .from("items")
         .insert(itemData)
-        .select()
+        .select(ITEM_COLUMNS)
         .single();
       if (error) throw error;
       return data;
@@ -391,7 +489,7 @@ export function useUpdateItem(id: string | undefined) {
         const { data: duplicate, error: duplicateError } = await supabase
           .from("items")
           .select("id")
-          .ilike("kod_item", kodItem)
+          .ilike("kod_item", escapeIlikeExact(kodItem))
           .neq("id", id!)
           .maybeSingle();
         if (duplicateError) throw duplicateError;
@@ -422,9 +520,14 @@ export function useDeleteItem() {
   const { profile } = useAuth();
   return useMutation({
     mutationFn: async (itemId: string) => {
+      // MEDIUM-4: jangan tulis jurnal tanpa pelaku.
+      if (!profile?.id) {
+        throw new Error("Sesi tamat tempoh. Sila log masuk semula.");
+      }
+      const actorId = profile.id;
       const { data, error } = await supabase.rpc("delete_item", {
         p_item_id: itemId,
-        p_deleted_by: profile?.id ?? null,
+        p_deleted_by: actorId,
       });
       if (!error) return data as "deleted" | "deactivated";
       if (!error.message?.includes("Could not find the function")) throw error;
@@ -457,7 +560,7 @@ export function useDeleteItem() {
             aktif: false,
             tarikh_tamat_guna: today,
             sebab_tamat: sebab,
-            ditamatkan_oleh: profile?.id ?? null,
+            ditamatkan_oleh: actorId,
           })
           .eq("item_id", itemId)
           .eq("aktif", true);
@@ -474,7 +577,7 @@ export function useDeleteItem() {
         for (const b of batches ?? []) {
           const { error: disposeErr } = await supabase.rpc("process_batch_disposal", {
             p_batch_id: b.id,
-            p_adjusted_by: profile?.id ?? null,
+            p_adjusted_by: actorId,
             p_reason: sebab,
           });
           if (
@@ -519,7 +622,7 @@ export function useBatches(itemId: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("item_batches")
-        .select("*")
+        .select(BATCH_COLUMNS)
         .eq("item_id", itemId!)
         .order("tarikh_luput", { ascending: true });
       if (error) throw error;
@@ -538,12 +641,22 @@ export function useAddBatch(itemId: string | undefined) {
       tarikh_luput: string;
       kuantiti: number;
     }) => {
+      // MEDIUM-1: semakan klien (pelayan 042 menguatkuasakan perkara sama).
+      // String YYYY-MM-DD boleh dibandingkan secara leksikografi.
+      if (batchData.tarikh_luput < getTodayStrKL()) {
+        throw new Error("Tarikh luput telah berlalu — kelompok luput tidak boleh diterima masuk.");
+      }
+      // MEDIUM-4: jangan tulis jurnal tanpa pelaku.
+      if (!profile?.id) {
+        throw new Error("Sesi tamat tempoh. Sila log masuk semula.");
+      }
+      const actorId = profile.id;
       const { error: addErr } = await supabase.rpc("record_batch_addition", {
         p_item_id: itemId!,
         p_nombor_kelompok: batchData.nombor_kelompok,
         p_tarikh_luput: batchData.tarikh_luput,
         p_kuantiti: batchData.kuantiti,
-        p_added_by: profile?.id ?? null,
+        p_added_by: actorId,
       });
       if (!addErr) return;
       if (!addErr.message?.includes("Could not find the function")) throw addErr;
@@ -553,7 +666,7 @@ export function useAddBatch(itemId: string | undefined) {
         .from("item_batches")
         .select("id, item_id, kuantiti, dilupuskan")
         .eq("item_id", itemId!)
-        .ilike("nombor_kelompok", batchData.nombor_kelompok)
+        .ilike("nombor_kelompok", escapeIlikeExact(batchData.nombor_kelompok))
         .maybeSingle();
       if (findError) throw findError;
       if (existing?.dilupuskan) throw new Error("Kelompok ini telah dilupuskan dan tidak boleh digunakan semula.");
@@ -567,15 +680,24 @@ export function useAddBatch(itemId: string | undefined) {
       } else {
         const { data: inserted, error } = await supabase.from("item_batches")
           .insert({ item_id: itemId!, ...batchData }).select("id").single();
-        if (error) throw error;
+        // Jaring keselamatan 23505 (tiada indeks unik — ulangan adalah sah;
+        // dikekalkan jika kekangan ditambah pada masa hadapan).
+        if (error) {
+          if ((error as { code?: string }).code === "23505") {
+            throw new Error(
+              "Kelompok ini baru sahaja didaftarkan (kemungkinan oleh pengguna lain). Sila cuba semula — stok akan ditambah ke kelompok tersebut."
+            );
+          }
+          throw error;
+        }
         batchId = inserted.id;
       }
       const { data: addition, error: staffError } = await supabase
         .from("batch_additions")
         .insert({
           batch_id: batchId,
-          quantity: batchData.kuantiti,
-          added_by: profile?.id ?? null,
+          kuantiti: batchData.kuantiti,
+          added_by: actorId,
         })
         .select("id")
         .single();
@@ -589,6 +711,8 @@ export function useAddBatch(itemId: string | undefined) {
         rujukan_id: additionId,
         rujukan_type: "batch_addition",
         catatan: existing ? "Tambah stok ke kelompok sedia ada" : "Kelompok baharu",
+        // LOW-5: baki tiada dalam fallback lama — kira seperti RPC.
+        baki: await fetchItemBaki(itemId!),
       });
       if (transactionError) throw transactionError;
     },
@@ -602,21 +726,99 @@ export function useAddBatch(itemId: string | undefined) {
 
 export function useUpdateBatch(itemId: string | undefined) {
   const queryClient = useQueryClient();
+  const { profile } = useAuth();
   return useMutation({
     mutationFn: async (data: {
       batchId: string;
       nombor_kelompok: string;
       tarikh_luput: string;
+      reason: string;
     }) => {
-      const { error } = await supabase
+      if (!profile?.id) {
+        throw new Error("Sesi tamat tempoh. Sila log masuk semula.");
+      }
+      // MEDIUM-3: laluan beraudit (044) dahulu — kemas kini identiti mesti
+      // meninggalkan jejak dengan sebab.
+      const { error: rpcErr } = await supabase.rpc("record_batch_update", {
+        p_batch_id: data.batchId,
+        p_nombor_kelompok: data.nombor_kelompok,
+        p_tarikh_luput: data.tarikh_luput,
+        p_reason: data.reason,
+        p_updated_by: profile.id,
+      });
+      if (!rpcErr) return;
+      if (
+        rpcErr.code !== "42883" &&
+        !rpcErr.message?.includes("does not exist") &&
+        !rpcErr.message?.includes("Could not find the function")
+      )
+        throw rpcErr;
+
+      // Fallback: DB belum dinaik taraf ke migrasi 044 — tulis terus +
+      // jurnal manual (semakan yang sama seperti RPC).
+      const { data: batch, error: getErr } = await supabase
+        .from("item_batches")
+        .select("id, item_id, nombor_kelompok, tarikh_luput, kuantiti, dilupuskan")
+        .eq("id", data.batchId)
+        .maybeSingle();
+      if (getErr) throw getErr;
+      if (!batch) throw new Error("Kelompok tidak dijumpai.");
+      if (batch.dilupuskan) {
+        throw new Error("Kelompok ini telah dilupuskan dan tidak boleh diubah.");
+      }
+      const newName = data.nombor_kelompok.trim().toUpperCase();
+      if (!newName) throw new Error("Nombor kelompok diperlukan.");
+      if (data.tarikh_luput < getTodayStrKL()) {
+        throw new Error("Tarikh luput telah berlalu.");
+      }
+      if (
+        batch.nombor_kelompok === newName &&
+        batch.tarikh_luput === data.tarikh_luput
+      ) {
+        throw new Error("Tiada perubahan pada maklumat kelompok.");
+      }
+      const { data: clash } = await supabase
+        .from("item_batches")
+        .select("id")
+        .eq("item_id", batch.item_id)
+        .ilike("nombor_kelompok", escapeIlikeExact(newName))
+        .neq("id", data.batchId)
+        .limit(1)
+        .maybeSingle();
+      if (clash) {
+        throw new Error(
+          `Nombor kelompok ${newName} sudah wujud — tambah stok ke kelompok tersebut dan bukannya menamakan semula.`
+        );
+      }
+      const { error: updErr } = await supabase
         .from("item_batches")
         .update({
-          nombor_kelompok: data.nombor_kelompok.toUpperCase(),
+          nombor_kelompok: newName,
           tarikh_luput: data.tarikh_luput,
           updated_at: getNowISOKL(),
         })
-        .eq("id", data.batchId);
-      if (error) throw error;
+        .eq("id", data.batchId)
+        .eq("dilupuskan", false);
+      if (updErr) {
+        if ((updErr as { code?: string }).code === "23505") {
+          throw new Error(
+            `Nombor kelompok ${newName} sudah wujud — tambah stok ke kelompok tersebut dan bukannya menamakan semula.`
+          );
+        }
+        throw updErr;
+      }
+      const { error: journalErr } = await supabase
+        .from("batch_adjustments")
+        .insert({
+          batch_id: data.batchId,
+          previous_kuantiti: batch.kuantiti,
+          new_kuantiti: batch.kuantiti,
+          change: 0,
+          reason: data.reason,
+          adjusted_by: profile.id,
+          catatan: `Maklumat kelompok: nombor ${batch.nombor_kelompok} → ${newName}; luput ${batch.tarikh_luput} → ${data.tarikh_luput}`,
+        });
+      if (journalErr) throw journalErr;
     },
     onSuccess: () => {
       toast.success("Maklumat kelompok dikemaskini.");

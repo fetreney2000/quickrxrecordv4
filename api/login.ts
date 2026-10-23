@@ -1,140 +1,174 @@
 /**
  * Vercel Serverless Function: POST /api/login
  *
- * Mengesahkan nama pengguna + kata laluan terhadap jadual "profiles" di Supabase.
- * Menyokong dua format hash: bcrypt ($2a/$2b) dan PBKDF2 (pbkdf2:iterations:salt:key).
- * Mengembalikan profil pengguna + token sesi yang ditandatangani (HMAC).
+ * Mengesahkan nama pengguna + kata laluan terhadap jadual "profiles".
+ * Menyokong hash bcrypt dan PBKDF2 (plaintext tidak lagi diterima).
+ * Mengembalikan profil + token sesi HMAC + sbToken (JWT Supabase-compat,
+ * membawa claim pwv untuk RLS).
+ *
+ * Keselamatan (audit H2):
+ *   - Had laju: 5 percubaan gagal / 15 minit per nama pengguna + 20 / 15 minit per IP
+ *   - Mesej 401 seragam (tiada pengecaman pengguna) + bcrypt dummy pada
+ *     pengguna tiada/h tanpa hash (padankan masa pengiraan)
  */
-import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
-import { createHmac, pbkdf2Sync } from "node:crypto";
+import {
+  adminClient,
+  clearAttempts,
+  clientIp,
+  corsHeadersFor,
+  isRateLimited,
+  json,
+  mintSupabaseJwt,
+  pwvFingerprint,
+  recordAttempt,
+  sbCookie,
+  sessionCookie,
+  SESSION_TTL_MS,
+  signToken,
+  verifyPassword,
+} from "./_lib/auth";
 
-const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 hari
+// Hash bcrypt dummy (cost 12) — sentiasa gagal sepadan, guna utk padankan masa.
+const DUMMY_HASH =
+  "$2b$12$GnStAWoBKu/luQvZG/0kEOi0O1mhiPeKvKi/84205LPMnfAVkTZAi";
 
-function getEnv(key: string): string {
-  const val = process.env[key];
-  if (!val) throw new Error(`Missing environment variable: ${key}`);
-  return val;
-}
-
-function corsHeaders(): Record<string, string> {
-  return {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers":
-      "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-  };
-}
-
-function json(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders(), "Content-Type": "application/json" },
-  });
-}
-
-function signToken(payload: { userId: string; expiresAt: number }): string {
-  const secret = getEnv("SESSION_SECRET");
-  const data = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const sig = createHmac("sha256", secret).update(data).digest("base64url");
-  return `${data}.${sig}`;
-}
-
-/**
- * Sahkan kata laluan terhadap hash yang disimpan.
- * Menyokong:
- *   - bcrypt ($2a$, $2b$)
- *   - PBKDF2 (format: pbkdf2:iterations:salt_hex:derived_key_hex)
- */
-async function verifyPassword(
-  password: string,
-  storedHash: string
-): Promise<boolean> {
-  // 1. Cuba bcrypt dahulu
-  if (storedHash.startsWith("$2a$") || storedHash.startsWith("$2b$")) {
-    return bcrypt.compare(password, storedHash);
-  }
-
-  // 2. Cuba PBKDF2 (format: pbkdf2:iterations:salt_hex:derived_key_hex)
-  if (storedHash.startsWith("pbkdf2:")) {
-    const parts = storedHash.split(":");
-    if (parts.length === 4) {
-      try {
-        const iterations = parseInt(parts[1], 10);
-        const salt = Buffer.from(parts[2], "hex");
-        const expectedKey = parts[3].toLowerCase();
-        const derivedKey = pbkdf2Sync(
-          password,
-          salt,
-          iterations,
-          32,
-          "sha256"
-        );
-        return derivedKey.toString("hex") === expectedKey;
-      } catch {
-        return false;
-      }
-    }
-    return false;
-  }
-
-  // 3. Fallback: plaintext comparison (legacy accounts)
-  return password === storedHash;
-}
-
-export async function OPTIONS(): Promise<Response> {
-  return new Response("ok", { headers: corsHeaders() });
+export async function OPTIONS(request: Request): Promise<Response> {
+  return new Response("ok", { headers: corsHeadersFor(request) });
 }
 
 export async function POST(request: Request): Promise<Response> {
+  const origin = request.headers.get("origin");
   try {
     const { nama_pengguna, kata_laluan } = await request.json();
     if (!nama_pengguna || !kata_laluan) {
-      return json(400, { error: "Nama pengguna dan kata laluan diperlukan." });
+      return json(
+        400,
+        { error: "Nama pengguna dan kata laluan diperlukan." },
+        { origin }
+      );
+    }
+    // Had atas 128 aksara — elak CPU DoS + pemotongan senyap bcrypt (72B).
+    if (
+      typeof kata_laluan === "string" &&
+      kata_laluan.length > 128
+    ) {
+      return json(
+        400,
+        { error: "Nama pengguna atau kata laluan tidak sah." },
+        { origin }
+      );
     }
 
-    const supabase = createClient(
-      getEnv("SUPABASE_URL"),
-      getEnv("SUPABASE_SERVICE_ROLE_KEY")
-    );
+    const supabase = adminClient();
+    const ip = clientIp(request);
+    const userKey = `login:user:${String(nama_pengguna).toLowerCase()}`;
+    const ipKey = `login:ip:${ip}`;
 
+    // Had laju — sebelum sebarang kerja
+    const limited = await isRateLimited(
+      supabase,
+      [
+        { key: userKey, max: 5 },
+        { key: ipKey, max: 20 },
+      ],
+      15 * 60
+    );
+    if (limited) {
+      return json(
+        429,
+        {
+          error: "Terlalu banyak percubaan. Sila cuba lagi sebentar lagi.",
+        },
+        { origin }
+      );
+    }
+
+    // Lajur eksplisit — elak pendedahan lajur sensitif baharu + hadkan
+    // apa yang boleh tumpah ke log ralat (hash hanya untuk pwv di bawah).
     const { data: profile, error } = await supabase
       .from("profiles")
-      .select("*")
+      .select(
+        "id, nama, jawatan, nama_pengguna, peranan, aktif, kata_laluan_hash, created_at, updated_at, tema"
+      )
       .eq("nama_pengguna", nama_pengguna)
       .eq("aktif", true)
       .maybeSingle();
 
-    if (error || !profile) {
-      return json(401, {
-        error: "Nama pengguna atau kata laluan tidak sah.",
-      });
+    const stored: string | null = profile?.kata_laluan_hash ?? null;
+    let valid = false;
+
+    if (error || !profile || !stored) {
+      // Pengguna tiada / akaun tanpa hash — padankan masa dgn bcrypt dummy
+      await bcrypt.compare(kata_laluan, DUMMY_HASH);
+      valid = false;
+    } else {
+      valid = await verifyPassword(kata_laluan, stored);
     }
 
-    const stored = profile.kata_laluan_hash as string | null;
-    if (!stored) {
-      return json(401, {
-        error:
-          "Akaun belum menetapkan kata laluan. Sila hubungi pentadbir.",
-      });
-    }
-
-    const valid = await verifyPassword(kata_laluan, stored);
     if (!valid) {
-      return json(401, {
-        error: "Nama pengguna atau kata laluan tidak sah.",
-      });
+      // Rekod percubaan gagal untuk kedua-dua key
+      await recordAttempt(supabase, userKey);
+      await recordAttempt(supabase, ipKey);
+      // Mesej seragam — tiada pengecaman nama pengguna wujud/salah/tanpa hash
+      return json(
+        401,
+        {
+          error: "Nama pengguna atau kata laluan tidak sah.",
+        },
+        { origin }
+      );
     }
 
+    // Login berjaya — reset pencacah pengguna (IP kekal utk agregat)
+    await clearAttempts(supabase, userKey);
+
+    // Pengawal TS: !valid telah return di atas, jadi profile di sini
+    // semestinya wujud — kekalkan sebagai pengawal eksplisit.
+    if (!profile) {
+      return json(
+        401,
+        { error: "Nama pengguna atau kata laluan tidak sah." },
+        { origin }
+      );
+    }
     const { kata_laluan_hash: _, ...profileSafe } = profile;
+    const pwv = pwvFingerprint(stored);
+    const expiresAt = Date.now() + SESSION_TTL_MS;
     const token = signToken({
       userId: profileSafe.id as string,
-      expiresAt: Date.now() + SESSION_TTL_MS,
+      expiresAt,
+      pwv,
     });
+    const sbToken = mintSupabaseJwt(profileSafe.id as string, expiresAt, pwv);
 
-    return json(200, { profile: profileSafe, token });
+    // Cookie httpOnly adalah pembawa sesi utama; token dalam body dikekalkan
+    // untuk keserasian (fallback Authorization) tetapi klien baharu tidak
+    // menyimpannya ke localStorage.
+    return json(
+      200,
+      { profile: profileSafe, token, sbToken },
+      {
+        origin,
+        cookies: [
+          sessionCookie(token),
+          sbCookie(sbToken),
+        ],
+      }
+    );
   } catch (err) {
     console.error("[api/login]", err);
-    return json(500, { error: "Ralat pelayan dalaman." });
+    const msg = err instanceof Error ? err.message : "";
+    if (msg.includes("SUPABASE_JWT_SECRET") || msg.includes("SESSION_SECRET")) {
+      return json(
+        500,
+        {
+          error:
+            "Konfigurasi server tidak lengkap. Tambah SUPABASE_JWT_SECRET dan SESSION_SECRET dalam Vercel → Settings → Environment Variables.",
+        },
+        { origin }
+      );
+    }
+    return json(500, { error: "Ralat pelayan dalaman." }, { origin });
   }
 }

@@ -1,17 +1,13 @@
 -- ============================================================================
 -- seed_admin.sql
--- Data pentadbir awal (JANGAN gunakan dalam pengeluaran tanpa menukar kata laluan!)
--- Tarikh: 26 Julai 2026
+-- AMARAN: FAIL INI UNTUK PEMBANGUNAN TEMPATAN SAHAJA. JANGAN JALANKAN DI
+-- PRODUKSI. Akaun di bawah dicipta BERKUNCI (kata_laluan_hash = NULL —
+-- tiada siapa boleh log masuk) dan mesti diaktifkan melalui API pentadbir
+-- (/api/create-user atau /api/reset-password, bcrypt cost 12) selepas semak.
 --
--- UNTUK PEMBANGUNAN & PENGUJIAN SAHAJA.
--- Kata laluan lalai: "admin123" (bcrypt hash di bawah).
--- SEGERA TUKAR selepas log masuk pertama!
+-- Sebab: hash placeholder lama BUKAN hash bcrypt yang sah, dan kata laluan
+-- terkenal ("admin123"/"password123") tidak boleh wujud dalam repo (audit).
 -- ============================================================================
-
--- Hash bcrypt untuk "admin123" (cost=10) — GANTI dalam produksi!
--- Hash ini dijana menggunakan bcrypt dengan salt raw 10.
--- Anda boleh menjana hash baharu dengan: bcrypt.hashSync('admin123', 10)
--- Nilai placeholder di bawah perlu diganti sebelum digunakan.
 
 INSERT INTO profiles (
   id,
@@ -24,25 +20,26 @@ INSERT INTO profiles (
   created_at,
   updated_at
 ) VALUES (
-  -- UUID stabil untuk admin pembangunan
+  -- UUID stabil untuk admin pembangunan — akaun BERKUNCI sehingga reset
+  -- kata laluan melalui API.
   '00000000-0000-0000-0000-000000000001',
   'Pentadbir Sistem',
   'Pegawai Farmasi',
   'admin',
   'Pentadbir',
-  true,
-  -- Hash bcrypt untuk "admin123" — GANTI selepas log masuk pertama
-  '$2a$10$abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUV',
+  false,
+  NULL,
   now(),
   now()
 )
 ON CONFLICT (id) DO NOTHING;
 
--- Tambah 3 pengguna ujian untuk setiap peranan lain
+-- Akaun demo dikunci + dinyahaktifkan secara lalai (aktifkan + reset kata
+-- laluan melalui API jika benar-benar diperlukan untuk ujian tempatan).
 INSERT INTO profiles (id, nama, jawatan, nama_pengguna, peranan, aktif, kata_laluan_hash, created_at, updated_at) VALUES
-  ('00000000-0000-0000-0000-000000000002', 'Penjaga Stor Demo', 'Penjaga Stor', 'storer', 'Penjaga Stor', true, '$2a$10$abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUV', now(), now()),
-  ('00000000-0000-0000-0000-000000000003', 'Kakitangan Farmasi Demo', 'Pegawai Farmasi', 'pharmacist', 'Kakitangan Farmasi', true, '$2a$10$abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUV', now(), now()),
-  ('00000000-0000-0000-0000-000000000004', 'Kakitangan Klinik Demo', 'Jururawat', 'nurse', 'Kakitangan Klinik', true, '$2a$10$abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUV', now(), now())
+  ('00000000-0000-0000-0000-000000000002', 'Penjaga Stor Demo', 'Penjaga Stor', 'storer', 'Penjaga Stor', false, NULL, now(), now()),
+  ('00000000-0000-0000-0000-000000000003', 'Kakitangan Farmasi Demo', 'Pegawai Farmasi', 'pharmacist', 'Kakitangan Farmasi', false, NULL, now(), now()),
+  ('00000000-0000-0000-0000-000000000004', 'Kakitangan Klinik Demo', 'Jururawat', 'nurse', 'Kakitangan Klinik', false, NULL, now(), now())
 ON CONFLICT (id) DO NOTHING;
 
 -- Tamat seed_admin.sql

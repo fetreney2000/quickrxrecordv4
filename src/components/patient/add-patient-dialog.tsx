@@ -21,7 +21,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Activity, AlertTriangle, Loader2, ExternalLink, X } from "lucide-react";
-import { cn, toTitleCase, formatMyKad, formatPhone } from "@/lib/utils";
+import { cn, toTitleCase, formatMyKad, formatPhone, digitsOnly } from "@/lib/utils";
+import { toast } from "sonner";
 import {
   EMPTY_NEW_PATIENT,
   useAddPatient,
@@ -109,13 +110,39 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
     setForm((p) => ({ ...p, alamat: toTitleCase(p.alamat) }));
   };
 
+  // Pengesahan medan (audit): KP mesti 12 digit jika diisi, telefon 9–12
+  // digit jika diisi. Mesej dipaparkan sebaris + submit disekat.
+  const kpDigits = digitsOnly(form.nombor_kad_pengenalan);
+  const phoneDigits = digitsOnly(form.nombor_telefon);
+  const kpError =
+    form.nombor_kad_pengenalan.trim() && kpDigits.length !== 12
+      ? "No. KP mesti 12 digit."
+      : null;
+  const phoneError =
+    form.nombor_telefon.trim() &&
+    (phoneDigits.length < 9 || phoneDigits.length > 12)
+      ? "No. telefon mesti 9–12 digit."
+      : null;
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!form.nama.trim()) return;
+    if (!form.nama.trim()) {
+      toast.error("Nama pesakit diperlukan.");
+      return;
+    }
+    if (kpError) {
+      toast.error(kpError);
+      return;
+    }
+    if (phoneError) {
+      toast.error(phoneError);
+      return;
+    }
     addPatient.mutate(form);
   };
 
-  const isValid = form.nama.trim().length > 0;
+  const isValid =
+    form.nama.trim().length > 0 && !kpError && !phoneError;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -154,6 +181,7 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
             <Input
               id="nama"
               value={form.nama}
+              maxLength={100}
               onChange={(e) => updateField("nama", e.target.value)}
               onBlur={handleBlurNama}
               required
@@ -179,12 +207,22 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
               <Input
                 id="kp"
                 value={form.nombor_kad_pengenalan}
+                maxLength={14}
+                inputMode="numeric"
+                placeholder="XXXXXX-XX-XXXX"
+                aria-invalid={!!kpError}
                 onChange={(e) =>
                   updateField("nombor_kad_pengenalan", e.target.value)
                 }
                 onBlur={handleBlurKp}
-                style={inputStyle}
+                style={{
+                  ...inputStyle,
+                  borderColor: kpError ? "#dc2626" : undefined,
+                }}
               />
+              {kpError && (
+                <p className="text-xs mt-1" style={{ color: "#dc2626" }}>{kpError}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="hospital" className="mb-1" style={labelStyle}>
@@ -193,6 +231,7 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
               <Input
                 id="hospital"
                 value={form.nombor_pendaftaran_hospital}
+                maxLength={30}
                 onChange={(e) =>
                   updateField("nombor_pendaftaran_hospital", e.target.value)
                 }
@@ -213,6 +252,7 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
             <Input
               id="dokumen"
               value={form.dokumen_lain}
+              maxLength={50}
               onChange={(e) => updateField("dokumen_lain", e.target.value)}
               style={inputStyle}
             />
@@ -226,10 +266,19 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
             <Input
               id="telefon"
               value={form.nombor_telefon}
+              maxLength={15}
+              inputMode="tel"
+              aria-invalid={!!phoneError}
               onChange={(e) => updateField("nombor_telefon", e.target.value)}
               onBlur={handleBlurPhone}
-              style={inputStyle}
+              style={{
+                ...inputStyle,
+                borderColor: phoneError ? "#dc2626" : undefined,
+              }}
             />
+            {phoneError && (
+              <p className="text-xs mt-1" style={{ color: "#dc2626" }}>{phoneError}</p>
+            )}
           </div>
 
           {/* Alamat */}
@@ -240,6 +289,7 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
             <textarea
               id="alamat"
               value={form.alamat}
+              maxLength={200}
               onChange={(e) => updateField("alamat", e.target.value)}
               onBlur={handleBlurAlamat}
               style={textareaStyle}
@@ -255,6 +305,7 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
             <textarea
               id="catatan"
               value={form.catatan}
+              maxLength={500}
               onChange={(e) => updateField("catatan", e.target.value)}
               style={textareaStyle}
               rows={2}
@@ -289,25 +340,61 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
                   <strong>{duplicate.patient.nama}</strong>
                   {duplicate.patient.nombor_kad_pengenalan && (
                     <> · KP: {duplicate.patient.nombor_kad_pengenalan}</>
+                  )}{" "}
+                  {duplicate.primary ? (
+                    <span
+                      className="inline-block font-semibold px-2 py-0.5 rounded-full whitespace-nowrap"
+                      style={{ background: "rgba(107,114,128,0.12)", color: "#4b5563" }}
+                    >
+                      Telah digabungkan
+                    </span>
+                  ) : (
+                    duplicate.isInactive && (
+                      <span
+                        className="inline-block font-semibold px-2 py-0.5 rounded-full whitespace-nowrap"
+                        style={{ background: "rgba(220,38,38,0.10)", color: "#b91c1c" }}
+                      >
+                        Tidak aktif
+                      </span>
+                    )
                   )}
                 </p>
-                <p
-                  className="mt-1"
-                  style={{ color: "#a16207" }}
-                >
-                  Anda boleh teruskan pendaftaran jika perlu.
-                </p>
+                {duplicate.primary ? (
+                  <p className="mt-1" style={{ color: "#a16207" }}>
+                    Rekod ini telah digabungkan ke{" "}
+                    <strong>{duplicate.primary.nama}</strong> — gunakan rekod
+                    utama tersebut.
+                  </p>
+                ) : duplicate.isInactive ? (
+                  <p className="mt-1" style={{ color: "#a16207" }}>
+                    Rekod sedia ada tidak aktif dan tidak boleh diaktifkan
+                    semula — teruskan pendaftaran baharu jika perlu.
+                  </p>
+                ) : (
+                  <p
+                    className="mt-1"
+                    style={{ color: "#a16207" }}
+                  >
+                    Anda boleh teruskan pendaftaran jika perlu.
+                  </p>
+                )}
                 <button
                   type="button"
                   onClick={() => {
-                    navigate(`/pesakit/${duplicate.patient.id}`);
+                    navigate(
+                      `/pesakit/${duplicate.primary?.id ?? duplicate.patient.id}`
+                    );
                     onOpenChange(false);
                   }}
                   className="mt-2 inline-flex items-center gap-1 text-xs font-semibold"
                   style={{ color: "#92400e" }}
-                  title="Lihat butiran pesakit sedia ada"
+                  title={
+                    duplicate.primary
+                      ? "Lihat rekod utama pesakit"
+                      : "Lihat butiran pesakit sedia ada"
+                  }
                 >
-                  Lihat butiran pesakit
+                  {duplicate.primary ? "Lihat rekod utama" : "Lihat butiran pesakit"}
                   <ExternalLink className="w-3 h-3" />
                 </button>
               </div>

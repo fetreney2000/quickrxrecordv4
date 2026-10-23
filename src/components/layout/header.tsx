@@ -5,6 +5,7 @@ import { AddPatientDialog } from "@/components/patient/add-patient-dialog";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
+import { escapeLikeTerm } from "@/lib/postgrest";
 import { formatMyKad, cn } from "@/lib/utils";
 import { useNavStore } from "@/lib/nav-store";
 import { useTheme } from "@/lib/theme-provider";
@@ -53,7 +54,7 @@ export function Header() {
     queryKey: ["patient-search", debounced],
     enabled: canViewPatients && debounced.trim().length >= 2 && open,
     queryFn: async () => {
-      const term = debounced.trim();
+      const term = escapeLikeTerm(debounced.trim());
       const orFilter = `nama.ilike.%${term}%,nombor_kad_pengenalan.ilike.%${term}%,nombor_pendaftaran_hospital.ilike.%${term}%`;
       const base = supabase
         .from("patients")

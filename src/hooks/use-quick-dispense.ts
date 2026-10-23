@@ -5,9 +5,16 @@ import { useEffect, useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { runSupplyMulti } from "@/lib/supply";
 import { useAuth } from "@/hooks/use-auth";
 import { getTodayStrKL } from "@/lib/utils";
+import { escapeLikeTerm } from "@/lib/postgrest";
 import type { Patient, Item, ItemBatch, SupplyDuration } from "@/types";
+
+const ITEM_COLUMNS =
+  "id, kod_item, nama_item, nama_dagangan, kekuatan, id_kategori, id_bentuk, kuota, catatan, aktif, created_at, updated_at";
+const BATCH_COLUMNS =
+  "id, item_id, nombor_kelompok, tarikh_luput, kuantiti, dilupuskan, dilupuskan_at, created_at, updated_at";
 
 // ============================================================================
 // Patient search
@@ -28,7 +35,7 @@ export function usePatientSearch(query: string) {
     queryKey: ["quick-dispense-search", debounced],
     enabled: debounced.trim().length >= 2,
     queryFn: async () => {
-      const like = `%${debounced.trim()}%`;
+      const like = `%${escapeLikeTerm(debounced.trim())}%`;
       const { data, error } = await supabase
         .from("patients")
         .select("id, nama, nombor_kad_pengenalan, nombor_pendaftaran_hospital, nombor_telefon")
@@ -129,7 +136,7 @@ export function useFrequentItems(assignedItemIds: Set<string>) {
 
       const { data: items, error: iErr } = await supabase
         .from("items")
-        .select("*")
+        .select(ITEM_COLUMNS)
         .eq("aktif", true)
         .in("id", top.length > 0 ? top : [""]);
       if (iErr) throw iErr;
@@ -162,7 +169,7 @@ export function useQuickDispenseBatches(itemId: string | null) {
       const today = getTodayStrKL();
       const { data, error } = await supabase
         .from("item_batches")
-        .select("*")
+        .select(BATCH_COLUMNS)
         .eq("item_id", itemId!)
         .eq("dilupuskan", false)
         .gt("kuantiti", 0)
@@ -183,7 +190,7 @@ export function useSupplyDurationsList() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("supply_durations")
-        .select("*")
+        .select("id, nama")
         .order("nama", { ascending: true });
       if (error) throw error;
       return (data ?? []) as SupplyDuration[];
@@ -208,92 +215,24 @@ export function useQuickSupplyMulti(patientId: string | null) {
       tempoh: string;
       catatan: string;
       allocations: Array<{ batchId: string; kuantiti: number }>;
-    }) => {
-      // 1. Cuba RPC process_supply_multi (atomik + jurnal baki)
-      const { data: rpcData, error: rpcError } = await supabase.rpc("process_supply_multi", {
-        p_assignment_id: data.assignmentId,
-        p_dos: data.dos,
-        p_tempoh_dibekal: data.tempoh,
-        p_allocations: JSON.stringify(data.allocations),
-        p_kakitangan_pembekal: profile?.id ?? null,
-        p_catatan_bekalan: data.catatan ?? null,
-      });
-      if (!rpcError) return { success: true, id: (rpcData as string) ?? null };
-
-      // 2. Fallback: RPC belum deployed — loop per allocation memanggil process_supply
-      let firstId: string | null = null;
-      for (const alloc of data.allocations) {
-        const { data: perBatchData, error: perBatchError } = await supabase.rpc("process_supply", {
-          p_assignment_id: data.assignmentId,
-          p_dos: data.dos,
-          p_tempoh_dibekal: data.tempoh,
-          p_kuantiti: alloc.kuantiti,
-          p_batch_id: alloc.batchId,
-          p_kakitangan_pembekal: profile?.id ?? null,
-          p_catatan_bekalan: data.catatan ?? null,
-        });
-        if (perBatchError) throw perBatchError;
-        if (!firstId && perBatchData) firstId = perBatchData as string;
-      }
-      if (firstId) return { success: true, id: firstId };
-
-      // 3. Fallback: manual per allocation
-      for (const alloc of data.allocations) {
-        const { data: batch, error: bErr } = await supabase
-          .from("item_batches")
-          .select("kuantiti, dilupuskan")
-          .eq("id", alloc.batchId)
-          .single();
-        if (bErr) throw bErr;
-        if (batch?.dilupuskan) throw new Error("Kelompok ini telah dilupuskan.");
-        if (!batch || batch.kuantiti < alloc.kuantiti) {
-          throw new Error("Stok tidak mencukupi.");
-        }
-        await supabase
-          .from("item_batches")
-          .update({ kuantiti: batch.kuantiti - alloc.kuantiti })
-          .eq("id", alloc.batchId);
-
-        const { data: supply, error: sErr2 } = await supabase
-          .from("supply_records")
-          .insert({
-            assignment_id: data.assignmentId,
-            dos: data.dos,
-            tempoh_dibekal: data.tempoh,
-            kuantiti: alloc.kuantiti,
-            batch_id: alloc.batchId,
-            kakitangan_pembekal: profile?.id!,
-            catatan_bekalan: data.catatan || null,
-          })
-          .select("id")
-          .single();
-        if (sErr2) throw sErr2;
-
-        if (supply) {
-          await supabase.from("inventory_transactions").insert({
-            item_id: data.itemId,
-            batch_id: alloc.batchId,
-            jenis: "keluar",
-            kuantiti: alloc.kuantiti,
-            rujukan_id: supply.id,
-            rujukan_type: "supply",
-            catatan: data.catatan || null,
-          });
-          if (!firstId) firstId = supply.id;
-        }
-      }
-      return { success: true, id: firstId };
-    },
+    }) => runSupplyMulti(data, profile?.id ?? null),
     onSuccess: () => {
       toast.success("Bekalan direkodkan.");
       if (patientId) {
         queryClient.invalidateQueries({
           queryKey: ["patient-assignments", patientId],
         });
+        // Cross-invalidate kunci yang digunakan oleh Butiran Pesakit
+        // supaya sejarah bekalan tidak lapuk selepas dispan di Halaman Pantas.
+        queryClient.invalidateQueries({ queryKey: ["assignments", patientId] });
       }
       queryClient.invalidateQueries({ queryKey: ["frequent-items"] });
       queryClient.invalidateQueries({ queryKey: ["batches"] });
       queryClient.invalidateQueries({ queryKey: ["pantas-batches"] });
+      queryClient.invalidateQueries({ queryKey: ["supply-history"] });
+      queryClient.invalidateQueries({ queryKey: ["assignment-activity"] });
+      queryClient.invalidateQueries({ queryKey: ["latest-supply-dates"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
     },
     onError: (err: any) => {
       toast.error(err?.message || "Gagal membekalkan ubat.");
@@ -316,7 +255,7 @@ export function useItemsActive() {
     queryFn: async () => {
       const { data: items, error: iErr } = await supabase
         .from("items")
-        .select("*")
+        .select(ITEM_COLUMNS)
         .eq("aktif", true)
         .order("nama_item", { ascending: true });
       if (iErr) throw iErr;

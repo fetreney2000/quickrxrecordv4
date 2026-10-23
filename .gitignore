@@ -46,5 +46,8 @@ vite/api-mock.js
 
 SRQ.db3
 
+# Pangkalan data dump (mungkin mengandungi PHI — jangan commit)
+backups/
+
 # Kilo plan/agent artifacts
 .kilo/

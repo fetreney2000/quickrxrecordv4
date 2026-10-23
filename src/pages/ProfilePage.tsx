@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { useAuthStore } from "@/lib/auth-store";
 import { supabase } from "@/lib/supabase";
+import { friendlyDbError } from "@/lib/db-errors";
 import { toTitleCase } from "@/lib/utils";
 
 // ============================================================================
@@ -82,7 +83,7 @@ interface PasswordData {
 // ============================================================================
 
 export default function ProfilePage() {
-  const { profile, refreshProfile } = useAuth();
+  const { profile, refreshProfile, signOut } = useAuth();
   const token = useAuthStore((s) => s.token);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -143,7 +144,7 @@ export default function ProfilePage() {
       queryClient.invalidateQueries();
     },
     onError: (error: any) => {
-      toast.error(error?.message || "Gagal mengemas kini profil.");
+      toast.error(friendlyDbError(error, "Gagal mengemas kini profil."));
     },
   });
 
@@ -152,6 +153,7 @@ export default function ProfilePage() {
       if (!token) throw new Error("Sesi tidak sah");
       const res = await fetch("/api/change-password", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -165,10 +167,14 @@ export default function ProfilePage() {
       if (!res.ok) throw new Error(result.error || "Gagal menukar kata laluan.");
       return result;
     },
-    onSuccess: () => {
-      toast.success("Kata laluan berjaya dikemaskini.");
+    onSuccess: async () => {
+      // Tukar kata laluan membatalkan semua sesi sedia ada (pwv) —
+      // log keluar paksa supaya pengguna log masuk semula dengan kata laluan baharu.
+      toast.success("Kata laluan berjaya dikemaskini. Sila log masuk semula.");
       setChangingPassword(false);
       setPwd({ current: "", newPwd: "", confirm: "" });
+      await signOut();
+      navigate("/login");
     },
     onError: (error: any) => {
       toast.error(error?.message || "Gagal menukar kata laluan.");
@@ -207,8 +213,12 @@ export default function ProfilePage() {
       toast.error("Sila masukkan kata laluan semasa.");
       return;
     }
-    if (pwd.newPwd.length < 6) {
-      toast.error("Kata laluan baharu mestilah sekurang-kurangnya 6 aksara.");
+    if (pwd.newPwd.length < 8 || pwd.newPwd.length > 128) {
+      toast.error("Kata laluan baharu mestilah 8–128 aksara.");
+      return;
+    }
+    if (!/[A-Za-z]/.test(pwd.newPwd) || !/[0-9]/.test(pwd.newPwd)) {
+      toast.error("Kata laluan baharu mestilah mengandungi huruf dan nombor.");
       return;
     }
     if (pwd.newPwd !== pwd.confirm) {
@@ -745,7 +755,7 @@ export default function ProfilePage() {
                         : { ...inputStyle, paddingRight: 40 }
                     }
                     onFocus={() => setFocusedField("pwd-new")}
-                    placeholder="Sekurang-kurangnya 6 aksara"
+                    placeholder="8–128 aksara, huruf + nombor"
                     aria-label="Kata laluan baharu"
                     autoComplete="new-password"
                   />

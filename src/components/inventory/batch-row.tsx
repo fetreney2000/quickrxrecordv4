@@ -8,6 +8,7 @@
  *  - Indikator kuantiti rendah
  */
 import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { Check, X as XIcon, Edit, Trash2, AlertTriangle, Loader2, Pencil } from "lucide-react";
 import { cn, formatDate, formatNumber, getKLDayStartISO, getTodayStrKL, toDateInputValue } from "@/lib/utils";
 import { DateInput } from "@/components/ui/date-input";
@@ -19,7 +20,7 @@ interface BatchRowProps {
   canEdit: boolean;
   onConfirmAdjust: (batch: ItemBatch, newKuantiti: number) => void;
   onDispose: (batch: ItemBatch) => void;
-  onUpdateBatch?: (batchId: string, nombor_kelompok: string, tarikh_luput: string) => void;
+  onUpdateBatch?: (batchId: string, nombor_kelompok: string, tarikh_luput: string, reason: string) => void;
 }
 
 function getStatus(batch: ItemBatch): {
@@ -82,6 +83,8 @@ export function BatchRow({
   const [editingInfo, setEditingInfo] = useState(false);
   const [draftKelompok, setDraftKelompok] = useState(batch.nombor_kelompok);
   const [draftLuput, setDraftLuput] = useState(toDateInputValue(batch.tarikh_luput));
+  // MEDIUM-3: sebab perubahan identiti kelompok (wajib — direkodkan dalam jurnal).
+  const [draftReason, setDraftReason] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const infoInputRef = useRef<HTMLInputElement>(null);
   const status = batch.dilupuskan
@@ -112,6 +115,7 @@ export function BatchRow({
     if (!editingInfo) {
       setDraftKelompok(batch.nombor_kelompok);
       setDraftLuput(toDateInputValue(batch.tarikh_luput));
+      setDraftReason("");
     }
   }, [batch.nombor_kelompok, batch.tarikh_luput, editingInfo]);
 
@@ -122,6 +126,8 @@ export function BatchRow({
     setDraftQty(String(batch.kuantiti));
   };
 
+  // LOW-6: had atas mengelakkan kesilapan taip magnitud.
+  const MAX_QTY = 9999999;
   const handleSubmit = () => {
     setEditing(false);
     const qty = parseInt(draftQty, 10);
@@ -129,29 +135,42 @@ export function BatchRow({
       setDraftQty(String(batch.kuantiti));
       return;
     }
+    if (qty > MAX_QTY) {
+      setDraftQty(String(batch.kuantiti));
+      toast.error(`Kuantiti melebihi had ${MAX_QTY.toLocaleString("ms-MY")} — semak angka anda.`);
+      return;
+    }
     if (qty === batch.kuantiti) return;
     onConfirmAdjust(batch, qty);
   };
 
-  const startEditInfo = () => setEditingInfo(true);
+  const startEditInfo = () => {
+    setDraftReason("");
+    setEditingInfo(true);
+  };
 
   const cancelEditInfo = () => {
     setEditingInfo(false);
     setDraftKelompok(batch.nombor_kelompok);
     setDraftLuput(toDateInputValue(batch.tarikh_luput));
+    setDraftReason("");
   };
 
   const handleInfoSubmit = () => {
     const kelompok = draftKelompok.trim().toUpperCase();
-    if (!kelompok || !draftLuput) return;
+    const reason = draftReason.trim();
+    if (!kelompok || !draftLuput || !reason) return;
     if (kelompok === batch.nombor_kelompok && draftLuput === toDateInputValue(batch.tarikh_luput)) return;
     setEditingInfo(false);
-    onUpdateBatch?.(batch.id, kelompok, draftLuput);
+    setDraftReason("");
+    onUpdateBatch?.(batch.id, kelompok, draftLuput, reason);
   };
 
   const infoDirty =
     draftKelompok.trim().toUpperCase() !== batch.nombor_kelompok ||
     draftLuput !== toDateInputValue(batch.tarikh_luput);
+  const reasonOk = draftReason.trim().length > 0;
+  const canConfirmInfo = infoDirty && reasonOk;
 
   return (
     <>
@@ -312,11 +331,11 @@ export function BatchRow({
             <>
               <button
                 onClick={handleInfoSubmit}
-                disabled={!infoDirty}
+                disabled={!canConfirmInfo}
                 className="w-7 h-7 flex items-center justify-center rounded-md"
-                style={{ background: infoDirty ? "#16a34a" : "var(--text-muted)", color: "white" }}
+                style={{ background: canConfirmInfo ? "#16a34a" : "var(--text-muted)", color: "white" }}
                 aria-label="Sahkan info"
-                title="Sahkan maklumat kelompok"
+                title={canConfirmInfo ? "Sahkan maklumat kelompok" : "Isi sebab perubahan dahulu"}
               >
                 <Check className="w-3 h-3" />
               </button>
@@ -332,6 +351,26 @@ export function BatchRow({
             </>
           )}
         </div>
+        {/* MEDIUM-3: sebab perubahan identiti (wajib untuk jejak audit). */}
+        {editingInfo && (
+          <div style={{ gridColumn: "1 / -1" }}>
+            <input
+              value={draftReason}
+              onChange={(e) => setDraftReason(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleInfoSubmit(); if (e.key === "Escape") cancelEditInfo(); }}
+              placeholder="Sebab perubahan (cth: salah taip nombor kelompok) — wajib"
+              aria-label="Sebab perubahan maklumat kelompok"
+              maxLength={200}
+              className="w-full h-8 text-xs px-2 rounded-lg outline-none"
+              style={{
+                border: "1px solid #7c3aed",
+                boxShadow: "0 0 0 3px rgba(124,58,237,0.15)",
+                color: "var(--text-primary)",
+                background: "var(--card)",
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Mobile row */}
@@ -379,6 +418,23 @@ export function BatchRow({
               />
             ) : (
               <span>Luput: {formatDate(batch.tarikh_luput)}</span>
+            )}
+            {editingInfo && (
+              <input
+                value={draftReason}
+                onChange={(e) => setDraftReason(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleInfoSubmit(); if (e.key === "Escape") cancelEditInfo(); }}
+                placeholder="Sebab perubahan — wajib"
+                aria-label="Sebab perubahan maklumat kelompok"
+                maxLength={200}
+                className="w-full h-7 text-xs px-2 rounded-lg outline-none"
+                style={{
+                  border: "1px solid #7c3aed",
+                  boxShadow: "0 0 0 3px rgba(124,58,237,0.15)",
+                  color: "var(--text-primary)",
+                  background: "var(--card)",
+                }}
+              />
             )}
             <span
               className="inline-flex items-center px-1.5 py-0.5 rounded-full text-2xs font-semibold"
@@ -430,10 +486,10 @@ export function BatchRow({
               <div className="flex items-center gap-1">
                 <button
                   onClick={handleInfoSubmit}
-                  disabled={!infoDirty}
+                  disabled={!canConfirmInfo}
                   className="w-11 h-11 flex items-center justify-center rounded-md"
-                  style={{ background: infoDirty ? "#16a34a" : "var(--text-muted)", color: "white" }}
-                  title="Sahkan maklumat kelompok"
+                  style={{ background: canConfirmInfo ? "#16a34a" : "var(--text-muted)", color: "white" }}
+                  title={canConfirmInfo ? "Sahkan maklumat kelompok" : "Isi sebab perubahan dahulu"}
                 >
                   <Check className="w-3.5 h-3.5" />
                 </button>

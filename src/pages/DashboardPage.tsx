@@ -70,8 +70,18 @@ export default function DashboardPage() {
   const { profile } = useAuth();
   const peranan = (profile?.peranan ?? "") as UserRole;
   const isStoreOrAdmin = peranan === "Pentadbir" || peranan === "Penjaga Stor";
-  const { data: stats, isLoading: statsLoading } = useDashboardStats();
-  const { data: expiryBatches, isLoading: expiryLoading } = useExpiryDashboard(isStoreOrAdmin);
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    isError: statsError,
+    refetch: refetchStats,
+  } = useDashboardStats();
+  const {
+    data: expiryBatches,
+    isLoading: expiryLoading,
+    isError: expiryError,
+    refetch: refetchExpiry,
+  } = useExpiryDashboard(isStoreOrAdmin);
 
   const statCards = useMemo(() => {
     if (!stats) return [];
@@ -119,6 +129,15 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {statsError && (
+        <div className="rounded-xl p-4 text-sm border" role="alert" style={{ background: "rgba(220,38,38,0.06)", borderColor: "rgba(220,38,38,0.2)" }}>
+          <p className="font-semibold">Gagal memuatkan statistik papan pemuka.</p>
+          <button onClick={() => refetchStats()} className="mt-2 min-h-10 px-4 rounded-lg text-sm font-semibold text-white" style={{ background: "#dc2626" }}>
+            Cuba Semula
+          </button>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
         {statsLoading && !stats ? Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="rounded-xl p-3.5 sm:p-4" style={{ background: "var(--card)", border: "1px solid rgba(0,0,0,0.06)" }}>
@@ -148,6 +167,14 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="mb-4 overflow-x-auto pb-1"><ExpirySummaryBadges critical={expiryStats.critical} warning={expiryStats.warning} safe={expiryStats.safe} /></div>
+            {expiryError && (
+              <div className="mb-3 rounded-xl p-3 text-sm border" role="alert" style={{ background: "rgba(220,38,38,0.06)", borderColor: "rgba(220,38,38,0.2)" }}>
+                Gagal memuatkan data luput.{" "}
+                <button onClick={() => refetchExpiry()} className="font-semibold underline">
+                  Cuba semula
+                </button>
+              </div>
+            )}
             <div className="overflow-x-auto rounded-[14px]" role="region" aria-label="Jadual kelompok ubat yang akan luput" tabIndex={0} style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
               <table className="w-full min-w-[640px] border-collapse" style={{ background: "var(--card)" }}>
                 <thead>

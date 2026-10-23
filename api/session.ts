@@ -1,111 +1,116 @@
 /**
  * Vercel Serverless Function: GET /api/session, DELETE /api/session
  *
- * GET  — pulangkan profil pengguna untuk token sesi yang sah
- * DELETE — hapus token sesi (log keluar)
+ * GET  — pulangkan profil + sbToken segar untuk token sesi yang sah.
+ *        Menolak sesi jika: akaun dinyahaktifkan ATAU pwv token tidak
+ *        sepadan dengan sidik jari hash kata laluan semasa (password change
+ *        menarik balik semua sesi sedia ada — audit H5).
+ * DELETE — hapus token sesi (client membuang token; token stateless)
  */
-import { createClient } from "@supabase/supabase-js";
-import { createHmac } from "node:crypto";
+import {
+  adminClient,
+  clearSessionCookies,
+  corsHeadersFor,
+  extractToken,
+  json,
+  mintSupabaseJwt,
+  pwvFingerprint,
+  sbCookie,
+  sessionCookie,
+  SESSION_TTL_MS,
+  signToken,
+  verifyToken,
+} from "./_lib/auth";
 
-function getEnv(key: string): string {
-  const val = process.env[key];
-  if (!val) throw new Error(`Missing environment variable: ${key}`);
-  return val;
-}
-
-function corsHeaders(): Record<string, string> {
-  return {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers":
-      "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "GET, DELETE, OPTIONS",
-  };
-}
-
-function json(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders(), "Content-Type": "application/json" },
-  });
-}
-
-function verifyToken(token: string): { userId: string; expiresAt: number } | null {
-  try {
-    const secret = getEnv("SESSION_SECRET");
-    const [dataBase64, sig] = token.split(".");
-    if (!dataBase64 || !sig) return null;
-
-    const expectedSig = createHmac("sha256", secret)
-      .update(dataBase64)
-      .digest("base64url");
-    if (!crypto.subtle || expectedSig !== sig) {
-      // Constant-time-ish compare for old Node
-      if (expectedSig.length !== sig.length) return null;
-      let ok = 0;
-      for (let i = 0; i < expectedSig.length; i++) {
-        ok |= expectedSig.charCodeAt(i) ^ sig.charCodeAt(i);
-      }
-      if (ok !== 0) return null;
-    }
-
-    const payload = JSON.parse(
-      Buffer.from(dataBase64, "base64url").toString("utf-8")
-    );
-
-    if (Date.now() > payload.expiresAt) return null;
-    return payload;
-  } catch {
-    return null;
-  }
-}
-
-function extractToken(request: Request): string | null {
-  const auth = request.headers.get("Authorization") || "";
-  const match = auth.match(/^Bearer\s+(.+)$/i);
-  return match ? match[1].trim() : null;
-}
-
-export async function OPTIONS(): Promise<Response> {
-  return new Response("ok", { headers: corsHeaders() });
+export async function OPTIONS(request: Request): Promise<Response> {
+  return new Response("ok", { headers: corsHeadersFor(request) });
 }
 
 export async function GET(request: Request): Promise<Response> {
+  const origin = request.headers.get("origin");
   try {
     const token = extractToken(request);
     if (!token) {
-      return json(200, { profile: null });
+      return json(200, { profile: null }, { origin });
     }
 
     const session = verifyToken(token);
     if (!session) {
-      return json(200, { profile: null });
+      // Token tamat/palsu — arah klien padam cookie lapuk.
+      return json(
+        200,
+        { profile: null },
+        { origin, cookies: clearSessionCookies() }
+      );
     }
 
-    const supabase = createClient(
-      getEnv("SUPABASE_URL"),
-      getEnv("SUPABASE_SERVICE_ROLE_KEY")
-    );
+    const supabase = adminClient();
 
+    // akaun mesti AKTIF — pengguna dinyahaktifkan kehilangan sesi serta-merta
+    // (lajur eksplisit; hash diperlukan untuk semakan pwv sahaja).
     const { data: profile } = await supabase
       .from("profiles")
-      .select("*")
+      .select(
+        "id, nama, jawatan, nama_pengguna, peranan, aktif, kata_laluan_hash, created_at, updated_at, tema"
+      )
       .eq("id", session.userId)
+      .eq("aktif", true)
       .maybeSingle();
 
     if (!profile) {
-      return json(200, { profile: null });
+      return json(
+        200,
+        { profile: null },
+        { origin, cookies: clearSessionCookies() }
+      );
+    }
+
+    // pwv mesti sepadan — tukar kata laluan membatalkan token lama
+    const currentPwv = pwvFingerprint(
+      profile.kata_laluan_hash as string | null
+    );
+    if (currentPwv !== (session.pwv ?? null)) {
+      return json(
+        200,
+        { profile: null },
+        { origin, cookies: clearSessionCookies() }
+      );
     }
 
     const { kata_laluan_hash: _, ...profileSafe } = profile;
-    return json(200, { profile: profileSafe });
+    // Putaran gelongsor: jika baki < 50% TTL, keluarkan token baharu supaya
+    // sesi aktif kekal segar tanpa memaksa log masuk semula; jika tidak,
+    // kekalkan expiresAt asal (tiada lanjutan tanpa had).
+    const now = Date.now();
+    const remaining = session.expiresAt - now;
+    const shouldRotate = remaining < SESSION_TTL_MS / 2;
+    const expiresAt = shouldRotate ? now + SESSION_TTL_MS : session.expiresAt;
+    const freshToken = shouldRotate
+      ? signToken({ userId: session.userId, expiresAt, pwv: currentPwv })
+      : token;
+    const sbToken = mintSupabaseJwt(session.userId, expiresAt, currentPwv);
+    return json(
+      200,
+      {
+        profile: profileSafe,
+        sbToken,
+        ...(shouldRotate ? { token: freshToken } : {}),
+      },
+      {
+        origin,
+        cookies: shouldRotate
+          ? [sessionCookie(freshToken), sbCookie(sbToken)]
+          : undefined,
+      }
+    );
   } catch (err) {
     console.error("[api/session]", err);
-    return json(500, { error: "Ralat pelayan dalaman." });
+    return json(500, { error: "Ralat pelayan dalaman." }, { origin });
   }
 }
 
 export async function DELETE(request: Request): Promise<Response> {
-  // Token-based sessions are stateless, so nothing to delete server-side.
-  // The client simply discards the token.
-  return json(200, { success: true });
+  const origin = request.headers.get("origin");
+  // Padam cookie httpOnly di pelayan; klien turut membuang salinan memori.
+  return json(200, { success: true }, { origin, cookies: clearSessionCookies() });
 }

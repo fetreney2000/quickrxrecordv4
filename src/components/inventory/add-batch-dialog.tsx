@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import { Package, AlertTriangle, Loader2, Info } from "lucide-react";
-import { toDateInputValue, fromDateInputValue } from "@/lib/utils";
+import { toDateInputValue, fromDateInputValue, getTodayStrKL, formatDate } from "@/lib/utils";
 import { useAddBatch, useBatches } from "@/hooks/use-inventory";
 
 interface AddBatchDialogProps {
@@ -117,11 +117,23 @@ export function AddBatchDialog({
     );
   };
 
+  // MEDIUM-1: kelompok luput tidak boleh diterima masuk (pelayan
+  // menguatkuasakan perkara sama — semakan untuk maklum balas segera).
+  const todayStr = getTodayStrKL();
+  const isExpired = form.tarikh_luput.length > 0 && form.tarikh_luput < todayStr;
+  // LOW-6: had atas mengelakkan kesilapan taip magnitud (cth. sifar tambahan)
+  // daripada sampai ke INTEGER Postgres sebagai ralat samar.
+  const MAX_QTY = 9999999;
+  const qtyNum = parseInt(form.kuantiti, 10);
+  const qtyTooBig = !isNaN(qtyNum) && qtyNum > MAX_QTY;
   const isValid =
     form.nombor_kelompok.trim().length > 0 &&
     form.tarikh_luput.length > 0 &&
-    !isNaN(parseInt(form.kuantiti, 10)) &&
-    parseInt(form.kuantiti, 10) > 0;
+    !isExpired &&
+    !matchedBatch?.dilupuskan &&
+    !isNaN(qtyNum) &&
+    qtyNum > 0 &&
+    !qtyTooBig;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -172,26 +184,69 @@ export function AddBatchDialog({
             />
           </div>
 
-          {matchedBatch && (
-            <div
-              className="flex items-start gap-2 p-2.5 rounded-xl"
-              style={{
-                background: "rgba(124,58,237,0.08)",
-                border: "1px solid rgba(124,58,237,0.25)",
-              }}
-            >
-              <Info
-                className="w-3.5 h-3.5 flex-shrink-0 mt-0.5"
-                style={{ color: "#7c3aed" }}
-              />
-              <p className="text-2xs" style={{ color: "#5b21b6" }}>
-                Kelompok <strong>{matchedBatch.nombor_kelompok}</strong>{" "}
-                sedia ada dengan stok semasa{" "}
-                <strong>{matchedBatch.kuantiti}</strong> unit. Stok baharu
-                akan ditambah ke kelompok ini.
-              </p>
-            </div>
-          )}
+          {matchedBatch && (() => {
+            // MEDIUM-2 (disemak): ulangan nombor kelompok adalah sah, tetapi
+            // penimpaan tarikh luput mesti diakui secara eksplisit.
+            const enteredExpiry = form.tarikh_luput
+              ? fromDateInputValue(form.tarikh_luput)
+              : "";
+            const expiryDiffers =
+              !!enteredExpiry && enteredExpiry !== matchedBatch.tarikh_luput;
+            const isDisposed = matchedBatch.dilupuskan;
+            return (
+              <div
+                className="flex items-start gap-2 p-2.5 rounded-xl"
+                role={isDisposed || expiryDiffers ? "alert" : undefined}
+                style={{
+                  background: isDisposed || expiryDiffers
+                    ? "rgba(220,38,38,0.06)"
+                    : "rgba(124,58,237,0.08)",
+                  border: isDisposed || expiryDiffers
+                    ? "1px solid rgba(220,38,38,0.25)"
+                    : "1px solid rgba(124,58,237,0.25)",
+                }}
+              >
+                <Info
+                  className="w-3.5 h-3.5 flex-shrink-0 mt-0.5"
+                  style={{ color: isDisposed || expiryDiffers ? "#dc2626" : "#7c3aed" }}
+                />
+                <div
+                  className="text-2xs"
+                  style={{ color: isDisposed || expiryDiffers ? "#991b1b" : "#5b21b6" }}
+                >
+                  {isDisposed ? (
+                    <p className="font-semibold">
+                      Kelompok {matchedBatch.nombor_kelompok} telah dilupuskan
+                      dan tidak boleh digunakan semula.
+                    </p>
+                  ) : (
+                    <p>
+                      Kelompok <strong>{matchedBatch.nombor_kelompok}</strong>{" "}
+                      sedia ada (stok {matchedBatch.kuantiti} unit, luput{" "}
+                      {formatDate(matchedBatch.tarikh_luput)}). Stok baharu
+                      akan ditambah ke kelompok ini.
+                    </p>
+                  )}
+                  {!isDisposed && expiryDiffers && (
+                    <p className="font-semibold mt-1">
+                      Tarikh luput berbeza: {formatDate(matchedBatch.tarikh_luput)}{" "}
+                      → {formatDate(enteredExpiry)}. Tarikh baharu akan
+                      menggantikan tarikh sedia ada.
+                    </p>
+                  )}
+                  {!isDisposed && !isNaN(qtyNum) && qtyNum > 0 && !qtyTooBig && (
+                    <p className="mt-1">
+                      Jumlah selepas tambah:{" "}
+                      <strong>
+                        {(matchedBatch.kuantiti + qtyNum).toLocaleString("ms-MY")}
+                      </strong>{" "}
+                      unit.
+                    </p>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
@@ -201,10 +256,23 @@ export function AddBatchDialog({
               <DateInput
                 id="luput"
                 value={form.tarikh_luput}
+                min={todayStr}
                 onChange={(v) => updateField("tarikh_luput", v)}
                 required
-                style={inputStyle}
+                style={{
+                  ...inputStyle,
+                  borderColor: isExpired ? "#dc2626" : undefined,
+                }}
               />
+              {isExpired ? (
+                <p className="text-2xs mt-1" role="alert" style={{ color: "#dc2626" }}>
+                  Tarikh luput telah berlalu — kelompok luput tidak boleh diterima masuk.
+                </p>
+              ) : (
+                <p className="text-2xs mt-1" style={{ color: "var(--text-muted)" }}>
+                  Kelompok luput tidak diterima — lupuskan melalui aliran pelupusan.
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="qty" className="mb-1" style={labelStyle}>
@@ -214,11 +282,21 @@ export function AddBatchDialog({
                 id="qty"
                 type="number"
                 min={1}
+                max={MAX_QTY}
+                maxLength={7}
                 value={form.kuantiti}
                 onChange={(e) => updateField("kuantiti", e.target.value)}
                 required
-                style={inputStyle}
+                style={{
+                  ...inputStyle,
+                  borderColor: qtyTooBig ? "#dc2626" : undefined,
+                }}
               />
+              {qtyTooBig && (
+                <p className="text-2xs mt-1" role="alert" style={{ color: "#dc2626" }}>
+                  Kuantiti melebihi had {MAX_QTY.toLocaleString("ms-MY")} — semak angka anda.
+                </p>
+              )}
             </div>
           </div>
 

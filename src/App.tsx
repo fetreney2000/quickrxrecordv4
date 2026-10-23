@@ -3,6 +3,8 @@ import {
   createBrowserRouter,
   RouterProvider,
   Navigate,
+  Link,
+  useRouteError,
 } from "react-router-dom";
 import { QueryProvider } from "@/lib/query-provider";
 import { hydrateAuth } from "@/lib/auth-store";
@@ -10,6 +12,7 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { hasPermission } from "@/lib/permissions";
 import { Toaster } from "sonner";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 // Pages
 import LoginPage from "@/pages/LoginPage";
@@ -25,6 +28,57 @@ import ManagementPage from "@/pages/ManagementPage";
 import ProfilePage from "@/pages/ProfilePage";
 import CopyrightPage from "@/pages/CopyrightPage";
 import type { PermissionAction } from "@/types";
+
+/** UI ralat peringkat route — ganti skrin putih dengan pemulihan. */
+function RouteError() {
+  const error = useRouteError() as { message?: string } | null;
+  return (
+    <div className="min-h-screen flex items-center justify-center p-6">
+      <div className="max-w-md w-full text-center space-y-4">
+        <h1 className="text-xl font-bold">Halaman gagal dimuatkan</h1>
+        <p className="text-sm text-muted-foreground">
+          {error?.message || "Ralat tidak dijangka. Sila cuba semula."}
+        </p>
+        <div className="flex items-center justify-center gap-3">
+          <button
+            onClick={() => window.location.reload()}
+            className="min-h-11 px-4 rounded-xl text-sm font-semibold text-white"
+            style={{ background: "#1877f2" }}
+          >
+            Muat Semula
+          </button>
+          <Link
+            to="/"
+            className="min-h-11 inline-flex items-center px-4 rounded-xl text-sm font-semibold border"
+          >
+            Papan Pemuka
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Halaman 404 — ganti redirect senyap ke "/" (audit: topeng pepijat). */
+function NotFoundPage() {
+  return (
+    <div className="min-h-screen flex items-center justify-center p-6">
+      <div className="max-w-md w-full text-center space-y-4">
+        <h1 className="text-xl font-bold">Halaman tidak dijumpai (404)</h1>
+        <p className="text-sm text-muted-foreground">
+          Pautan yang anda ikuti mungkin salah atau telah dialihkan.
+        </p>
+        <Link
+          to="/"
+          className="min-h-11 inline-flex items-center px-4 rounded-xl text-sm font-semibold text-white"
+          style={{ background: "#1877f2" }}
+        >
+          Kembali ke Papan Pemuka
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 /** Auth-required wrapper. Redirects to /login if no profile. */
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -103,6 +157,7 @@ const router = createBrowserRouter([
   // Protected dashboard routes
   {
     path: "/",
+    errorElement: <RouteError />,
     element: (
       <RequireAuth>
         <DashboardLayout />
@@ -156,8 +211,8 @@ const router = createBrowserRouter([
       { path: "hakcipta", element: <CopyrightPage /> },
     ],
   },
-  // Catch-all
-  { path: "*", element: <Navigate to="/" replace /> },
+  // Catch-all — 404 eksplisit (bukan redirect senyap)
+  { path: "*", element: <NotFoundPage /> },
 ]);
 
 function App() {
@@ -168,7 +223,9 @@ function App() {
 
   return (
     <QueryProvider>
-      <RouterProvider router={router} />
+      <ErrorBoundary>
+        <RouterProvider router={router} />
+      </ErrorBoundary>
       {/* Global Toaster */}
       <Toaster
         position="top-right"

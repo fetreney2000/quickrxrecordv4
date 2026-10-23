@@ -60,16 +60,179 @@ WHERE t.typname = 'peranan_enum'
 ORDER BY e.enumsortorder;
 
 -- ============================================================================
--- 7. SEMAK RLS (semuanya patut disabled)
+-- 7. SEMAK RLS (mesti ENABLED selepas 038/039 — skrip lama yang menjangka
+--    disabled adalah LAPUK dan mesti gagal selepas pengerasan keselamatan)
 -- ============================================================================
 SELECT
   '7. RLS' AS bahagian,
   schemaname,
   tablename,
-  rowsecurity AS rls_enabled
+  rowsecurity AS rls_enabled,
+  CASE WHEN rowsecurity THEN 'OK' ELSE 'FAIL: jalankan 038_reenable_rls.sql' END AS status
 FROM pg_tables
 WHERE schemaname = 'public'
 ORDER BY tablename;
+
+-- 7b. Anon mesti TIADA akses (revoked dalam 038); authenticated mesti ada.
+SELECT '7b. ANON_GRANTS' AS bahagian, grantee, privilege_type, COUNT(*) AS jumlah
+FROM information_schema.role_table_grants
+WHERE table_schema = 'public' AND grantee = 'anon'
+GROUP BY grantee, privilege_type;
+
+-- 7c. Senarai polisi per jadual (jangka: sel_active/wr_*/admin_only, BUKAN authenticated_all)
+SELECT '7c. POLICIES' AS bahagian, tablename, policyname, roles::text, cmd
+FROM pg_policies
+WHERE schemaname = 'public'
+ORDER BY tablename, policyname;
+
+-- 7d. Pengawal status pesakit (040): trigger mesti wujud, jika tidak
+--     aktif=false→true masih boleh dilakukan dari klien (HIGH-2).
+SELECT '7d. STATUS_GUARD' AS bahagian,
+  CASE WHEN EXISTS (
+    SELECT 1 FROM information_schema.triggers
+    WHERE trigger_schema = 'public'
+      AND event_object_table = 'patients'
+      AND trigger_name = 'trg_patients_protect_status'
+  ) THEN 'OK' ELSE 'FAIL: jalankan 040_patients_status_guard.sql' END AS status;
+
+-- 7e. Pengawal bekalan pesakit (041): nyahaktif mesti menamatkan tugasan,
+--     jika tidak bekalan boleh direkod semula melalui RPC langsung (HIGH-1).
+SELECT '7e. HALT_GUARD' AS bahagian,
+  CASE WHEN EXISTS (
+    SELECT 1 FROM information_schema.triggers
+    WHERE trigger_schema = 'public'
+      AND event_object_table = 'patients'
+      AND trigger_name = 'trg_patients_halt_assignments'
+  ) THEN 'OK' ELSE 'FAIL: jalankan 041_supply_patient_guards.sql' END AS status;
+
+-- 7f. Pengawal stok luput (042): jumlah mesti membezakan stok boleh dibekal.
+SELECT '7f. DISPENSABLE' AS bahagian,
+  CASE WHEN EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'get_inventory_list'
+      AND 'dispensable_stock' = ANY (p.proargnames)
+  ) THEN 'OK' ELSE 'FAIL: jalankan 042_expired_stock_guards.sql' END AS status;
+
+-- 7g. (Ditarik balik: tiada indeks unik kelompok — ulangan nombor kelompok
+--     merentas sesi pesanan adalah sah; top-up bergabung secara logik.)
+
+-- 7h. Audit identiti kelompok (044): pertukaran nombor/tarikh luput mesti
+--     berjejak dengan sebab, bukan UPDATE senyap.
+SELECT '7h. IDENTITY' AS bahagian,
+  CASE WHEN EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'record_batch_update'
+  ) THEN 'OK' ELSE 'FAIL: jalankan 044_batch_identity_audit.sql' END AS status;
+
+-- 7i. Nama lajur konsisten (045): batch_additions.quantity → kuantiti.
+SELECT '7i. RENAME' AS bahagian,
+  CASE WHEN EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'batch_additions'
+      AND column_name = 'kuantiti'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'batch_additions'
+      AND column_name = 'quantity'
+  ) THEN 'OK' ELSE 'FAIL: jalankan 045_batch_additions_rename.sql' END AS status;
+
+-- 7j. Pengawal suntingan bekalan (046): kuantiti < 1 mesti ditolak di
+--     pelayan (nilai negatif mencipta stok daripada tiada).
+SELECT '7j. EDIT_FLOOR' AS bahagian,
+  CASE WHEN EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'update_supply'
+      AND p.prosrc LIKE '%sekurang-kurangnya 1%'
+  ) THEN 'OK' ELSE 'FAIL: jalankan 046_supply_edit_guards.sql' END AS status;
+
+-- 7k. Pengawal kelompok lupus (046): suntingan/pembatalan bekalan tidak
+--     boleh membangkitkan stok dalam kelompok lupus.
+SELECT '7k. EDIT_DISPOSED' AS bahagian,
+  CASE WHEN EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'update_supply'
+      AND p.prosrc LIKE '%dilupuskan = false%'
+  ) AND EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'reverse_supply'
+      AND p.prosrc LIKE '%dilupuskan = false%'
+  ) THEN 'OK' ELSE 'FAIL: jalankan 046_supply_edit_guards.sql' END AS status;
+
+-- 7l. Pembatalan pukal atomik (047): baris bergabung dibatalkan dalam satu
+--     transaksi dengan satu toast ringkasan.
+SELECT '7l. BULK_VOID' AS bahagian,
+  CASE WHEN EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'reverse_supplies'
+  ) THEN 'OK' ELSE 'FAIL: jalankan 047_bulk_reverse_supply.sql' END AS status;
+
+-- 7m. Padam penolakan Pentadbir sahaja (048): fakta klinikal tidak boleh
+--     dipadam oleh sebarangan peranan klinikal.
+SELECT '7m. DECL_DEL' AS bahagian,
+  CASE WHEN EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'supply_declinations'
+      AND policyname = 'del_admin_only'
+  ) THEN 'OK' ELSE 'FAIL: jalankan 048_declination_delete_guard.sql' END AS status;
+
+-- 7n. Dos tidak ditulis pada tugasan mati (046): tiada fakta klinikal baharu
+--     pada rekod yang ditamatkan/digabungkan.
+SELECT '7n. DOSE_DEAD' AS bahagian,
+  CASE WHEN EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'update_dose_with_history'
+      AND p.prosrc LIKE '%kemas kini dos tidak dibenarkan%'
+  ) THEN 'OK' ELSE 'FAIL: jalankan 046_supply_edit_guards.sql' END AS status;
+
+-- 7o. Pengawal status tugasan (049): henti mesti berjejak; aktif semula
+--     dilarang (cermin 040 untuk pesakit).
+SELECT '7o. ASSIGN_GUARD' AS bahagian,
+  CASE WHEN EXISTS (
+    SELECT 1 FROM information_schema.triggers
+    WHERE trigger_schema = 'public'
+      AND event_object_table = 'patient_item_assignments'
+      AND trigger_name = 'trg_assignments_protect_status'
+  ) THEN 'OK' ELSE 'FAIL: jalankan 049_assignment_status_guard.sql' END AS status;
+
+-- 7p. Kuota dikuatkuasakan pelayan (041): penambahan melebihi kuota ditolak
+--     walaupun dipintas UI.
+SELECT '7p. QUOTA' AS bahagian,
+  CASE WHEN EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'add_assignment_with_dose'
+      AND p.prosrc LIKE '%Kuota item telah penuh%'
+  ) THEN 'OK' ELSE 'FAIL: jalankan 041_supply_patient_guards.sql' END AS status;
+
+-- 7q. Padam klinikal Pentadbir sahaja (050): tiada DELETE senyap sejarah
+--     klinikal oleh sebarangan peranan.
+SELECT '7q. NO_DELETE' AS bahagian,
+  CASE WHEN (
+    SELECT COUNT(*) FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename IN ('patients','patient_item_assignments','supply_records',
+                        'dose_history','supply_declinations')
+      AND policyname = 'del_admin_only'
+  ) = 5 THEN 'OK' ELSE 'FAIL: jalankan 050_clinical_delete_guard.sql' END AS status;
+
+-- 7r. (Ditarik balik: tiada indeks unik KP/hospital — pendaftaran semula
+--     dan varian data sedia ada tidak boleh disekat di DB; semakan pendua
+--     klien + normalisasi kanonik kekal sebagai perlindungan.)
+
+-- 7s. Jejak pendaftar (052): setiap pendaftaran baharu merekodkan pelaku.
+SELECT '7s. REG_BY' AS bahagian,
+  CASE WHEN EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'patients'
+      AND column_name = 'didaftar_oleh'
+  ) THEN 'OK' ELSE 'FAIL: jalankan 052_patient_registered_by.sql' END AS status;
 
 -- ============================================================================
 -- 8. SEMAK KOLOM dose_history.dikemaskini_oleh
@@ -111,12 +274,12 @@ SELECT * FROM count_active_assignments();
 -- ============================================================================
 -- RINGKASAN
 -- ============================================================================
--- Dijangka selepas migrasi berjaya:
---   - 14 jadual
---   - 5 fungsi (process_supply, merge_patients, update_password_hash, count_active_assignments, update_updated_at)
---   - 8 triggers
---   - 22+ indeks
+-- Dijangka selepas migrasi berjaya (termasuk 038 + 039):
+--   - 14+ jadual (termasuk auth_attempts)
+--   - Semua jadual public: RLS ENABLED (status OK di bahagian 7)
+--   - 0 grants kepada anon (bahagian 7b kosong)
+--   - Polisi RBAC: sel_active / wr_clinical / wr_inventory / upd_own_or_admin
+--     / admin_only (bahagian 7c) — TIADA authenticated_all
 --   - 6 kategori, 11 bentuk, 3 tempoh
---   - Semua RLS disabled
---   - dose_history.mempunyai dikemaskini_oleh
+--   - dose_history mempunyai dikemaskini_oleh
 -- ============================================================================

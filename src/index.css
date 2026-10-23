@@ -512,3 +512,22 @@
   body { background: white !important; }
   .print-only { display: block !important; }
 }
+
+/* A11y: penunjuk fokus papan kekunci yang sentiasa kelihatan untuk medan
+   input — beberapa komponen menetapkan outline:none sebaris. */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #1877f2 !important;
+  outline-offset: 1px;
+}
+
+/* A11y: hormati prefers-reduced-motion — matikan animasi orb/hiasan yang
+   boleh menyebabkan pening (audit: 9+ animasi blur serentak). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

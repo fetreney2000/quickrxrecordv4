@@ -100,6 +100,7 @@ export function StopAssignmentDialog({
             <Label style={labelStyle}>Sebab Tamat *</Label>
             <Input
               value={sebab}
+              maxLength={200}
               onChange={(e) => setSebab(e.target.value)}
               style={inputBaseStyle}
             />

@@ -414,8 +414,8 @@ if (defaulterFilter !== "all") {
     setAdjustDialog({ type: "dispose", batch });
   };
 
-  const handleUpdateBatch = (batchId: string, nombor_kelompok: string, tarikh_luput: string) => {
-    updateBatch.mutate({ batchId, nombor_kelompok, tarikh_luput });
+  const handleUpdateBatch = (batchId: string, nombor_kelompok: string, tarikh_luput: string, reason: string) => {
+    updateBatch.mutate({ batchId, nombor_kelompok, tarikh_luput, reason });
   };
 
   const resolveDeleteMode = async () => {

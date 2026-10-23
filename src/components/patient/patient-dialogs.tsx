@@ -158,6 +158,7 @@ export function AddAssignmentDialog({
   onOpenChange,
   items,
   activeItemIds,
+  countsStale,
   onSubmit,
   isPending,
   formsMap,
@@ -166,6 +167,8 @@ export function AddAssignmentDialog({
   onOpenChange: (o: boolean) => void;
   items: (Item & { active_assignments?: number })[];
   activeItemIds: Set<string>;
+  /** HIGH-2: kiraan tidak dapat disahkan — item berkuota disekat sementara. */
+  countsStale?: boolean;
   onSubmit: (data: { item_id: string; dos: string; catatan: string }) => void;
   isPending: boolean;
   formsMap: Map<string, string>;
@@ -250,6 +253,22 @@ export function AddAssignmentDialog({
             </div>
           </div>
 
+          {/* HIGH-2: gagal-tutup — jangan papar baki kuota palsu. */}
+          {countsStale && (
+            <div
+              className="flex items-start gap-2 p-2.5 rounded-xl text-2xs"
+              role="alert"
+              style={{
+                background: "rgba(220,38,38,0.06)",
+                border: "1px solid rgba(220,38,38,0.25)",
+                color: "#991b1b",
+              }}
+            >
+              Data kuota tidak dapat disahkan — penambahan untuk item
+              berkuota disekat sementara. Cuba lagi sebentar lagi.
+            </div>
+          )}
+
           {/* Item list */}
           <div
             className="border rounded-xl overflow-y-auto min-w-0 w-full max-w-full"
@@ -268,8 +287,10 @@ export function AddAssignmentDialog({
                 const kuota = i.kuota;
                 const activeCount = i.active_assignments ?? 0;
                 const hasKuota = kuota != null && kuota > 0;
-                const baki = hasKuota ? Math.max(0, kuota - activeCount) : null;
-                const kuotaPenuh = hasKuota ? activeCount >= kuota : false;
+                // HIGH-2: kiraan tidak disahkan → anggap penuh (gagal-tutup).
+                const unknownQuota = !!countsStale && hasKuota;
+                const baki = hasKuota && !unknownQuota ? Math.max(0, kuota - activeCount) : null;
+                const kuotaPenuh = hasKuota ? (unknownQuota ? true : activeCount >= kuota) : false;
                 return (
                   <button
                     type="button"
@@ -306,8 +327,9 @@ export function AddAssignmentDialog({
                               background: "rgba(220,38,38,0.10)",
                               color: "#dc2626",
                             }}
+                            title={unknownQuota ? "Data kuota tidak dapat disahkan" : undefined}
                           >
-                            Kuota Penuh
+                            {unknownQuota ? "Belum Disahkan" : "Kuota Penuh"}
                           </span>
                         ) : active ? (
                           <span

@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { getNowISOKL, toTitleCase } from "@/lib/utils";
+import { friendlyDbError } from "@/lib/db-errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -94,7 +95,7 @@ export default function LookupManager({ type }: LookupManagerProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from(type)
-        .select("*")
+        .select("id, nama, created_at, updated_at")
         .order("nama");
       if (error) throw error;
       return data ?? [];
@@ -114,7 +115,7 @@ export default function LookupManager({ type }: LookupManagerProps) {
       setNewName("");
     },
     onError: (err: Error) => {
-      toast.error(`Gagal menambah: ${err.message}`);
+      toast.error(`Gagal menambah: ${friendlyDbError(err, "Gagal menambah.")}`);
     },
   });
 
@@ -133,7 +134,7 @@ export default function LookupManager({ type }: LookupManagerProps) {
       setEditName("");
     },
     onError: (err: Error) => {
-      toast.error(`Gagal mengemaskini: ${err.message}`);
+      toast.error(`Gagal mengemaskini: ${friendlyDbError(err, "Gagal mengemaskini.")}`);
     },
   });
 
@@ -148,7 +149,7 @@ export default function LookupManager({ type }: LookupManagerProps) {
       setDeleteConfirm(null);
     },
     onError: (err: Error) => {
-      toast.error(`Gagal memadam: ${err.message}`);
+      toast.error(`Gagal memadam: ${friendlyDbError(err, "Gagal memadam.")}`);
     },
   });
 

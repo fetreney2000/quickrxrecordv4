@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FoldableCard } from "@/components/ui/foldable-card";
+import { useAuth } from "@/hooks/use-auth";
 import {
   useDoseHistory,
   useAssignmentActivity,
@@ -124,6 +125,10 @@ function groupSupplyRecords(rows: SupplyActivityRow[]): SupplyActivityRow[] {
 
 export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpdateDose, onStop, onDecline, onDeleteDeclination, onEditSupply, onDeleteSupply, canEdit, formsMap, lastSupplyAge }: AssignmentItemProps) {
   const navigate = useNavigate();
+  const { profile } = useAuth();
+  // LOW-5: pemadaman penolakan dikhaskan untuk Pentadbir (pelayan 048
+  // menguatkuasakan perkara sama — semakan di sini menyembunyikan butang).
+  const canDeleteDeclination = canEdit && profile?.peranan === "Pentadbir";
   const [doseSort, setDoseSort] = useState<{ key: string; dir: SortDir } | null>(null);
   const [supplySort, setSupplySort] = useState<{ key: string; dir: SortDir } | null>(null);
   const [dosePage, setDosePage] = useState(0);
@@ -329,7 +334,9 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                         {canEdit && <td className="px-2 py-1.5">
                           {row.kind === "declination" ? (
                             <div className="flex items-center gap-1">
-                              <button title="Padam rekod" onClick={(e) => { e.stopPropagation(); onDeleteDeclination(row.id); }} className="hover:opacity-70" style={{ color: "#dc2626" }}><Trash2 className="w-3 h-3" /></button>
+                              {canDeleteDeclination && (
+                                <button title="Padam rekod (Pentadbir sahaja)" onClick={(e) => { e.stopPropagation(); onDeleteDeclination(row.id); }} className="hover:opacity-70" style={{ color: "#dc2626" }}><Trash2 className="w-3 h-3" /></button>
+                              )}
                             </div>
                           ) : (
                             <div className="flex items-center gap-1">

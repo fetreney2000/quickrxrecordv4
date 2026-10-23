@@ -12,6 +12,26 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
+/**
+ * JWT authenticated (ditandatangani oleh /api/login dengan SUPABASE_JWT_SECRET).
+ * Bila diset, semua permintaan Supabase membawa Authorization ini supaya
+ * PostgREST menetapkan peranan "authenticated" (diperlukan selepas RLS diaktifkan).
+ */
+let sbAccessToken: string | null = null;
+
+export function setSbAccessToken(token: string | null): void {
+  sbAccessToken = token;
+}
+
+const customFetch: typeof fetch = async (input, init) => {
+  if (sbAccessToken) {
+    const headers = new Headers(init?.headers);
+    headers.set("Authorization", `Bearer ${sbAccessToken}`);
+    init = { ...init, headers };
+  }
+  return fetch(input, init);
+};
+
 export const supabase = createClient(
   supabaseUrl || "https://placeholder.supabase.co",
   supabaseAnonKey || "placeholder-anon-key",
@@ -20,6 +40,9 @@ export const supabase = createClient(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: false,
+    },
+    global: {
+      fetch: customFetch,
     },
   }
 );

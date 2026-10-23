@@ -70,4 +70,4 @@ BEGIN
   USING p_search;
 END; $$;
 
-GRANT EXECUTE ON FUNCTION get_inventory_list(TEXT, TEXT, TEXT, BIGINT, BIGINT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_inventory_list(TEXT, TEXT, TEXT, BIGINT, BIGINT) TO authenticated;

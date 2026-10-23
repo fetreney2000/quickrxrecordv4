@@ -76,7 +76,7 @@ BEGIN
 END;
 $$;
 
-GRANT ALL ON FUNCTION process_batch_disposal(UUID, UUID, TEXT, TEXT) TO anon, authenticated;
+GRANT ALL ON FUNCTION process_batch_disposal(UUID, UUID, TEXT, TEXT) TO authenticated;
 
 -- ----------------------------------------------------------------------------
 -- record_batch_adjustment (pelarasan bukan pelupusan, atomik)
@@ -140,6 +140,6 @@ BEGIN
 END;
 $$;
 
-GRANT ALL ON FUNCTION record_batch_adjustment(UUID, INTEGER, TEXT, UUID, TEXT) TO anon, authenticated;
+GRANT ALL ON FUNCTION record_batch_adjustment(UUID, INTEGER, TEXT, UUID, TEXT) TO authenticated;
 
 -- Tamat 020_batch_adjustment_catatan.sql

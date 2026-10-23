@@ -36,4 +36,4 @@ BEGIN
   RETURN v_id;
 END; $$;
 
-GRANT EXECUTE ON FUNCTION add_assignment_with_dose(UUID, UUID, TEXT, TEXT, UUID, UUID, TEXT, TIMESTAMPTZ) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION add_assignment_with_dose(UUID, UUID, TEXT, TEXT, UUID, UUID, TEXT, TIMESTAMPTZ) TO authenticated;

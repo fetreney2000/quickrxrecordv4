@@ -36,6 +36,6 @@ CREATE INDEX IF NOT EXISTS idx_supply_declinations_direkod_oleh ON supply_declin
 
 -- RLS dinyahaktifkan (konsisten dengan jadual lain; pengesahan di peringkat aplikasi)
 ALTER TABLE supply_declinations DISABLE ROW LEVEL SECURITY;
-GRANT ALL ON supply_declinations TO anon, authenticated;
+GRANT ALL ON supply_declinations TO authenticated;
 
 -- Tamat 016_supply_declinations.sql

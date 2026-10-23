@@ -53,7 +53,7 @@ BEGIN
 END;
 $$;
 
-GRANT ALL ON FUNCTION process_batch_disposal(UUID, UUID, TEXT) TO anon, authenticated;
+GRANT ALL ON FUNCTION process_batch_disposal(UUID, UUID, TEXT) TO authenticated;
 
 NOTIFY pgrst, 'reload schema';
 
@@ -68,4 +68,4 @@ CREATE TABLE IF NOT EXISTS batch_additions (
 CREATE INDEX IF NOT EXISTS idx_batch_additions_batch ON batch_additions(batch_id);
 CREATE INDEX IF NOT EXISTS idx_batch_additions_added_by ON batch_additions(added_by);
 ALTER TABLE batch_additions DISABLE ROW LEVEL SECURITY;
-GRANT ALL ON batch_additions TO anon, authenticated;
+GRANT ALL ON batch_additions TO authenticated;

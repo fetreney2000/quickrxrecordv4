@@ -26,6 +26,6 @@ CREATE INDEX IF NOT EXISTS idx_batch_adjustments_adjusted_by ON batch_adjustment
 ALTER TABLE batch_adjustments DISABLE ROW LEVEL SECURITY;
 
 -- Grant akses
-GRANT ALL ON batch_adjustments TO anon, authenticated;
+GRANT ALL ON batch_adjustments TO authenticated;
 
 -- Tamat 006_batch_adjustments.sql

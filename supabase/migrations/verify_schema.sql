@@ -234,6 +234,13 @@ SELECT '7s. REG_BY' AS bahagian,
       AND column_name = 'didaftar_oleh'
   ) THEN 'OK' ELSE 'FAIL: jalankan 052_patient_registered_by.sql' END AS status;
 
+-- 7t. Kuota tidak negatif (053): lantai integriti untuk had pesakit.
+SELECT '7t. QUOTA_FLOOR' AS bahagian,
+  CASE WHEN EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'items_kuota_nonnegatif'
+  ) THEN 'OK' ELSE 'FAIL: jalankan 053_item_kuota_check.sql' END AS status;
+
 -- ============================================================================
 -- 8. SEMAK KOLOM dose_history.dikemaskini_oleh
 -- ============================================================================

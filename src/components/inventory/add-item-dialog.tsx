@@ -113,10 +113,22 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  // MEDIUM-2: kuota mesti integer 0–999999. Tanpa ini, "-5" diluluskan
+  // parseInt dan item terkunci kekal (kuota negatif tidak pernah tercapai).
+  const MAX_KUOTA = 999999;
+  const kuotaRaw = form.kuota.trim();
+  // Digit tulen sahaja — tolak "12abc" (parseInt separa) dan "-5".
+  const kuotaNum =
+    kuotaRaw === "" ? null : /^\d+$/.test(kuotaRaw) ? parseInt(kuotaRaw, 10) : NaN;
+  const kuotaInvalid =
+    kuotaNum !== null &&
+    (isNaN(kuotaNum) || kuotaNum < 0 || kuotaNum > MAX_KUOTA);
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!form.kod_item.trim() || !form.nama_item.trim()) return;
-    const kuota = form.kuota.trim() ? parseInt(form.kuota, 10) : null;
+    if (kuotaInvalid) return;
+    const kuota = kuotaNum;
     addItem.mutate(
       {
         kod_item: form.kod_item.trim().toUpperCase(),
@@ -125,10 +137,10 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
         kekuatan: form.kekuatan.trim() ? form.kekuatan.trim().toUpperCase() : null,
         id_kategori: form.id_kategori || null,
         id_bentuk: form.id_bentuk || null,
-        kuota: isNaN(kuota as number) ? null : kuota,
+        kuota: kuotaNum,
         catatan: form.catatan.trim() || null,
         aktif: true,
-      } as any,
+      },
       {
         onSuccess: (data) => {
           onOpenChange(false);
@@ -141,7 +153,9 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
   };
 
   const isValid =
-    form.kod_item.trim().length > 0 && form.nama_item.trim().length > 0;
+    form.kod_item.trim().length > 0 &&
+    form.nama_item.trim().length > 0 &&
+    !kuotaInvalid;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -181,6 +195,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
               <Input
                 id="kod"
                 value={form.kod_item}
+                maxLength={30}
                 onChange={(e) => updateField("kod_item", e.target.value)}
                 onBlur={(e) =>
                   updateField("kod_item", e.target.value.toUpperCase())
@@ -196,6 +211,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
               <Input
                 id="kekuatan"
                 value={form.kekuatan}
+                maxLength={30}
                 onChange={(e) => updateField("kekuatan", e.target.value)}
                 onBlur={(e) =>
                   updateField("kekuatan", e.target.value.toUpperCase())
@@ -210,16 +226,17 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
             <Label htmlFor="nama" className="mb-1" style={labelStyle}>
               Nama Item <span style={{ color: "#dc2626" }}>*</span>
             </Label>
-            <Input
-              id="nama"
-              value={form.nama_item}
-              onChange={(e) => updateField("nama_item", e.target.value)}
-              onBlur={(e) =>
-                updateField("nama_item", toTitleCaseKeepAcronyms(e.target.value))
-              }
-              required
-              style={inputStyle}
-            />
+              <Input
+                id="nama"
+                value={form.nama_item}
+                maxLength={200}
+                onChange={(e) => updateField("nama_item", e.target.value)}
+                onBlur={(e) =>
+                  updateField("nama_item", toTitleCaseKeepAcronyms(e.target.value))
+                }
+                required
+                style={inputStyle}
+              />
           </div>
 
           {/* Nama Dagangan */}
@@ -227,18 +244,19 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
             <Label htmlFor="dagangan" className="mb-1" style={labelStyle}>
               Nama Dagangan
             </Label>
-            <Input
-              id="dagangan"
-              value={form.nama_dagangan}
-              onChange={(e) => updateField("nama_dagangan", e.target.value)}
-              onBlur={(e) =>
-                updateField(
-                  "nama_dagangan",
-                  toTitleCaseKeepAcronyms(e.target.value)
-                )
-              }
-              style={inputStyle}
-            />
+              <Input
+                id="dagangan"
+                value={form.nama_dagangan}
+                maxLength={200}
+                onChange={(e) => updateField("nama_dagangan", e.target.value)}
+                onBlur={(e) =>
+                  updateField(
+                    "nama_dagangan",
+                    toTitleCaseKeepAcronyms(e.target.value)
+                  )
+                }
+                style={inputStyle}
+              />
           </div>
 
           {/* Kategori + Bentuk Dos */}
@@ -290,17 +308,28 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
               id="quota"
               type="number"
               min={0}
+              max={MAX_KUOTA}
               value={form.kuota}
               onChange={(e) => updateField("kuota", e.target.value)}
-              style={inputStyle}
+              style={{
+                ...inputStyle,
+                borderColor: kuotaInvalid ? "#dc2626" : undefined,
+              }}
             />
-            {form.kuota && !isNaN(parseInt(form.kuota, 10)) && (
-              <p
-                className="text-2xs mt-1"
-                style={{ color: "var(--text-muted)" }}
-              >
-                {formatNumber(parseInt(form.kuota, 10))} unit
+            {kuotaInvalid ? (
+              <p className="text-2xs mt-1" role="alert" style={{ color: "#dc2626" }}>
+                Kuota mestilah nombor bulat 0–{MAX_KUOTA.toLocaleString("ms-MY")}.
               </p>
+            ) : (
+              form.kuota &&
+              !isNaN(parseInt(form.kuota, 10)) && (
+                <p
+                  className="text-2xs mt-1"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {formatNumber(parseInt(form.kuota, 10))} unit
+                </p>
+              )
             )}
           </div>
 
@@ -312,6 +341,7 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
             <textarea
               id="catatan"
               value={form.catatan}
+              maxLength={500}
               onChange={(e) => updateField("catatan", e.target.value)}
               style={textareaStyle}
               rows={2}

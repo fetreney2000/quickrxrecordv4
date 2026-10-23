@@ -32,7 +32,7 @@ CREATE INDEX IF NOT EXISTS idx_inv_trans_rujukan ON inventory_transactions(rujuk
 ALTER TABLE inventory_transactions DISABLE ROW LEVEL SECURITY;
 
 -- Grant akses
-GRANT ALL ON inventory_transactions TO anon, authenticated;
+GRANT ALL ON inventory_transactions TO authenticated;
 
 -- ============================================================================
 -- FUNGSI: process_supply (VERSI 2) — ditambah integrasi inventory_transactions

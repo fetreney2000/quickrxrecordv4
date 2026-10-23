@@ -55,7 +55,7 @@ export function Header() {
     enabled: canViewPatients && debounced.trim().length >= 2 && open,
     queryFn: async () => {
       const term = escapeLikeTerm(debounced.trim());
-      const orFilter = `nama.ilike.%${term}%,nombor_kad_pengenalan.ilike.%${term}%,nombor_pendaftaran_hospital.ilike.%${term}%`;
+      const orFilter = `nama.ilike.%${term}%,nombor_kad_pengenalan.ilike.%${term}%,nombor_pendaftaran_hospital.ilike.%${term}%,nombor_telefon.ilike.%${term}%`;
       const base = supabase
         .from("patients")
         .select("id, nama, nombor_kad_pengenalan, nombor_pendaftaran_hospital", { count: "exact" })

@@ -40,4 +40,4 @@ AS $$
   ORDER BY (COALESCE(u.total, 0) / 12 * 4 - COALESCE(cb.balance, 0)) DESC;
 $$;
 
-GRANT EXECUTE ON FUNCTION get_report_low_stock() TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_report_low_stock() TO authenticated;

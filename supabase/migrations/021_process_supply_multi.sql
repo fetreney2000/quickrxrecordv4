@@ -118,6 +118,6 @@ $$;
 
 GRANT ALL ON FUNCTION process_supply_multi(
   UUID, TEXT, TEXT, JSONB, UUID, TEXT
-) TO anon, authenticated;
+) TO authenticated;
 
 -- Tamat 021_process_supply_multi.sql

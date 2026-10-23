@@ -465,12 +465,46 @@ export function useAddItem() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (itemData: Partial<Item>) => {
+      // MEDIUM-2: kuota mesti integer 0–999999 (pertahanan di titik cekik —
+      // dialog mengesahkan dahulu, pelayan 053 menguatkuasakan muktamad).
+      if (itemData.kuota !== undefined && itemData.kuota !== null) {
+        const q = Number(itemData.kuota);
+        if (!Number.isInteger(q) || q < 0 || q > 999999) {
+          throw new Error("Kuota mestilah nombor bulat 0–999999.");
+        }
+      }
+      // MEDIUM-1 (audit pendaftaran item): semak pendua SEBELUM tulis —
+      // laluan suntingan (useUpdateItem) sudah berbuat demikian; ciptaan
+      // tidak harus bergantung semata-mata pada ralat DB mentah. Semakan
+      // tidak peka huruf (selari carian) + perbandingan tepat.
+      const kodItem = (itemData.kod_item ?? "").trim();
+      if (!kodItem) throw new Error("Kod item diperlukan.");
+      const { data: duplicate, error: duplicateError } = await supabase
+        .from("items")
+        .select("id")
+        .ilike("kod_item", escapeIlikeExact(kodItem))
+        .maybeSingle();
+      if (duplicateError) throw duplicateError;
+      if (duplicate) {
+        throw new Error(
+          `Kod item "${kodItem.toUpperCase()}" sudah digunakan. Sila gunakan kod yang unik.`
+        );
+      }
       const { data, error } = await supabase
         .from("items")
-        .insert(itemData)
+        .insert({ ...itemData, kod_item: kodItem.toUpperCase() })
         .select(ITEM_COLUMNS)
         .single();
-      if (error) throw error;
+      if (error) {
+        // Perlumbaan selit (dua pendaftaran serentak) — kekangan unik DB
+        // kekal sebagai penguatkuasa terakhir; terjemahkan mesejnya.
+        if ((error as { code?: string }).code === "23505") {
+          throw new Error(
+            `Kod item "${kodItem.toUpperCase()}" sudah digunakan. Sila gunakan kod yang unik.`
+          );
+        }
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {
@@ -483,6 +517,13 @@ export function useUpdateItem(id: string | undefined) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: Partial<Item>) => {
+      // MEDIUM-2: kuota negatif/salah bentuk ditolak di sini (jalan edit).
+      if (data.kuota !== undefined && data.kuota !== null) {
+        const q = Number(data.kuota);
+        if (!Number.isInteger(q) || q < 0 || q > 999999) {
+          throw new Error("Kuota mestilah nombor bulat 0–999999.");
+        }
+      }
       if (data.kod_item !== undefined) {
         const kodItem = data.kod_item.trim();
         if (!kodItem) throw new Error("Kod item diperlukan.");

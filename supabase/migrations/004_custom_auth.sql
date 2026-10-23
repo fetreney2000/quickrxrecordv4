@@ -49,6 +49,6 @@ END;
 $$;
 
 -- Grant akses
-GRANT ALL ON FUNCTION update_password_hash TO anon, authenticated;
+GRANT ALL ON FUNCTION update_password_hash TO authenticated;
 
 -- Tamat 004_custom_auth.sql

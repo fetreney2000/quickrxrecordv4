@@ -42,7 +42,7 @@ export function usePatientSearch(query: string) {
         .eq("aktif", true)
         .is("merged_into", null)
         .or(
-          `nama.ilike.${like},nombor_kad_pengenalan.ilike.${like},nombor_pendaftaran_hospital.ilike.${like}`
+          `nama.ilike.${like},nombor_kad_pengenalan.ilike.${like},nombor_pendaftaran_hospital.ilike.${like},nombor_telefon.ilike.${like}`
         )
         .order("nama", { ascending: true })
         .limit(50);

@@ -39,4 +39,4 @@ BEGIN
   ORDER BY i.nama_item;
 END; $$;
 
-GRANT EXECUTE ON FUNCTION get_report_inventory() TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_report_inventory() TO authenticated;

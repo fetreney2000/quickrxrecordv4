@@ -66,7 +66,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION delete_item(UUID, UUID) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION delete_item(UUID, UUID) TO authenticated;
 
 -- ============================================================================
 -- PENYUAIAN (BACKFILL): item legacy yang sudah aktif=false dari 017.

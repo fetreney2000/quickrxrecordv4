@@ -71,4 +71,4 @@ AS $$
     (SELECT count(*)::BIGINT FROM stock_calc WHERE item_stock < required_4w);
 $$;
 
-GRANT EXECUTE ON FUNCTION get_dashboard_stats() TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_dashboard_stats() TO authenticated;

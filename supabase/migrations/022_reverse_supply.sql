@@ -68,6 +68,6 @@ BEGIN
 END;
 $$;
 
-GRANT ALL ON FUNCTION reverse_supply(UUID, TEXT) TO anon, authenticated;
+GRANT ALL ON FUNCTION reverse_supply(UUID, TEXT) TO authenticated;
 
 -- Tamat 022_reverse_supply.sql

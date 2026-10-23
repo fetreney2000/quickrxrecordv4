@@ -20,4 +20,4 @@ BEGIN
   VALUES (p_assignment_id, now(), p_dos, true, p_catatan, p_dikemaskini_oleh);
 END; $$;
 
-GRANT EXECUTE ON FUNCTION update_dose_with_history(UUID, TEXT, TEXT, UUID) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION update_dose_with_history(UUID, TEXT, TEXT, UUID) TO authenticated;

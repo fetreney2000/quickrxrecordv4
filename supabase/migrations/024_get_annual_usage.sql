@@ -27,6 +27,6 @@ AS $$
   GROUP BY EXTRACT(MONTH FROM sr.tarikh_dibekal)::INTEGER;
 $$;
 
-GRANT ALL ON FUNCTION get_annual_usage(UUID, INTEGER) TO anon, authenticated;
+GRANT ALL ON FUNCTION get_annual_usage(UUID, INTEGER) TO authenticated;
 
 -- Tamat 024_get_annual_usage.sql

@@ -83,4 +83,4 @@ BEGIN
   USING p_search, p_active;
 END; $$;
 
-GRANT EXECUTE ON FUNCTION get_patient_list(TEXT, BOOLEAN, TEXT, TEXT, BIGINT, BIGINT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_patient_list(TEXT, BOOLEAN, TEXT, TEXT, BIGINT, BIGINT) TO authenticated;

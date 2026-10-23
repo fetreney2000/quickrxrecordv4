@@ -94,6 +94,6 @@ BEGIN
 END;
 $$;
 
-GRANT ALL ON FUNCTION update_supply(UUID, TEXT, INTEGER, TEXT, TEXT) TO anon, authenticated;
+GRANT ALL ON FUNCTION update_supply(UUID, TEXT, INTEGER, TEXT, TEXT) TO authenticated;
 
 -- Tamat 023_update_supply.sql

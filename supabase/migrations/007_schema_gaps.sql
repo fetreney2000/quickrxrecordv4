@@ -183,9 +183,9 @@ ALTER TABLE supply_durations DISABLE ROW LEVEL SECURITY;
 ALTER TABLE staff_migration_lookup DISABLE ROW LEVEL SECURITY;
 
 -- Grant akses
-GRANT ALL ON item_categories TO anon, authenticated;
-GRANT ALL ON item_forms TO anon, authenticated;
-GRANT ALL ON supply_durations TO anon, authenticated;
-GRANT ALL ON staff_migration_lookup TO anon, authenticated;
+GRANT ALL ON item_categories TO authenticated;
+GRANT ALL ON item_forms TO authenticated;
+GRANT ALL ON supply_durations TO authenticated;
+GRANT ALL ON staff_migration_lookup TO authenticated;
 
 -- Tamat 007_schema_gaps.sql

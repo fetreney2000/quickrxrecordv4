@@ -12,7 +12,7 @@ import { supabase } from "@/lib/supabase";
 import { useNavStore } from "@/lib/nav-store";
 import { useAuth } from "@/hooks/use-auth";
 import { digitsOnly, formatMyKad, formatPhone, getTodayStrKL } from "@/lib/utils";
-import { escapeLikeTerm } from "@/lib/postgrest";
+import { escapeIlikeExact, escapeLikeTerm } from "@/lib/postgrest";
 import type { Patient } from "@/types";
 
 const PATIENT_COLUMNS =
@@ -60,10 +60,15 @@ export function usePatients({
       const sortKey = sort?.key ?? "nama";
       const sortDir = sort?.dir ?? "asc";
       const offset = page * pageSize;
+      // MEDIUM-1 (audit carian): lepaskan wildcard LIKE (% _ \) — tanpa
+      // ini carian "%" memadankan hampir semua. Tidak seperti escapeLikeTerm
+      // (laluan PostgREST, membuang aksara struktur), di sini hanya
+      // wildcard dilepaskan supaya nama seperti O'Brien kekal boleh dicari
+      // (parameter diikat — tiada risiko suntikan SQL).
       const { data: rpcData, error: rpcErr } = await supabase.rpc(
         "get_patient_list",
         {
-          p_search: search.trim(),
+          p_search: escapeIlikeExact(search.trim()),
           p_active: active,
           p_sort_key: sortKey,
           p_sort_dir: sortDir,

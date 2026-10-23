@@ -255,15 +255,20 @@ export function MergeDialog({ open, onOpenChange, primaryPatient }: MergeDialogP
                     key={p.id}
                     className="text-2xs font-semibold px-2 py-0.5 rounded-full"
                     style={{
-                      background: "rgba(124,58,237,0.1)",
-                      color: "#7c3aed",
+                      background: p.aktif
+                        ? "rgba(124,58,237,0.1)"
+                        : "rgba(107,114,128,0.12)",
+                      color: p.aktif ? "#7c3aed" : "#4b5563",
                     }}
+                    title={p.aktif ? undefined : "Rekod tidak aktif — tugasannya dipindahkan tanpa diaktifkan semula"}
                   >
                     {p.nama}
+                    {!p.aktif && " (tidak aktif)"}
                     <button
                       type="button"
                       onClick={() => toggleSelect(p.id)}
                       className="ml-1 hover:opacity-70"
+                      aria-label={`Buang ${p.nama} daripada pilihan`}
                     >
                       ×
                     </button>

@@ -90,4 +90,4 @@ BEGIN
   ORDER BY it.created_at DESC, it.id ASC;
 END; $$;
 
-GRANT EXECUTE ON FUNCTION get_item_transaction_history(UUID) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_item_transaction_history(UUID) TO authenticated;

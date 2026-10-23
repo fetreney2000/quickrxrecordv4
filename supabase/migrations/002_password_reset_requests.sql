@@ -22,6 +22,6 @@ CREATE INDEX IF NOT EXISTS idx_reset_requests_user ON password_reset_requests(us
 CREATE INDEX IF NOT EXISTS idx_reset_requests_requested_at ON password_reset_requests(requested_at DESC);
 
 -- Grant akses
-GRANT ALL ON password_reset_requests TO anon, authenticated;
+GRANT ALL ON password_reset_requests TO authenticated;
 
 -- Tamat 002_password_reset_requests.sql

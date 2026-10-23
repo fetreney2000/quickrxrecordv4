@@ -34,6 +34,6 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION delete_item(UUID) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION delete_item(UUID) TO authenticated;
 
 -- Tamat 017_delete_item.sql

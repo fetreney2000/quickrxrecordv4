@@ -137,7 +137,7 @@ $$;
 
 GRANT ALL ON FUNCTION process_supply(
   UUID, TEXT, TEXT, INTEGER, UUID, UUID, TEXT
-) TO anon, authenticated;
+) TO authenticated;
 
 -- ----------------------------------------------------------------------------
 -- process_batch_disposal (pelupusan atomik + baki; sentiasa jurnal)
@@ -186,7 +186,7 @@ BEGIN
 END;
 $$;
 
-GRANT ALL ON FUNCTION process_batch_disposal(UUID, UUID, TEXT) TO anon, authenticated;
+GRANT ALL ON FUNCTION process_batch_disposal(UUID, UUID, TEXT) TO authenticated;
 
 -- ----------------------------------------------------------------------------
 -- record_batch_addition (tambah stok / kelompok baharu, atomik)
@@ -254,7 +254,7 @@ BEGIN
 END;
 $$;
 
-GRANT ALL ON FUNCTION record_batch_addition(UUID, TEXT, DATE, INTEGER, UUID) TO anon, authenticated;
+GRANT ALL ON FUNCTION record_batch_addition(UUID, TEXT, DATE, INTEGER, UUID) TO authenticated;
 
 -- ----------------------------------------------------------------------------
 -- record_batch_adjustment (pelarasan bukan pelupusan, atomik)
@@ -313,7 +313,7 @@ BEGIN
 END;
 $$;
 
-GRANT ALL ON FUNCTION record_batch_adjustment(UUID, INTEGER, TEXT, UUID) TO anon, authenticated;
+GRANT ALL ON FUNCTION record_batch_adjustment(UUID, INTEGER, TEXT, UUID) TO authenticated;
 
 -- ============================================================================
 -- 5. BACKFILL — backfill_inventory_ledger()
@@ -429,6 +429,6 @@ BEGIN
 END;
 $$;
 
-GRANT ALL ON FUNCTION backfill_inventory_ledger() TO anon, authenticated;
+GRANT ALL ON FUNCTION backfill_inventory_ledger() TO authenticated;
 
 -- Tamat 018_inventory_ledger_baki.sql

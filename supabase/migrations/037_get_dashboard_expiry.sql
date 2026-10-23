@@ -22,4 +22,4 @@ AS $$
   LIMIT p_limit;
 $$;
 
-GRANT EXECUTE ON FUNCTION get_dashboard_expiry(INTEGER) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_dashboard_expiry(INTEGER) TO authenticated;

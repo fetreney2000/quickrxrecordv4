@@ -39,7 +39,7 @@ BEGIN
   WHERE pia.item_id = p_item_id AND pia.aktif = true;
 END; $$;
 
-GRANT EXECUTE ON FUNCTION get_item_patients_with_activity(UUID) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_item_patients_with_activity(UUID) TO authenticated;
 
 -- Recommended composite indexes
 CREATE INDEX IF NOT EXISTS idx_supply_record_assignment_date

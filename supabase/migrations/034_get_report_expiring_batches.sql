@@ -32,4 +32,4 @@ AS $$
   ORDER BY ib.tarikh_luput ASC;
 $$;
 
-GRANT EXECUTE ON FUNCTION get_report_expiring_batches(BIGINT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_report_expiring_batches(BIGINT) TO authenticated;

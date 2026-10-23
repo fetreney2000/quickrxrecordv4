@@ -41,4 +41,4 @@ AS $$
   LIMIT p_limit;
 $$;
 
-GRANT EXECUTE ON FUNCTION get_report_transactions(TIMESTAMPTZ, TIMESTAMPTZ, BIGINT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_report_transactions(TIMESTAMPTZ, TIMESTAMPTZ, BIGINT) TO authenticated;

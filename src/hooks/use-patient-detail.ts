@@ -487,14 +487,14 @@ export function useSearchPatients(query: string) {
       const term = escapeLikeTerm(query.trim());
       const { data, error } = await supabase
         .from("patients")
-        .select("id, nama, nombor_kad_pengenalan, nombor_pendaftaran_hospital, aktif")
+        .select("id, nama, nombor_kad_pengenalan, nombor_pendaftaran_hospital, nombor_telefon, aktif")
         .or(
-          `nama.ilike.%${term}%,nombor_kad_pengenalan.ilike.%${term}%,nombor_pendaftaran_hospital.ilike.%${term}%`
+          `nama.ilike.%${term}%,nombor_kad_pengenalan.ilike.%${term}%,nombor_pendaftaran_hospital.ilike.%${term}%,nombor_telefon.ilike.%${term}%`
         )
         .is("merged_into", null)
         .limit(50);
       if (error) throw error;
-      return (data ?? []) as Pick<Patient, "id" | "nama" | "nombor_kad_pengenalan" | "nombor_pendaftaran_hospital" | "aktif">[];
+      return (data ?? []) as Pick<Patient, "id" | "nama" | "nombor_kad_pengenalan" | "nombor_pendaftaran_hospital" | "nombor_telefon" | "aktif">[];
     },
   });
 }

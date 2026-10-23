@@ -108,7 +108,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION merge_patients(UUID, UUID[], DATE, UUID) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION merge_patients(UUID, UUID[]) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION merge_patients(UUID, UUID[], DATE, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION merge_patients(UUID, UUID[]) TO authenticated;
 
 NOTIFY pgrst, 'reload schema';

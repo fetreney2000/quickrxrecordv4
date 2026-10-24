@@ -1,6 +1,7 @@
 /**
  * Hooks untuk Pengurusan Inventori.
  */
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
@@ -516,6 +517,44 @@ export function useAddItem() {
   });
 }
 
+/**
+ * Semakan pendua kod item secara langsung (debounce 600ms) — amaran awal
+ * sebelum hantar, selari dengan dialog pendaftaran pesakit. Perbandingan
+ * tidak peka huruf besar/kecil; pulangkan padanan atau null.
+ */
+export function useItemDuplicateCheck(kod: string) {
+  const [result, setResult] = useState<Pick<
+    Item,
+    "id" | "kod_item" | "nama_item"
+  > | null>(null);
+
+  useEffect(() => {
+    const trimmed = kod.trim();
+    if (!trimmed) {
+      setResult(null);
+      return;
+    }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      const { data, error } = await supabase
+        .from("items")
+        .select("id, kod_item, nama_item")
+        .ilike("kod_item", escapeIlikeExact(trimmed))
+        .limit(1)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error) return;
+      setResult((data as Pick<Item, "id" | "kod_item" | "nama_item">) ?? null);
+    }, 600);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [kod]);
+
+  return result;
+}
+
 export function useUpdateItem(id: string | undefined) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -528,7 +567,7 @@ export function useUpdateItem(id: string | undefined) {
         }
       }
       if (data.kod_item !== undefined) {
-        const kodItem = data.kod_item.trim();
+        const kodItem = data.kod_item.trim().toUpperCase();
         if (!kodItem) throw new Error("Kod item diperlukan.");
         const { data: duplicate, error: duplicateError } = await supabase
           .from("items")
@@ -538,6 +577,9 @@ export function useUpdateItem(id: string | undefined) {
           .maybeSingle();
         if (duplicateError) throw duplicateError;
         if (duplicate) throw new Error("Kod item sudah digunakan. Sila gunakan kod yang unik.");
+        // MEDIUM-1 (audit pendaftaran): selaraskan dengan laluan cipta —
+        // kod sentiasa disimpan huruf besar (perbandingan ilike pula
+        // tidak peka huruf, jadi semakan di atas kekal sah).
         data = { ...data, kod_item: kodItem };
       }
       const { error } = await supabase

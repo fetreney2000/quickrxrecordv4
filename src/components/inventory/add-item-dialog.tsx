@@ -18,15 +18,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Pill, Loader2 } from "lucide-react";
-import {
-  toTitleCaseKeepAcronyms,
-  formatNumber,
-} from "@/lib/utils";
+import { Pill, Loader2, AlertTriangle, ExternalLink } from "lucide-react";
+import { toTitleCaseKeepAcronyms, formatNumber } from "@/lib/utils";
 import {
   useAddItem,
   useItemCategories,
   useItemForms,
+  useItemDuplicateCheck,
 } from "@/hooks/use-inventory";
 
 interface AddItemDialogProps {
@@ -95,10 +93,24 @@ const selectStyle: React.CSSProperties = {
 export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
   const navigate = useNavigate();
   const [form, setForm] = useState<NewItemForm>(EMPTY_FORM);
-  const { data: categories = [] } = useItemCategories();
-  const { data: forms = [] } = useItemForms();
+  const {
+    data: categories = [],
+    isError: categoriesError,
+    refetch: refetchCategories,
+    isFetching: categoriesFetching,
+  } = useItemCategories();
+  const {
+    data: forms = [],
+    isError: formsError,
+    refetch: refetchForms,
+    isFetching: formsFetching,
+  } = useItemForms();
+  const lookupsFailed = categoriesError || formsError;
 
   const addItem = useAddItem();
+  // Semakan pendua langsung — tidak seperti pesakit, kod item MESTI unik
+  // (kekangan DB), jadi padanan menyekat hantar (bukan sekadar amaran).
+  const duplicate = useItemDuplicateCheck(open ? form.kod_item : "");
 
   // Reset form when opened
   useEffect(() => {
@@ -155,7 +167,8 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
   const isValid =
     form.kod_item.trim().length > 0 &&
     form.nama_item.trim().length > 0 &&
-    !kuotaInvalid;
+    !kuotaInvalid &&
+    !duplicate;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -201,8 +214,41 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
                   updateField("kod_item", e.target.value.toUpperCase())
                 }
                 required
-                style={{ ...inputStyle, textTransform: "uppercase" }}
+                style={{
+                  ...inputStyle,
+                  textTransform: "uppercase",
+                  borderColor: duplicate ? "#dc2626" : undefined,
+                }}
               />
+              {duplicate && (
+                <div
+                  className="flex items-start gap-2 p-2.5 rounded-xl mt-2 text-2xs"
+                  role="alert"
+                  style={{
+                    background: "rgba(220,38,38,0.06)",
+                    border: "1px solid rgba(220,38,38,0.25)",
+                    color: "#991b1b",
+                  }}
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-semibold">
+                      Kod ini telah digunakan oleh "{duplicate.nama_item}".
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigate(`/stok/${duplicate.id}`);
+                        onOpenChange(false);
+                      }}
+                      className="mt-1 inline-flex items-center gap-1 font-semibold underline"
+                      title="Lihat item sedia ada"
+                    >
+                      Lihat item <ExternalLink className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             <div>
               <Label htmlFor="kekuatan" className="mb-1" style={labelStyle}>
@@ -258,6 +304,35 @@ export function AddItemDialog({ open, onOpenChange }: AddItemDialogProps) {
                 style={inputStyle}
               />
           </div>
+
+          {lookupsFailed && (
+            <div
+              className="flex items-center justify-between gap-2 p-2.5 rounded-xl text-2xs"
+              role="alert"
+              style={{
+                background: "rgba(220,38,38,0.06)",
+                border: "1px solid rgba(220,38,38,0.25)",
+                color: "#991b1b",
+              }}
+            >
+              <span>
+                Senarai kategori/bentuk tidak dapat dimuatkan — item masih
+                boleh didaftar tanpa kedua-duanya.
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  refetchCategories();
+                  refetchForms();
+                }}
+                disabled={categoriesFetching || formsFetching}
+                className="font-semibold underline whitespace-nowrap"
+                title="Muat semula senarai"
+              >
+                Cuba semula
+              </button>
+            </div>
+          )}
 
           {/* Kategori + Bentuk Dos */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

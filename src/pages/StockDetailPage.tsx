@@ -392,7 +392,7 @@ if (defaulterFilter !== "all") {
           ? editData.kekuatan.toUpperCase()
           : null,
         kuota: editData.kuota != null ? Number(editData.kuota) : null,
-      } as any,
+      },
       {
         onSuccess: () => {
           setEditMode(false);

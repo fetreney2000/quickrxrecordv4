@@ -260,6 +260,20 @@ SELECT '7v. REASON_REQ' AS bahagian,
       AND p.prosrc LIKE '%Sebab pel%'
   ) = 2 THEN 'OK' ELSE 'FAIL: jalankan 056_batch_reason_required.sql' END AS status;
 
+-- 7w. Jadual rujukan Pentadbir sahaja (057): Stor/Farmasi baca sahaja.
+SELECT '7w. LOOKUP_ADMIN' AS bahagian,
+  CASE WHEN (
+    SELECT COUNT(*) FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename IN ('item_categories','item_forms','supply_durations')
+      AND policyname IN ('wr_lookup_admin_ins','wr_lookup_admin_upd','wr_lookup_admin_del')
+  ) = 9 AND NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename IN ('item_categories','item_forms','supply_durations')
+      AND policyname = 'wr_inventory'
+  ) THEN 'OK' ELSE 'FAIL: jalankan 057_lookup_admin_only.sql' END AS status;
+
 -- ============================================================================
 -- 8. SEMAK KOLOM dose_history.dikemaskini_oleh
 -- ============================================================================

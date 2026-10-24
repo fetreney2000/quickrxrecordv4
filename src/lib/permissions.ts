@@ -14,6 +14,8 @@ export const PERMISSIONS: Record<UserRole, PermissionAction[]> = {
     "view_patients",
     "manage_assignments",
   ],
+  // Penjaga Stor: semua KECUALI Pengurusan (/pengurusan berpagar manage_users,
+  // iaitu akaun pengguna, kelulusan reset, dan jadual rujukan). Lihat 057.
   "Penjaga Stor": [
     "manage_items",
     "manage_patients",

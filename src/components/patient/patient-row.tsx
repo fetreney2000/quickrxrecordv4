@@ -21,6 +21,7 @@ export function PatientRow({ patient, index, onClick }: PatientRowProps) {
         onClick={onClick}
         role="button"
         tabIndex={0}
+        aria-label={`Lihat butiran ${patient.nama}`}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
@@ -89,6 +90,7 @@ export function PatientRow({ patient, index, onClick }: PatientRowProps) {
         onClick={onClick}
         role="button"
         tabIndex={0}
+        aria-label={`Lihat butiran ${patient.nama}`}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();

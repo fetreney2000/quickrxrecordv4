@@ -306,10 +306,19 @@ export interface DuplicateMatch {
   primary: { id: string; nama: string } | null;
 }
 
-/** Carian pendua masa nyata dengan debounce 600ms. */
-export function useCheckDuplicate(form: NewPatientForm) {
+/**
+ * Carian pendua masa nyata dengan debounce 600ms.
+ * Mengembalikan `{ match, checking }` — `checking` kekal true selagi
+ * input belum disemak (termasuk tetingkap debounce), supaya penghantar
+ * tidak boleh memintas semakan dengan klik Simpan sebelum semakan selesai.
+ */
+export function useCheckDuplicate(form: NewPatientForm): {
+  match: DuplicateMatch | null;
+  checking: boolean;
+} {
   const [debouncedForm, setDebouncedForm] = useState(form);
   const [result, setResult] = useState<DuplicateMatch | null>(null);
+  const [checking, setChecking] = useState(false);
 
   // Debounce form changes
   useEffect(() => {
@@ -323,10 +332,12 @@ export function useCheckDuplicate(form: NewPatientForm) {
 
     if (!kp && !hosp) {
       setResult(null);
+      setChecking(false);
       return;
     }
 
     let cancelled = false;
+    setChecking(true);
     (async () => {
       // HIGH-2: bandingkan dalam bentuk kanonik (sama seperti simpanan) —
       // jika tidak, varian format (mentah vs bersempang, huruf kecil)
@@ -334,7 +345,10 @@ export function useCheckDuplicate(form: NewPatientForm) {
       const kpNorm = kp ? formatMyKad(digitsOnly(kp)) : "";
       const hospNorm = hosp ? hosp.trim().toUpperCase() : "";
       if (!kpNorm && !hospNorm) {
-        if (!cancelled) setResult(null);
+        if (!cancelled) {
+          setResult(null);
+          setChecking(false);
+        }
         return;
       }
       const orParts: string[] = [];
@@ -352,6 +366,7 @@ export function useCheckDuplicate(form: NewPatientForm) {
       if (error) {
         // eslint-disable-next-line no-console
         console.warn("Duplicate check error:", error);
+        setChecking(false);
         return;
       }
       if (data) {
@@ -378,8 +393,10 @@ export function useCheckDuplicate(form: NewPatientForm) {
           isInactive: !p.aktif,
           primary,
         });
+        setChecking(false);
       } else {
         setResult(null);
+        setChecking(false);
       }
     })();
 
@@ -388,5 +405,11 @@ export function useCheckDuplicate(form: NewPatientForm) {
     };
   }, [debouncedForm.nombor_kad_pengenalan, debouncedForm.nombor_pendaftaran_hospital]);
 
-  return result;
+  // Sementara debounce belum mengejar input mentah, anggap semakan belum
+  // selesai supaya penghantar tidak boleh memintasnya.
+  const rawKey = `${form.nombor_kad_pengenalan.trim()}|${form.nombor_pendaftaran_hospital.trim()}`;
+  const debouncedKey = `${debouncedForm.nombor_kad_pengenalan.trim()}|${debouncedForm.nombor_pendaftaran_hospital.trim()}`;
+  const pending = rawKey !== debouncedKey && rawKey !== "|";
+
+  return { match: result, checking: checking || pending };
 }

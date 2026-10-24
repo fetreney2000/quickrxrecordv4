@@ -75,13 +75,13 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
       setForm(EMPTY_NEW_PATIENT);
     },
   });
-  const duplicate = useCheckDuplicate(form);
+  const { match: duplicate, checking: duplicateChecking } = useCheckDuplicate(form);
 
-  // Reset form on close
+  // Mulakan borang kosong setiap kali dialog dibuka — elak data basi
+  // daripada sesi sebelumnya. Reset semasa buka (bukan semasa tutup)
+  // supaya animasi tutup tidak berkelip.
   useEffect(() => {
-    if (!open) {
-      // Jangan reset semasa animation keluar — biar useEffect onSuccess kendalikan
-    }
+    if (open) setForm(EMPTY_NEW_PATIENT);
   }, [open]);
 
   const updateField = <K extends keyof NewPatientForm>(
@@ -126,6 +126,10 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    if (duplicateChecking) {
+      toast.error("Sedang menyemak rekod pendua. Sila tunggu sebentar.");
+      return;
+    }
     if (!form.nama.trim()) {
       toast.error("Nama pesakit diperlukan.");
       return;
@@ -142,7 +146,7 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
   };
 
   const isValid =
-    form.nama.trim().length > 0 && !kpError && !phoneError;
+    form.nama.trim().length > 0 && !kpError && !phoneError && !duplicateChecking;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -192,7 +196,7 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
                   "0 0 0 3px rgba(24,119,242,0.1)";
               }}
               onBlurCapture={(e) => {
-                e.currentTarget.style.borderColor = "#dddfe2";
+                e.currentTarget.style.borderColor = "var(--border)";
                 e.currentTarget.style.boxShadow = "none";
               }}
             />
@@ -311,6 +315,18 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
               rows={2}
             />
           </div>
+
+          {/* Penunjuk semakan pendua sedang berjalan */}
+          {duplicateChecking && !duplicate && (
+            <div
+              className="flex items-center gap-2 px-1 text-xs"
+              role="status"
+              style={{ color: "var(--text-muted)" }}
+            >
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Menyemak rekod pendua...
+            </div>
+          )}
 
           {/* Duplicate warning */}
           {duplicate && (

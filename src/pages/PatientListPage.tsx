@@ -62,9 +62,11 @@ export default function PatientListPage() {
   const [openAdd, setOpenAdd] = useState(false);
   const [activeTab, setActiveTab] = useState<"aktif" | "dinyahaktif">("aktif");
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRefAktif = useRef<HTMLInputElement>(null);
+  const searchInputRefDinyahaktif = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    if (initialQuery) searchInputRef.current?.focus();
+    if (initialQuery) searchInputRefAktif.current?.focus();
+    setBreadcrumbTrail([HOME_CRUMB, { label: "Senarai Pesakit" }]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
@@ -72,7 +74,6 @@ export default function PatientListPage() {
     debounceTimer.current = setTimeout(() => {
       setDebouncedSearch(search);
       setPage(0);
-      setBreadcrumbTrail([HOME_CRUMB, { label: "Senarai Pesakit" }]);
     }, SEARCH_DEBOUNCE_MS);
     return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
   }, [search]);
@@ -103,10 +104,26 @@ export default function PatientListPage() {
 
   const pageButtons = useMemo(() => {
     const buttons: (number | "...")[] = [];
-    if (totalPages <= 7) { for (let i = 1; i <= totalPages; i++) buttons.push(i); }
-    else if (page < 3) { for (let i = 1; i <= 7; i++) buttons.push(i); }
-    else if (page > totalPages - 4) { for (let i = totalPages - 6; i <= totalPages; i++) buttons.push(i); }
-    else { buttons.push(1); buttons.push("..."); for (let i = page - 1; i <= page + 3; i++) buttons.push(i); buttons.push("..."); buttons.push(totalPages); }
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) buttons.push(i);
+    } else if (page < 3) {
+      // Awal: 1–5 + ... + akhir (lompat terus ke halaman akhir)
+      for (let i = 1; i <= 5; i++) buttons.push(i);
+      buttons.push("...");
+      buttons.push(totalPages);
+    } else if (page > totalPages - 4) {
+      // Hujung: awal + ... + 5 terakhir (lompat terus ke halaman pertama)
+      buttons.push(1);
+      buttons.push("...");
+      for (let i = totalPages - 4; i <= totalPages; i++) buttons.push(i);
+    } else {
+      // Tengah: awal + ... + 3 sekitar semasa + ... + akhir
+      buttons.push(1);
+      buttons.push("...");
+      for (let i = page; i <= page + 2; i++) buttons.push(i);
+      buttons.push("...");
+      buttons.push(totalPages);
+    }
     return buttons;
   }, [page, totalPages]);
 
@@ -160,7 +177,7 @@ export default function PatientListPage() {
             searchFocused={searchFocused}
             setSearch={setSearch}
             setSearchFocused={setSearchFocused}
-            searchInputRef={searchInputRef}
+            searchInputRef={searchInputRefAktif}
             setPage={setPage}
             setPageSize={setPageSize}
             toggleSort={toggleSort}
@@ -186,7 +203,7 @@ export default function PatientListPage() {
             searchFocused={searchFocused}
             setSearch={setSearch}
             setSearchFocused={setSearchFocused}
-            searchInputRef={searchInputRef}
+            searchInputRef={searchInputRefDinyahaktif}
             setPage={setPage}
             setPageSize={setPageSize}
             toggleSort={toggleSort}
@@ -330,7 +347,7 @@ function PatientListContent({
           </>
         )}
       </div>
-      {!isLoading && totalPages > 1 && (
+      {!isLoading && total > 0 && (
         <div className="px-3 py-3 sm:px-4 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ borderColor: "var(--border-light)" }}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Halaman {page + 1} daripada {totalPages} ({total.toLocaleString("ms-MY")} pesakit)</p>
@@ -343,6 +360,7 @@ function PatientListContent({
               </select>
             </div>
           </div>
+          {totalPages > 1 && (
           <div className="flex items-center justify-end gap-1">
             <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))} title="Halaman sebelumnya" className="h-11 w-11 p-0 sm:h-8 sm:w-auto sm:px-2" style={{ opacity: page === 0 ? 0.4 : 1, cursor: page === 0 ? "default" : "pointer" }}><ChevronLeft className="w-3.5 h-3.5" /></Button>
             {pageButtons.map((b, i) => b === "..." ? <span key={`dots-${i}`} className="px-1.5 text-xs" style={{ color: "var(--text-muted)" }}>…</span> : (
@@ -350,6 +368,7 @@ function PatientListContent({
             ))}
             <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} title="Halaman seterusnya" className="h-11 w-11 p-0 sm:h-8 sm:w-auto sm:px-2" style={{ opacity: page >= totalPages - 1 ? 0.4 : 1, cursor: page >= totalPages - 1 ? "default" : "pointer" }}><ChevronRight className="w-3.5 h-3.5" /></Button>
           </div>
+          )}
         </div>
       )}
     </div>
@@ -367,6 +386,7 @@ function DeactivatedPatientRow({ patient, index, onClick }: { patient: Patient &
         onClick={onClick}
         role="button"
         tabIndex={0}
+        aria-label={`Lihat butiran ${patient.nama}`}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
         className="hidden sm:grid px-4 py-2.5 items-center cursor-pointer transition-colors hover:bg-[rgba(217,119,6,0.05)]"
         style={{ gridTemplateColumns: "3fr 3fr 3fr 2fr 2fr", gap: 12, borderBottom: "1px solid var(--border-light)" }}
@@ -396,6 +416,7 @@ function DeactivatedPatientRow({ patient, index, onClick }: { patient: Patient &
         onClick={onClick}
         role="button"
         tabIndex={0}
+        aria-label={`Lihat butiran ${patient.nama}`}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
         className="sm:hidden flex items-center gap-3 px-4 py-3 cursor-pointer border-b border-[#f0f2f5] transition-colors hover:bg-[rgba(217,119,6,0.05)]"
       >

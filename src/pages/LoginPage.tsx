@@ -20,6 +20,8 @@ export default function LoginPage() {
   const [kataLaluan, setKataLaluan] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  // LOW-3: ralat sebaris kekal untuk pembaca skrin (selain toast sementara).
+  const [formError, setFormError] = useState<string | null>(null);
   const [focusedField, setFocusedField] = useState<"username" | "password" | null>(
     null
   );
@@ -33,16 +35,23 @@ export default function LoginPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!namaPengguna.trim() || !kataLaluan) {
-      toast.error("Sila isi nama pengguna dan kata laluan.");
+      const msg = "Sila isi nama pengguna dan kata laluan.";
+      setFormError(msg);
+      toast.error(msg);
       return;
     }
+    setFormError(null);
     setLoading(true);
     const { error } = await signIn(namaPengguna.trim(), kataLaluan);
     setLoading(false);
     if (error) {
+      // LOW-2: jangan simpan kata laluan yang gagal (komputer kongsi klinik).
+      setKataLaluan("");
+      setFormError(error);
       toast.error(error);
       return;
     }
+    setFormError(null);
     toast.success("Log masuk berjaya!");
     navigate("/", { replace: true });
   };
@@ -193,7 +202,13 @@ export default function LoginPage() {
                 id="username"
                 type="text"
                 value={namaPengguna}
-                onChange={(e) => setNamaPengguna(e.target.value)}
+                maxLength={64}
+                aria-invalid={!!formError}
+                aria-describedby={formError ? "login-error" : undefined}
+                onChange={(e) => {
+                  setNamaPengguna(e.target.value);
+                  if (formError) setFormError(null);
+                }}
                 onFocus={() => setFocusedField("username")}
                 onBlur={() => setFocusedField(null)}
                 placeholder="Masukkan nama pengguna"
@@ -237,7 +252,13 @@ export default function LoginPage() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   value={kataLaluan}
-                  onChange={(e) => setKataLaluan(e.target.value)}
+                  maxLength={128}
+                  aria-invalid={!!formError}
+                  aria-describedby={formError ? "login-error" : undefined}
+                  onChange={(e) => {
+                    setKataLaluan(e.target.value);
+                    if (formError) setFormError(null);
+                  }}
                   onFocus={() => setFocusedField("password")}
                   onBlur={() => setFocusedField(null)}
                   placeholder="Masukkan kata laluan"
@@ -280,6 +301,18 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
+
+            {/* Ralat sebaris kekal untuk pembaca skrin */}
+            {formError && (
+              <p
+                id="login-error"
+                role="alert"
+                className="text-sm font-medium"
+                style={{ color: "#f87171" }}
+              >
+                {formError}
+              </p>
+            )}
 
             {/* Submit button */}
             <div>

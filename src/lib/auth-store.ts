@@ -102,7 +102,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       refreshProfile: async () => {
-        const { profile, token } = get();
+        const { profile, token, setProfile, setToken, setSbToken } = get();
         if (!profile) return;
         try {
           // Cuba API session dahulu (lebih terkini) — cookie dihantar
@@ -122,6 +122,14 @@ export const useAuthStore = create<AuthState>()(
               });
               return;
             }
+            // LOW-4: pelayan mengesahkan sesi MATI (cth. kata laluan ditukar
+            // di tempat lain, akaun dinyahaktifkan) — jangan kekalkan profil
+            // basi yang hanya menghasilkan ralat RLS misteri. Keluar bersih.
+            // (Ralat rangkaian / bukan-200 kekal senyap di bawah.)
+            setProfile(null);
+            setToken(null);
+            setSbToken(null);
+            return;
           }
           // Fallback ke Supabase langsung (lajur eksplisit — hash tidak boleh
           // dipilih klien selepas sekatan lajur 039)

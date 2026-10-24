@@ -399,13 +399,27 @@ export default function ManagementPage() {
       requestId,
       status,
       userId,
+      requestedAt,
     }: {
       requestId: string;
       status: "approved" | "rejected";
       userId: string;
+      /** ISO masa permintaan — untuk semakan luput (MEDIUM-1 reset). */
+      requestedAt?: string | null;
     }) => {
       if (!profile?.id) {
         throw new Error("Sesi tamat tempoh. Sila log masuk semula.");
+      }
+      // MEDIUM-1 (audit reset): permintaan luput selepas 7 hari — keperluan
+      // mungkin sudah tiada (pengguna ingat semula / bertukar). Tolak
+      // kelulusan lapuk; penolakan untuk kemas fail kekal dibenarkan.
+      if (status === "approved" && requestedAt) {
+        const ageMs = Date.now() - new Date(requestedAt).getTime();
+        if (!Number.isNaN(ageMs) && ageMs > 7 * 24 * 60 * 60 * 1000) {
+          throw new Error(
+            "Permintaan ini telah luput (lebih 7 hari). Minta pengguna menghantar permintaan baharu."
+          );
+        }
       }
       // MEDIUM-2: reset DAHULU, tandakan diluluskan KEMUDIAN. Susunan lama
       // menanda "approved" dahulu — jika reset gagal, permintaan kekal
@@ -819,6 +833,26 @@ export default function ManagementPage() {
                         <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
                           @{req.profiles?.nama_pengguna ?? "—"} ·{" "}
                           {formatDateTime(req.requested_at)}
+                          {(() => {
+                            const ageMs =
+                              Date.now() - new Date(req.requested_at).getTime();
+                            if (req.status !== "pending" || Number.isNaN(ageMs)) return null;
+                            const days = Math.floor(ageMs / 86400000);
+                            const stale = ageMs > 7 * 86400000;
+                            return (
+                              <span
+                                className="ml-1 inline-block rounded-full px-2 py-0.5 text-2xs font-semibold"
+                                style={
+                                  stale
+                                    ? { background: "rgba(220,38,38,0.10)", color: "#b91c1b" }
+                                    : { background: "rgba(107,114,128,0.12)", color: "#4b5563" }
+                                }
+                                title={stale ? "Melebihi 7 hari — minta pengguna hantar semula" : undefined}
+                              >
+                                {stale ? "TELAH LUPUT" : days <= 0 ? "Hari ini" : `${days} hari lalu`}
+                              </span>
+                            );
+                          })()}
                         </p>
                       </div>
                     </div>
@@ -847,6 +881,7 @@ export default function ManagementPage() {
                                 requestId: req.id,
                                 status: "approved",
                                 userId: req.user_id,
+                                requestedAt: req.requested_at,
                               })
                             }
                             disabled={resolveRequestMutation.isPending}
@@ -864,6 +899,7 @@ export default function ManagementPage() {
                                 requestId: req.id,
                                 status: "rejected",
                                 userId: req.user_id,
+                                requestedAt: req.requested_at,
                               })
                             }
                             disabled={resolveRequestMutation.isPending}

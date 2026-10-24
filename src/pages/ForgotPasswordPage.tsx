@@ -105,12 +105,18 @@ export default function ForgotPasswordPage() {
           >
             Lupa Kata Laluan?
           </h2>
-          <p
-            className="text-sm"
-            style={{ color: "rgba(255,255,255,0.45)" }}
-          >
-            Masukkan nama pengguna anda. Permintaan akan dihantar kepada pentadbir.
-          </p>
+              <p
+                className="text-sm"
+                style={{ color: "rgba(255,255,255,0.45)" }}
+              >
+                Masukkan nama pengguna anda. Permintaan akan dihantar kepada pentadbir.
+              </p>
+              <p
+                className="text-xs"
+                style={{ color: "rgba(255,255,255,0.3)" }}
+              >
+                Nota: nama pengguna adalah peka huruf besar/kecil — sama seperti semasa log masuk.
+              </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -126,11 +132,12 @@ export default function ForgotPasswordPage() {
               />
               Nama Pengguna
             </label>
-            <input
-              id="username"
-              type="text"
-              value={namaPengguna}
-              onChange={(e) => setNamaPengguna(e.target.value)}
+              <input
+                id="username"
+                type="text"
+                value={namaPengguna}
+                maxLength={64}
+                onChange={(e) => setNamaPengguna(e.target.value)}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
               placeholder="Masukkan nama pengguna"

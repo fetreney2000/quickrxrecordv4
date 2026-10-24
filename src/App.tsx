@@ -7,7 +7,7 @@ import {
   useRouteError,
 } from "react-router-dom";
 import { QueryProvider } from "@/lib/query-provider";
-import { hydrateAuth } from "@/lib/auth-store";
+import { hydrateAuth, useAuthStore } from "@/lib/auth-store";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { hasPermission } from "@/lib/permissions";
@@ -219,6 +219,25 @@ function App() {
   // Hydrate auth on mount
   useEffect(() => {
     hydrateAuth();
+  }, []);
+
+  // LOW-4: semakan hayat sesi berkala — jika kata laluan ditukar di tempat
+  // lain / akaun dinyahaktifkan, refreshProfile kini membersihkan sesi mati
+  // (cth. kembali ke tab selepas semalaman) dan RequireAuth menghantar ke
+  // log masuk dengan mesej yang jelas, bukan ralat RLS misteri.
+  useEffect(() => {
+    const check = () => {
+      if (useAuthStore.getState().profile) {
+        void useAuthStore.getState().refreshProfile();
+      }
+    };
+    const onFocus = () => check();
+    window.addEventListener("focus", onFocus);
+    const timer = setInterval(check, 5 * 60 * 1000);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      clearInterval(timer);
+    };
   }, []);
 
   return (

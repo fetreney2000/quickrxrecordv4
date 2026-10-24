@@ -316,15 +316,20 @@ export function BatchRow({
                   </button>
                 </>
               )}
-              <button
-                onClick={() => onDispose(batch)}
-                className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-red-50 transition-colors"
-                style={{ color: "#dc2626" }}
-                aria-label="Pelupusan"
-                title="Lupuskan kelompok"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+              {/* LOW-2: tiada apa untuk dilupuskan pada kuantiti 0 — pelupusan
+                  akan gagal di CHECK pelayan. Sorok butang dan bukannya
+                  menawarkan jalan mati. */}
+              {batch.kuantiti > 0 && (
+                <button
+                  onClick={() => onDispose(batch)}
+                  className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-red-50 transition-colors"
+                  style={{ color: "#dc2626" }}
+                  aria-label="Pelupusan"
+                  title="Lupuskan kelompok"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
             </>
           )}
           {editingInfo && (
@@ -529,14 +534,16 @@ export function BatchRow({
                         </button>
                       </>
                     )}
-                    <button
-                      onClick={() => onDispose(batch)}
-                      className="w-11 h-11 flex items-center justify-center rounded-md hover:bg-red-50 transition-colors"
-                      style={{ color: "#dc2626", background: "rgba(220,38,38,0.10)" }}
-                      title="Lupuskan kelompok"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {batch.kuantiti > 0 && (
+                      <button
+                        onClick={() => onDispose(batch)}
+                        className="w-11 h-11 flex items-center justify-center rounded-md hover:bg-red-50 transition-colors"
+                        style={{ color: "#dc2626", background: "rgba(220,38,38,0.10)" }}
+                        title="Lupuskan kelompok"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 )}
               </>

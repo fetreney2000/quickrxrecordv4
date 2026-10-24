@@ -237,9 +237,28 @@ SELECT '7s. REG_BY' AS bahagian,
 -- 7t. Kuota tidak negatif (053): lantai integriti untuk had pesakit.
 SELECT '7t. QUOTA_FLOOR' AS bahagian,
   CASE WHEN EXISTS (
-    SELECT 1 FROM pg_constraint
-    WHERE conname = 'items_kuota_nonnegatif'
+    SELECT 1 FROM pg_constraint WHERE conname = 'items_kuota_nonnegatif'
   ) THEN 'OK' ELSE 'FAIL: jalankan 053_item_kuota_check.sql' END AS status;
+
+-- 7u. Indeks trigram carian (055): padanan '%…%' berskala tanpa imbasan penuh.
+SELECT '7u. TRGM' AS bahagian,
+  CASE WHEN EXISTS (
+    SELECT 1 FROM pg_extension WHERE extname = 'pg_trgm'
+  ) AND (
+    SELECT COUNT(*) FROM pg_indexes
+    WHERE schemaname = 'public' AND tablename = 'items'
+      AND indexname LIKE 'ix_items_%_trgm'
+  ) = 4 THEN 'OK' ELSE 'FAIL: jalankan 055_search_trgm_indexes.sql' END AS status;
+
+-- 7v. Sebab pelarasan/pelupusan wajib (056): jurnal tanpa sebab ditolak.
+SELECT '7v. REASON_REQ' AS bahagian,
+  CASE WHEN (
+    SELECT COUNT(*) FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname IN ('record_batch_adjustment','process_batch_disposal')
+      AND p.prosrc LIKE '%Sebab pel%'
+  ) = 2 THEN 'OK' ELSE 'FAIL: jalankan 056_batch_reason_required.sql' END AS status;
 
 -- ============================================================================
 -- 8. SEMAK KOLOM dose_history.dikemaskini_oleh

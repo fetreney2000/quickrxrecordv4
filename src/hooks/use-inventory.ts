@@ -136,7 +136,7 @@ export function useUpdateBatchQuantity(itemId: string | undefined) {
 
       const { error: updErr } = await supabase
         .from("item_batches")
-        .update({ kuantiti: data.newKuantiti })
+        .update({ kuantiti: data.newKuantiti, updated_at: getNowISOKL() })
         .eq("id", data.batchId)
         .eq("dilupuskan", false);
       if (updErr) throw updErr;
@@ -200,10 +200,12 @@ export function useItems({
       const sortKey = sort?.key ?? "nama_item";
       const sortDir = sort?.dir ?? "asc";
       const offset = page * pageSize;
+      // MEDIUM-1 (audit carian): lepaskan wildcard LIKE (selari dengan
+      // use-patients) — tanpa ini "%" memadankan hampir semua item.
       const { data: rpcData, error: rpcErr } = await supabase.rpc(
         "get_inventory_list",
         {
-          p_search: search.trim(),
+          p_search: escapeIlikeExact(search.trim()),
           p_sort_key: sortKey,
           p_sort_dir: sortDir,
           p_offset: offset,
@@ -256,11 +258,12 @@ export function useItems({
         )
         .eq("aktif", true);
 
-      // Search — istilah dibersihkan (PostgREST injection).
+      // Search — istilah dibersihkan (PostgREST injection); termasuk
+      // kekuatan (selari dengan get_inventory_list 054).
       if (search.trim()) {
         const term = escapeLikeTerm(search.trim());
         query = query.or(
-          `kod_item.ilike.%${term}%,nama_item.ilike.%${term}%,nama_dagangan.ilike.%${term}%`
+          `kod_item.ilike.%${term}%,nama_item.ilike.%${term}%,nama_dagangan.ilike.%${term}%,kekuatan.ilike.%${term}%`
         );
       }
 

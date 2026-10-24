@@ -334,8 +334,8 @@ export function BatchAdjustmentDialog({
             <textarea
               id="catatan"
               value={catatan}
+              maxLength={500}
               onChange={(e) => setCatatan(e.target.value)}
-              
               style={noteTextareaStyle}
               rows={3}
             />

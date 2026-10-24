@@ -275,6 +275,29 @@ SELECT '7w. LOOKUP_ADMIN' AS bahagian,
       AND policyname = 'wr_inventory'
   ) THEN 'OK' ELSE 'FAIL: jalankan 057_lookup_admin_only.sql' END AS status;
 
+-- 7x. Pentadbir terakhir dilindungi (059): nyahaktif/turunkan yang
+--     menghapuskan Pentadbir aktif terakhir ditolak (service_role kekal
+--     sebagai jalan kecemasan).
+SELECT '7x. LAST_ADMIN' AS bahagian,
+  CASE WHEN EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'profiles_protect_privileged'
+      AND p.prosrc LIKE '%sekurang-kurangnya seorang Pentadbir aktif%'
+  ) THEN 'OK' ELSE 'FAIL: jalankan 059_protect_last_admin.sql' END AS status;
+
+-- 7y. Jejak audit pentadbir (060): jadual append-only wujud dengan RLS
+--     Pentadbir-sahaja (baca+tulis) dan tiada laluan UPDATE/DELETE klien.
+SELECT '7y. AUDIT_LOG' AS bahagian,
+  CASE WHEN EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'admin_audit_log'
+  ) AND (
+    SELECT COUNT(*) FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'admin_audit_log'
+      AND policyname IN ('admin_audit_read','admin_audit_write')
+  ) = 2 THEN 'OK' ELSE 'FAIL: jalankan 060_admin_audit_log.sql' END AS status;
+
 -- ============================================================================
 -- 8. SEMAK KOLOM dose_history.dikemaskini_oleh
 -- ============================================================================

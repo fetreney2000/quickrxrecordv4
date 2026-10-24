@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useAuthStore } from "@/lib/auth-store";
 import { friendlyDbError } from "@/lib/db-errors";
 import { formatDateTime, getNowISOKL, toTitleCase } from "@/lib/utils";
+import { escapeIlikeExact } from "@/lib/postgrest";
 import { toast } from "sonner";
 
 // UI Components
@@ -62,6 +63,23 @@ interface ResetRequestWithProfile extends PasswordResetRequest {
   profiles: Pick<Profile, "id" | "nama" | "nama_pengguna"> | null;
 }
 
+interface AdminAuditRow {
+  id: string;
+  created_at: string;
+  action: string;
+  details: Record<string, unknown> | null;
+  actor: Pick<Profile, "id" | "nama" | "nama_pengguna"> | null;
+  target: Pick<Profile, "id" | "nama" | "nama_pengguna"> | null;
+}
+
+const AUDIT_ACTION_LABELS: Record<string, string> = {
+  cipta_pengguna: "Cipta pengguna",
+  kemas_kini_pengguna: "Kemaskini pengguna",
+  tukar_status_aktif: "Aktif / Nyahaktif",
+  reset_kata_laluan: "Reset kata laluan",
+  selesai_permintaan_reset: "Selesai permintaan reset",
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ManagementPage() {
@@ -98,6 +116,10 @@ export default function ManagementPage() {
     nama_pengguna: string;
   } | null>(null);
   const [userSearch, setUserSearch] = useState("");
+  // LOW-5: senarai pengguna kini berhalaman (20 sehalaman) dan bukannya
+  // memaparkan keseluruhan jadual sekaligus.
+  const USERS_PAGE_SIZE = 20;
+  const [userPage, setUserPage] = useState(0);
 
   // ── Queries ───────────────────────────────────────────────────────────────
   const { data: users = [], isLoading: usersLoading } = useQuery<Profile[]>({
@@ -129,6 +151,24 @@ export default function ManagementPage() {
       enabled: isAdmin,
     });
 
+  const { data: auditLog = [], isLoading: auditLoading } = useQuery<
+    AdminAuditRow[]
+  >({
+    queryKey: ["admin-audit-log"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("admin_audit_log")
+        .select(
+          "id, created_at, action, details, actor:profiles!admin_audit_log_actor_id_fkey(id, nama, nama_pengguna), target:profiles!admin_audit_log_target_user_id_fkey(id, nama, nama_pengguna)"
+        )
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return (data ?? []) as unknown as AdminAuditRow[];
+    },
+    enabled: isAdmin,
+  });
+
   // ── Derived Values ────────────────────────────────────────────────────────
   const filteredUsers = useMemo(() => {
     if (!userSearch.trim()) return users;
@@ -141,16 +181,64 @@ export default function ManagementPage() {
     );
   }, [users, userSearch]);
 
+  // LOW-5: senarai pengguna berhalaman (20 sehalaman) dan bukannya
+  // memaparkan keseluruhan jadual sekaligus.
+  const userTotalPages = Math.max(
+    1,
+    Math.ceil(filteredUsers.length / USERS_PAGE_SIZE)
+  );
+  const safeUserPage = Math.min(userPage, userTotalPages - 1);
+  const pagedUsers = useMemo(
+    () =>
+      filteredUsers.slice(
+        safeUserPage * USERS_PAGE_SIZE,
+        safeUserPage * USERS_PAGE_SIZE + USERS_PAGE_SIZE
+      ),
+    [filteredUsers, safeUserPage]
+  );
+
   const pendingCount = useMemo(
     () => resetRequests.filter((r) => r.status === "pending").length,
     [resetRequests]
   );
+
+  // HIGH-1: pengawal klien anti-kunci-keluar (pelayan 059 menguatkuasakan).
+  const isSelf = (id: string) => profile?.id === id;
+  const activeAdminCount = useMemo(
+    () => users.filter((u) => u.peranan === "Pentadbir" && u.aktif).length,
+    [users]
+  );
+  const isLastActiveAdmin = (u: { id: string; peranan: string; aktif: boolean }) =>
+    u.peranan === "Pentadbir" && u.aktif && activeAdminCount <= 1;
 
   // ── Mutations ─────────────────────────────────────────────────────────────
   // Semua endpoint /api/* yang dilindungi memerlukan Bearer token sesi.
   const authHeaders = {
     "Content-Type": "application/json",
     ...(sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {}),
+  };
+
+  // Jejak audit klien (060) — untuk mutasi langsung (kemas kini, tukar
+  // status, selesai permintaan). Laluan pelayan (/api/create-user,
+  // /api/reset-password) menulis sendiri melalui service_role.
+  // Best-effort: kegagalan log tidak menggagalkan operasi utama.
+  const logAdminAction = async (
+    action: string,
+    targetUserId: string,
+    details?: Record<string, unknown>
+  ) => {
+    if (!profile?.id) return;
+    try {
+      await supabase.from("admin_audit_log").insert({
+        actor_id: profile.id,
+        action,
+        target_user_id: targetUserId,
+        details: details ?? null,
+      });
+      queryClient.invalidateQueries({ queryKey: ["admin-audit-log"] });
+    } catch {
+      // Senyap — jejak audit tidak boleh menyekat operasi pentadbir.
+    }
   };
 
   const addUserMutation = useMutation({
@@ -167,9 +255,14 @@ export default function ManagementPage() {
       }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: { profile?: { id: string; nama_pengguna?: string } }) => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       toast.success("Pengguna berjaya ditambah");
+      if (data?.profile?.id) {
+        void logAdminAction("cipta_pengguna", data.profile.id, {
+          nama_pengguna: data.profile.nama_pengguna ?? null,
+        });
+      }
       setOpenAdd(false);
       setNewUser({
         nama: "",
@@ -192,6 +285,25 @@ export default function ManagementPage() {
       id: string;
       data: Partial<Profile>;
     }) => {
+      // LOW-5: semak pendua nama_pengguna dahulu (cipta ada 409; sunting
+      // sebelum ini membiarkan 23505 mentah bocor ke UI).
+      if (data.nama_pengguna?.trim()) {
+        const uname = data.nama_pengguna.trim();
+        const { data: clash, error: clashErr } = await supabase
+          .from("profiles")
+          .select("id")
+          .ilike("nama_pengguna", escapeIlikeExact(uname))
+          .neq("id", id)
+          .limit(1)
+          .maybeSingle();
+        if (clashErr) throw clashErr;
+        if (clash) {
+          throw new Error(
+            `Nama pengguna "${uname}" sudah digunakan. Sila pilih yang lain.`
+          );
+        }
+        data = { ...data, nama_pengguna: uname };
+      }
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -202,22 +314,25 @@ export default function ManagementPage() {
           updated_at: getNowISOKL(),
         })
         .eq("id", id);
-      if (error) throw error;
-
-      // If nama_pengguna changed, try to update auth user too
-      if (data.nama_pengguna) {
-        try {
-          await supabase.auth.admin.updateUserById(id, {
-            user_metadata: { nama_pengguna: data.nama_pengguna },
-          });
-        } catch {
-          // Auth update may fail with custom RLS — ignore silently
+      if (error) {
+        // Perlumbaan selit (dua suntingan serentak) — kekangan unik kekal
+        // sebagai penguatkuasa terakhir.
+        if ((error as { code?: string }).code === "23505") {
+          throw new Error("Nama pengguna sudah digunakan. Sila pilih yang lain.");
         }
+        throw error;
       }
+      // NOTA: tiada panggilan supabase.auth.admin di sini — aplikasi
+      // menggunakan JWT tersuai sendiri (/api/*), bukan Supabase Auth;
+      // panggilan admin memerlukan service_role dan tidak boleh berjaya
+      // dengan anon key klien (kod mati yang telah dibuang).
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       toast.success("Pengguna berjaya dikemaskini");
+      void logAdminAction("kemas_kini_pengguna", variables.id, {
+        medan: Object.keys(variables.data ?? {}),
+      });
       setEditId(null);
       setEditData({});
     },
@@ -241,6 +356,9 @@ export default function ManagementPage() {
           ? "Pengguna berjaya diaktifkan"
           : "Pengguna berjaya dinyahaktifkan"
       );
+      void logAdminAction("tukar_status_aktif", variables.id, {
+        aktif_baharu: variables.aktif,
+      });
       setConfirmToggle(null);
     },
     onError: (err: Error) => {
@@ -286,18 +404,14 @@ export default function ManagementPage() {
       status: "approved" | "rejected";
       userId: string;
     }) => {
-      // Update request status
-      const { error } = await supabase
-        .from("password_reset_requests")
-        .update({
-          status,
-          resolved_by: profile?.id,
-          resolved_at: getNowISOKL(),
-        })
-        .eq("id", requestId);
-      if (error) throw error;
-
-      // If approved, also reset the password
+      if (!profile?.id) {
+        throw new Error("Sesi tamat tempoh. Sila log masuk semula.");
+      }
+      // MEDIUM-2: reset DAHULU, tandakan diluluskan KEMUDIAN. Susunan lama
+      // menanda "approved" dahulu — jika reset gagal, permintaan kekal
+      // diluluskan sedangkan pengguna masih tidak boleh log masuk, tanpa
+      // jalan cuba-semula yang jelas (kekal "pending" + ralat dipaparkan).
+      let tempPassword: string | undefined;
       if (status === "approved") {
         const res = await fetch("/api/reset-password", {
           method: "POST",
@@ -309,15 +423,52 @@ export default function ManagementPage() {
           const err = await res.json();
           throw new Error(err.error || "Gagal reset kata laluan");
         }
+        // Jangan buang kata laluan sementara — pentadbir mesti
+        // menyampaikannya kepada pengguna (dipaparkan sekali sahaja).
+        const body = (await res.json().catch(() => ({}))) as {
+          tempPassword?: string;
+        };
+        tempPassword = body?.tempPassword;
       }
+      // Update request status (hanya selepas reset berjaya / penolakan).
+      // Syarat status='pending' menjadikan peralihan idempoten — dua
+      // pentadbir yang meluluskan serentak tidak memproses dua kali.
+      const { data: resolved, error } = await supabase
+        .from("password_reset_requests")
+        .update({
+          status,
+          resolved_by: profile.id,
+          resolved_at: getNowISOKL(),
+        })
+        .eq("id", requestId)
+        .eq("status", "pending")
+        .select("id");
+      if (error) throw error;
+      if (!resolved || resolved.length === 0) {
+        throw new Error(
+          "Permintaan ini telah diselesaikan oleh pentadbir lain. Muat semula senarai."
+        );
+      }
+      return { status, tempPassword };
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["reset-requests"] });
-      toast.success(
-        variables.status === "approved"
-          ? "Permintaan diluluskan dan kata laluan diset semula"
-          : "Permintaan ditolak"
-      );
+      void logAdminAction("selesai_permintaan_reset", variables.userId, {
+        request_id: variables.requestId,
+        keputusan: variables.status,
+      });
+      if (data?.status === "approved" && data?.tempPassword) {
+        toast.success(
+          `Diluluskan. Kata laluan sementara: ${data.tempPassword} — sila salin dan sampaikan kepada pengguna sekarang`,
+          { duration: 15000 }
+        );
+      } else {
+        toast.success(
+          data?.status === "approved"
+            ? "Permintaan diluluskan dan kata laluan diset semula"
+            : "Permintaan ditolak"
+        );
+      }
     },
     onError: (err: Error) => {
       toast.error(`Gagal: ${friendlyDbError(err, "Operasi tidak dibenarkan.")}`);
@@ -367,6 +518,22 @@ export default function ManagementPage() {
   };
 
   const handleSaveEdit = (userId: string) => {
+    const target = users.find((u) => u.id === userId);
+    const newRole = editData.peranan;
+    // Jangan benarkan penurunan peranan diri sendiri — minta pentadbir lain.
+    if (isSelf(userId) && newRole && newRole !== "Pentadbir") {
+      toast.error("Anda tidak boleh menurunkan peranan sendiri. Minta pentadbir lain melakukannya.");
+      return;
+    }
+    // Jangan hapuskan Pentadbir aktif terakhir (pelayan 059 penguatkuasa muktamad).
+    if (
+      target &&
+      isLastActiveAdmin(target) &&
+      newRole && newRole !== "Pentadbir"
+    ) {
+      toast.error("Tidak boleh menurunkan Pentadbir aktif terakhir. Lantik pentadbir baharu dahulu.");
+      return;
+    }
     updateUserMutation.mutate({
       id: userId,
       data: { ...editData, nama: toTitleCase(editData.nama) },
@@ -376,6 +543,20 @@ export default function ManagementPage() {
   const handleCancelEdit = () => {
     setEditId(null);
     setEditData({});
+  };
+
+  // HIGH-1: sekat nyahaktif diri sendiri dan Pentadbir aktif terakhir
+  // sebelum dialog pengesahan (pelayan 059 penguatkuasa muktamad).
+  const handleToggleRequest = (user: Profile) => {
+    if (isSelf(user.id) && user.aktif) {
+      toast.error("Anda tidak boleh menyahaktifkan akaun sendiri. Minta pentadbir lain melakukannya.");
+      return;
+    }
+    if (user.aktif && isLastActiveAdmin(user)) {
+      toast.error("Tidak boleh menyahaktifkan Pentadbir aktif terakhir. Lantik pentadbir baharu dahulu.");
+      return;
+    }
+    setConfirmToggle({ id: user.id, name: user.nama, newStatus: !user.aktif });
   };
 
   const toggleExpand = (userId: string) => {
@@ -452,6 +633,10 @@ export default function ManagementPage() {
             <BookOpen className="h-4 w-4" />
             Rujukan
           </TabsTrigger>
+          <TabsTrigger value="audit" className="min-h-11 flex-shrink-0 gap-2 sm:min-h-0">
+            <History className="h-4 w-4" />
+            Audit
+          </TabsTrigger>
         </TabsList>
 
         {/* ═══════════════════════════════════════════════════════════════════ */}
@@ -463,7 +648,10 @@ export default function ManagementPage() {
             <div className="p-4 border-b" style={{ borderColor: "var(--border-light)" }}>
               <Input
                 value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
+                onChange={(e) => {
+                  setUserSearch(e.target.value);
+                  setUserPage(0);
+                }}
                 className="max-w-sm"
               />
             </div>
@@ -481,7 +669,7 @@ export default function ManagementPage() {
                 Tiada pengguna didaftarkan.
               </div>
             ) : (
-              <div className="overflow-x-auto" role="region" aria-label="Jadual pengguna" tabIndex={0}>
+              <div className="overflow-x-auto" role="region" aria-label="Jadual pengguna — berhalaman" tabIndex={0}>
                 <table className="w-full min-w-[760px]">
                   <thead>
                     <tr>
@@ -503,7 +691,7 @@ export default function ManagementPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredUsers.map((user, idx) => (
+                    {pagedUsers.map((user, idx) => (
                       <UserRow
                         key={user.id}
                         user={user}
@@ -516,13 +704,9 @@ export default function ManagementPage() {
                         onSaveEdit={() => handleSaveEdit(user.id)}
                         onCancelEdit={handleCancelEdit}
                         onEditDataChange={setEditData}
-                        onToggleActive={() =>
-                          setConfirmToggle({
-                            id: user.id,
-                            name: user.nama,
-                            newStatus: !user.aktif,
-                          })
-                        }
+                        onToggleActive={() => handleToggleRequest(user)}
+                        isSelf={profile?.id === user.id}
+                        isLastAdmin={isLastActiveAdmin({ id: user.id, peranan: user.peranan, aktif: user.aktif })}
                         onResetPassword={() =>
                           setConfirmReset({
                             id: user.id,
@@ -534,6 +718,36 @@ export default function ManagementPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+            {userTotalPages > 1 && (
+              <div
+                className="flex items-center justify-between px-4 py-3"
+                style={{ borderTop: "1px solid var(--border-light)" }}
+              >
+                <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                  Halaman {safeUserPage + 1} / {userTotalPages} ({filteredUsers.length} pengguna)
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={safeUserPage === 0}
+                    onClick={() => setUserPage(safeUserPage - 1)}
+                    className="min-h-10"
+                  >
+                    Sebelum
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={safeUserPage >= userTotalPages - 1}
+                    onClick={() => setUserPage(safeUserPage + 1)}
+                    className="min-h-10"
+                  >
+                    Seterus
+                  </Button>
+                </div>
               </div>
             )}
           </Card>
@@ -677,6 +891,63 @@ export default function ManagementPage() {
             <LookupManager type="item_forms" />
             <LookupManager type="supply_durations" />
           </div>
+        </TabsContent>
+
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {/* TAB 4: Audit Log (060 — jejak tindakan pentadbir, 100 terkini)      */}
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        <TabsContent value="audit">
+          <Card className="overflow-hidden">
+            {auditLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+              </div>
+            ) : auditLog.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <History
+                  className="h-10 w-10 mb-3"
+                  style={{ color: "var(--text-secondary)" }}
+                />
+                <p className="text-sm font-medium">Tiada rekod audit.</p>
+                <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                  Tindakan pentadbir akan direkodkan di sini.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--border-light)" }}>
+                      <th className="text-left px-4 py-2.5 font-semibold" style={{ color: "var(--text-secondary)" }}>Masa</th>
+                      <th className="text-left px-4 py-2.5 font-semibold" style={{ color: "var(--text-secondary)" }}>Pelaku</th>
+                      <th className="text-left px-4 py-2.5 font-semibold" style={{ color: "var(--text-secondary)" }}>Tindakan</th>
+                      <th className="text-left px-4 py-2.5 font-semibold" style={{ color: "var(--text-secondary)" }}>Sasaran</th>
+                      <th className="text-left px-4 py-2.5 font-semibold" style={{ color: "var(--text-secondary)" }}>Butiran</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {auditLog.map((row) => (
+                      <tr key={row.id} style={{ borderBottom: "1px solid var(--border-light)" }}>
+                        <td className="px-4 py-2.5 whitespace-nowrap text-xs" style={{ color: "var(--text-secondary)" }}>
+                          {formatDateTime(row.created_at)}
+                        </td>
+                        <td className="px-4 py-2.5">{row.actor?.nama ?? "—"}</td>
+                        <td className="px-4 py-2.5">
+                          <Badge variant="secondary">
+                            {AUDIT_ACTION_LABELS[row.action] ?? row.action}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-2.5">{row.target?.nama ?? "—"}</td>
+                        <td className="px-4 py-2.5 text-xs font-mono" style={{ color: "var(--text-secondary)" }}>
+                          {row.details ? JSON.stringify(row.details) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
         </TabsContent>
       </Tabs>
 
@@ -990,6 +1261,10 @@ interface UserRowProps {
   onEditDataChange: (data: Partial<Profile>) => void;
   onToggleActive: () => void;
   onResetPassword: () => void;
+  /** HIGH-1: baris akaun sendiri — butang berbahaya dilumpuhkan. */
+  isSelf: boolean;
+  /** HIGH-1: Pentadbir aktif terakhir — nyahaktif disekat. */
+  isLastAdmin: boolean;
 }
 
 function UserRow({
@@ -1005,6 +1280,8 @@ function UserRow({
   onEditDataChange,
   onToggleActive,
   onResetPassword,
+  isSelf,
+  isLastAdmin,
 }: UserRowProps) {
   const isEditing = editId === user.id;
 
@@ -1151,13 +1428,15 @@ function UserRow({
                           <Label className="text-xs">Peranan</Label>
                           <select
                             value={editData.peranan || ""}
+                            disabled={isSelf}
+                            title={isSelf ? "Peranan sendiri tidak boleh diubah — minta pentadbir lain" : undefined}
                             onChange={(e) =>
                               onEditDataChange({
                                 ...editData,
                                 peranan: e.target.value as Profile["peranan"],
                               })
                             }
-                             className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm"
+                             className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm disabled:opacity-50"
                           >
                             <option value="Pentadbir">Pentadbir</option>
                             <option value="Penjaga Stor">Penjaga Stor</option>
@@ -1208,6 +1487,14 @@ function UserRow({
                           size="sm"
                           variant={user.aktif ? "destructive" : "default"}
                           className={`min-h-11 sm:min-h-0 ${!user.aktif ? "text-white" : ""}`}
+                          disabled={(isSelf || isLastAdmin) && user.aktif}
+                          title={
+                            isSelf && user.aktif
+                              ? "Akaun sendiri tidak boleh dinyahaktifkan — minta pentadbir lain"
+                              : isLastAdmin && user.aktif
+                                ? "Pentadbir aktif terakhir tidak boleh dinyahaktifkan"
+                                : undefined
+                          }
                           onClick={(e) => {
                             e.stopPropagation();
                             onToggleActive();

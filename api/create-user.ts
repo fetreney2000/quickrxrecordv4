@@ -143,6 +143,22 @@ export async function POST(request: Request): Promise<Response> {
       return json(500, { error: "Gagal mencipta pengguna." }, { origin });
     }
 
+    // Jejak audit (060, service_role — tidak boleh dipintas klien).
+    // Kegagalan log tidak menggagalkan penciptaan (catat sahaja).
+    try {
+      await supabase.from("admin_audit_log").insert({
+        actor_id: session.userId,
+        action: "cipta_pengguna",
+        target_user_id: (profile as { id: string }).id,
+        details: {
+          nama_pengguna,
+          peranan: (profile as { peranan?: string }).peranan ?? peranan ?? null,
+        },
+      });
+    } catch (auditErr) {
+      console.error("[api/create-user] audit log gagal:", auditErr);
+    }
+
     return json(201, { profile }, { origin });
   } catch (err) {
     console.error("[api/create-user]", err);

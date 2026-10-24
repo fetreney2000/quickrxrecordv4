@@ -131,6 +131,22 @@ export async function POST(request: Request): Promise<Response> {
       );
     }
 
+    // Jejak audit (060, service_role — tidak boleh dipintas klien).
+    // Kegagalan log tidak menggagalkan reset (catat sahaja). Kata laluan
+    // TIDAK direkodkan — hanya fakta bahawa reset berlaku.
+    try {
+      await supabase.from("admin_audit_log").insert({
+        actor_id: session.userId,
+        action: "reset_kata_laluan",
+        target_user_id: userId,
+        details: {
+          nama_pengguna: (target as { nama_pengguna?: string }).nama_pengguna ?? null,
+        },
+      });
+    } catch (auditErr) {
+      console.error("[api/reset-password] audit log gagal:", auditErr);
+    }
+
     return json(
       200,
       { profile: target, tempPassword: newPassword ? undefined : password },

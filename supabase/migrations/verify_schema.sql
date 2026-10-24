@@ -298,6 +298,15 @@ SELECT '7y. AUDIT_LOG' AS bahagian,
       AND policyname IN ('admin_audit_read','admin_audit_write')
   ) = 2 THEN 'OK' ELSE 'FAIL: jalankan 060_admin_audit_log.sql' END AS status;
 
+-- 7aa. Verdict stok-rendah papan pemuka (062): berdasarkan stok boleh dibekal.
+SELECT '7aa. DASHBOARD_LS' AS bahagian,
+  CASE WHEN EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'get_dashboard_stats'
+      AND p.prosrc LIKE '%dispensable_balance%'
+  ) THEN 'OK' ELSE 'FAIL: jalankan 062_dashboard_lowstock_expiry.sql' END AS status;
+
 -- 7z. Batas laporan (061): tahun mengikut Asia/Kuala_Lumpur; p_limit
 --     get_report_transactions dikapit 1..2000.
 SELECT '7z. RPT_BOUNDS' AS bahagian,

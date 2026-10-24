@@ -28,13 +28,17 @@ export const PERMISSIONS: Record<UserRole, PermissionAction[]> = {
     "view_patients",
     "manage_assignments",
   ],
+  // MEDIUM-1 (audit papan pemuka): baca sahaja stok — tulis kekal
+  // disekat (tiada manage_items/manage_batches). Kad "Item Ubatan" dan
+  // laluan /stok kini sepadan untuk peranan ini.
   "Kakitangan Farmasi": [
     "manage_patients",
     "manage_supply",
     "view_reports",
     "export_reports",
-    "view_items",
     "view_patients",
+    "view_items",
+    "merge_patients",
     "manage_assignments",
   ],
   "Kakitangan Klinik": ["view_items", "view_patients"],

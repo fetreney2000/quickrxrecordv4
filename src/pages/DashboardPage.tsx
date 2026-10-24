@@ -51,11 +51,15 @@ interface StatCardConfig {
 }
 
 const ALL_CARDS: StatCardConfig[] = [
+  // MEDIUM-2 (audit papan pemuka): setiap kad dipaparkan HANYA kepada peranan
+  // yang boleh membuka pautannya — /pesakit dan /stok terbuka kepada semua
+  // empat peranan; /laporan memerlukan view_reports (tiada Klinik).
+  // Kad yang dipaut ke laluan terkunci hanyalah jalan mati yang melantun.
   { key: "patients", title: "Pesakit Aktif", subtitle: "Jumlah pesakit dalam sistem", icon: Users, gradient: ["#2563eb", "#3b82f6"], roles: ["Pentadbir", "Penjaga Stor", "Kakitangan Farmasi", "Kakitangan Klinik"], getValue: (s) => s.totalPatients, href: "/pesakit" },
-  { key: "items", title: "Item Ubatan", subtitle: "Jumlah item dalam katalog", icon: Package, gradient: ["#059669", "#10b981"], roles: ["Pentadbir", "Penjaga Stor", "Kakitangan Farmasi"], getValue: (s) => s.totalItems, href: "/stok" },
-  { key: "supply", title: "Bekalan Hari Ini", subtitle: "Pembekalan yang dilakukan hari ini", icon: TrendingUp, gradient: ["#7c3aed", "#8b5cf6"], roles: ["Pentadbir", "Penjaga Stor", "Kakitangan Farmasi", "Kakitangan Klinik"], getValue: (s) => s.supplyToday, href: "/laporan?tab=transactions&date=today" },
-  { key: "expiry", title: "Akan Luput (30 Hari)", subtitle: "Kelompok yang akan tamat tempoh", icon: AlertTriangle, gradient: ["#ea580c", "#f97316"], roles: ["Pentadbir", "Penjaga Stor", "Kakitangan Farmasi", "Kakitangan Klinik"], getValue: (s) => s.expiringSoon, href: "/laporan?tab=expiry&days=30" },
-  { key: "stock", title: "Jumlah Stok", subtitle: "Unit stok tersedia", icon: Package, gradient: ["#0891b2", "#06b6d4"], roles: ["Pentadbir", "Penjaga Stor", "Kakitangan Klinik"], getValue: (s) => s.totalStock, href: "/stok" },
+  { key: "items", title: "Item Ubatan", subtitle: "Jumlah item dalam katalog", icon: Package, gradient: ["#059669", "#10b981"], roles: ["Pentadbir", "Penjaga Stor", "Kakitangan Farmasi", "Kakitangan Klinik"], getValue: (s) => s.totalItems, href: "/stok" },
+  { key: "supply", title: "Bekalan Hari Ini", subtitle: "Pembekalan yang dilakukan hari ini", icon: TrendingUp, gradient: ["#7c3aed", "#8b5cf6"], roles: ["Pentadbir", "Penjaga Stor", "Kakitangan Farmasi"], getValue: (s) => s.supplyToday, href: "/laporan?tab=transactions&date=today" },
+  { key: "expiry", title: "Akan Luput (30 Hari)", subtitle: "Kelompok yang akan tamat tempoh", icon: AlertTriangle, gradient: ["#ea580c", "#f97316"], roles: ["Pentadbir", "Penjaga Stor", "Kakitangan Farmasi"], getValue: (s) => s.expiringSoon, href: "/laporan?tab=expiry&days=30" },
+  { key: "stock", title: "Jumlah Stok", subtitle: "Unit stok tersedia", icon: Package, gradient: ["#0891b2", "#06b6d4"], roles: ["Pentadbir", "Penjaga Stor", "Kakitangan Farmasi", "Kakitangan Klinik"], getValue: (s) => s.totalStock, href: "/stok" },
   { key: "lowStock", title: "Stok Rendah", subtitle: "Item di bawah keperluan 4 minggu", icon: AlertTriangle, gradient: ["#dc2626", "#ef4444"], roles: ["Pentadbir", "Penjaga Stor", "Kakitangan Farmasi"], getValue: (s) => s.lowStockCount, href: "/laporan?tab=low-stock" },
 ];
 
@@ -98,8 +102,15 @@ export default function DashboardPage() {
     return { critical, warning, safe };
   }, [expiryBatches]);
 
-  const roleColors = ROLE_LABEL_COLORS[peranan];
-  const roleLabel = ROLE_LABELS[peranan] || peranan;
+  // LOW-4: jangan ranap pada peranan yang tidak dikenali (cth. enum DB
+  // dikembangkan tanpa mengemas kini peta ini, atau profil rosak) —
+  // paparkan lencana neutral dan teruskan.
+  const roleColors = ROLE_LABEL_COLORS[peranan] ?? {
+    bg: "rgba(107,114,128,0.08)",
+    text: "#6b7280",
+    border: "rgba(107,114,128,0.20)",
+  };
+  const roleLabel = ROLE_LABELS[peranan] || peranan || "Pengguna";
 
   return (
     <div className="relative space-y-4 sm:space-y-5">

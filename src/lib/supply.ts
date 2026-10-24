@@ -131,13 +131,21 @@ export async function runSupplyMulti(
     throw new Error("Sesi tamat tempoh. Sila log masuk semula.");
   }
   // ── 1. RPC atomik ───────────────────────────────────────────────────────
+  // PENTING: hantar array JS mentah (bukan JSON.stringify) — supabase-js
+  // mensirikannya sebagai tatasusunan JSONB. Stringifikasi berganda
+  // menghasilkan skalar JSON ('"[{...}]"'), dan jsonb_array_elements()
+  // di pelayan gagal dengan "cannot extract elements from a scalar".
+  // Kekunci juga dipetakan ke snake_case seperti yang dijangka RPC.
   const { data: rpcData, error: rpcError } = await supabase.rpc(
     "process_supply_multi",
     {
       p_assignment_id: data.assignmentId,
       p_dos: data.dos,
       p_tempoh_dibekal: data.tempoh,
-      p_allocations: JSON.stringify(data.allocations),
+      p_allocations: data.allocations.map((a) => ({
+        batch_id: a.batchId,
+        kuantiti: a.kuantiti,
+      })),
       p_kakitangan_pembekal: profileId,
       p_catatan_bekalan: data.catatan ?? null,
     }

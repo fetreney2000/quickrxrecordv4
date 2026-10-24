@@ -201,15 +201,16 @@ SELECT '7o. ASSIGN_GUARD' AS bahagian,
       AND trigger_name = 'trg_assignments_protect_status'
   ) THEN 'OK' ELSE 'FAIL: jalankan 049_assignment_status_guard.sql' END AS status;
 
--- 7p. Kuota dikuatkuasakan pelayan (041): penambahan melebihi kuota ditolak
---     walaupun dipintas UI.
+-- 7p. Kuota dikuatkuasakan pelayan (041) + kunci nasihat (058, bukan FOR UPDATE
+--     yang menyekat Farmasi di bawah RLS).
 SELECT '7p. QUOTA' AS bahagian,
   CASE WHEN EXISTS (
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public' AND p.proname = 'add_assignment_with_dose'
       AND p.prosrc LIKE '%Kuota item telah penuh%'
-  ) THEN 'OK' ELSE 'FAIL: jalankan 041_supply_patient_guards.sql' END AS status;
+      AND p.prosrc LIKE '%pg_advisory_xact_lock%'
+  ) THEN 'OK' ELSE 'FAIL: jalankan 058_assignment_advisory_lock.sql' END AS status;
 
 -- 7q. Padam klinikal Pentadbir sahaja (050): tiada DELETE senyap sejarah
 --     klinikal oleh sebarangan peranan.

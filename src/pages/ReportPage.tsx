@@ -26,6 +26,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { DateInput } from "@/components/ui/date-input";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/use-auth";
 import { addDaysToDateInput, formatDate, formatItemDisplay, formatTime, formatWithLiteralAMPM, getKLDayEndISO, getKLDayStartISO, getTodayStrKL } from "@/lib/utils";
 import { sanitizeExportValue } from "@/lib/postgrest";
 import { toast } from "sonner";
@@ -412,6 +413,10 @@ const MALAY_MONTHS = ["Januari", "Februari", "Mac", "April", "Mei", "Jun", "Jula
 export default function ReportPage() {
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabKey>("inventory");
+  // MEDIUM-1 (audit laporan): kebenaran export_reports sebelum ini tidak
+  // disemak di mana-mana — butang eksport kini memerlukan keizinan ini.
+  const { can } = useAuth();
+  const canExport = can("export_reports");
   const today = getTodayStrKL();
   const showTodayTransactions = searchParams.get("tab") === "transactions" && searchParams.get("date") === "today";
   const showExpiry = searchParams.get("tab") === "expiry";
@@ -571,15 +576,15 @@ export default function ReportPage() {
         throw rpcErr;
       }
 
-      // Fallback: RPC not yet deployed — legacy client-side queries
-      const expiryStart = getTodayStrKL();
-      const expiryEnd = addDaysToDateInput(expiryStart, expiryDays);
+      // Fallback: RPC not yet deployed — legacy client-side queries.
+      // LOW-4: sertakan kelompok yang TELAH luput (selari dengan RPC 042) —
+      // tab memaparkan "LUPUT N hari" untuk baki negatif.
+      const expiryEnd = addDaysToDateInput(getTodayStrKL(), expiryDays);
       const { data: batches, error: batchError } = await supabase
         .from("item_batches")
         .select("id, item_id, nombor_kelompok, tarikh_luput, kuantiti, dilupuskan")
         .eq("dilupuskan", false)
         .gt("kuantiti", 0)
-        .gte("tarikh_luput", expiryStart)
         .lte("tarikh_luput", expiryEnd)
         .order("tarikh_luput", { ascending: true });
       if (batchError) throw batchError;
@@ -635,7 +640,9 @@ export default function ReportPage() {
       const [itemsResult, usageResult] = await Promise.all([
         supabase
           .from("items")
-          .select("id, kod_item, nama_item, kekuatan, id_bentuk, item_batches(kuantiti, dilupuskan)")
+          // LOW-4: tarikh_luput diperlukan untuk mengecualikan kelompok luput
+          // daripada baki (selari dengan get_report_low_stock 042).
+          .select("id, kod_item, nama_item, kekuatan, id_bentuk, item_batches(kuantiti, tarikh_luput, dilupuskan)")
           .eq("aktif", true),
         supabase
           .from("supply_records")
@@ -661,12 +668,15 @@ export default function ReportPage() {
         (itemsResult.data ?? []).forEach((item: any) => { item.bentuk = formMap.get(item.id_bentuk) ?? null; });
       }
 
+      const todayStr = getTodayStrKL();
       return (itemsResult.data ?? [])
         .map((item: any) => {
           const usage12Weeks = usageByItem.get(item.id) ?? 0;
           const requiredFourWeeks = (usage12Weeks / 12) * 4;
+          // LOW-4: kelompok lupus tidak dikira (selari dengan RPC).
           const currentBalance = (item.item_batches ?? []).reduce(
-            (sum: number, batch: any) => sum + (batch.dilupuskan ? 0 : batch.kuantiti || 0),
+            (sum: number, batch: any) =>
+              sum + (!batch.dilupuskan && batch.tarikh_luput >= todayStr ? batch.kuantiti || 0 : 0),
             0
           );
           return { ...item, requiredFourWeeks, currentBalance };
@@ -1131,8 +1141,8 @@ const mapped = transactionsData.map((t) => ({
             <InventoryTab
               data={inventoryData}
               loading={inventoryLoading}
-              onExportExcel={handleExportInventoryExcel}
-              onExportPDF={handleExportInventoryPDF}
+              onExportExcel={canExport ? handleExportInventoryExcel : undefined}
+              onExportPDF={canExport ? handleExportInventoryPDF : undefined}
             />
           ) : activeTab === "transactions" ? (
               <TransactionsTab
@@ -1142,8 +1152,8 @@ const mapped = transactionsData.map((t) => ({
                 dateTo={dateTo}
                 onDateFromChange={setDateFrom}
                 onDateToChange={setDateTo}
-              onExportExcel={handleExportTransactionExcel}
-              onExportPDF={handleExportTransactionPDF}
+              onExportExcel={canExport ? handleExportTransactionExcel : undefined}
+              onExportPDF={canExport ? handleExportTransactionPDF : undefined}
             />
           ) : activeTab === "annual-usage" ? (
             <AnnualUsageTab
@@ -1154,13 +1164,13 @@ const mapped = transactionsData.map((t) => ({
               selectedYear={annualUsageYear}
               onItemChange={setAnnualUsageId}
               onYearChange={setAnnualUsageYear}
-              onExportExcel={handleExportAnnualUsageExcel}
-              onExportPDF={handleExportAnnualUsagePDF}
+              onExportExcel={canExport ? handleExportAnnualUsageExcel : undefined}
+              onExportPDF={canExport ? handleExportAnnualUsagePDF : undefined}
             />
           ) : activeTab === "expiry" ? (
-            <ExpiryTab data={expiryData} loading={expiryLoading} days={expiryDays} onDaysChange={setExpiryDays} onExportExcel={handleExportExpiryExcel} onExportPDF={handleExportExpiryPDF} />
+            <ExpiryTab data={expiryData} loading={expiryLoading} days={expiryDays} onDaysChange={setExpiryDays} onExportExcel={canExport ? handleExportExpiryExcel : undefined} onExportPDF={canExport ? handleExportExpiryPDF : undefined} />
           ) : (
-            <LowStockTab data={lowStockData} loading={lowStockLoading} onExportExcel={handleExportLowStockExcel} onExportPDF={handleExportLowStockPDF} />
+            <LowStockTab data={lowStockData} loading={lowStockLoading} onExportExcel={canExport ? handleExportLowStockExcel : undefined} onExportPDF={canExport ? handleExportLowStockPDF : undefined} />
           )}
         </div>
     </div>
@@ -1177,8 +1187,8 @@ function InventoryTab({
 }: {
   data: InventoryItem[] | undefined;
   loading: boolean;
-  onExportExcel: () => void;
-  onExportPDF: () => void;
+  onExportExcel?: () => void;
+  onExportPDF?: () => void;
 }) {
   return (
     <Card
@@ -1203,6 +1213,7 @@ function InventoryTab({
               Paras Stok Inventori
             </h2>
           </div>
+          {onExportExcel && onExportPDF && (
           <div className="flex items-center gap-2">
             <button
               onClick={onExportExcel}
@@ -1231,6 +1242,7 @@ function InventoryTab({
               PDF
             </button>
           </div>
+          )}
         </div>
 
         {/* Loading / Empty / Table */}
@@ -1568,8 +1580,8 @@ function TransactionsTab({
   dateTo: string;
   onDateFromChange: (value: string) => void;
   onDateToChange: (value: string) => void;
-  onExportExcel: () => void;
-  onExportPDF: () => void;
+  onExportExcel?: () => void;
+  onExportPDF?: () => void;
 }) {
   // Only display first 100 records, but all 500 are available for export
   const displayData = data?.slice(0, 100) ?? [];
@@ -1620,6 +1632,7 @@ function TransactionsTab({
               />
               </label>
             </div>
+            {onExportExcel && onExportPDF && (
             <div className="flex items-center gap-2">
               <button
               onClick={onExportExcel}
@@ -1648,6 +1661,7 @@ function TransactionsTab({
               PDF
               </button>
             </div>
+            )}
           </div>
         </div>
 

@@ -298,6 +298,21 @@ SELECT '7y. AUDIT_LOG' AS bahagian,
       AND policyname IN ('admin_audit_read','admin_audit_write')
   ) = 2 THEN 'OK' ELSE 'FAIL: jalankan 060_admin_audit_log.sql' END AS status;
 
+-- 7z. Batas laporan (061): tahun mengikut Asia/Kuala_Lumpur; p_limit
+--     get_report_transactions dikapit 1..2000.
+SELECT '7z. RPT_BOUNDS' AS bahagian,
+  CASE WHEN EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'get_annual_usage'
+      AND p.prosrc LIKE '%Asia/Kuala_Lumpur%'
+  ) AND EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'get_report_transactions'
+      AND p.prosrc LIKE '%LEAST(GREATEST(COALESCE(p_limit, 500), 1), 2000)%'
+  ) THEN 'OK' ELSE 'FAIL: jalankan 061_report_bounds.sql' END AS status;
+
 -- ============================================================================
 -- 8. SEMAK KOLOM dose_history.dikemaskini_oleh
 -- ============================================================================

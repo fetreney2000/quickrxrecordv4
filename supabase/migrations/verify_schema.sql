@@ -322,6 +322,28 @@ SELECT '7z. RPT_BOUNDS' AS bahagian,
       AND p.prosrc LIKE '%LEAST(GREATEST(COALESCE(p_limit, 500), 1), 2000)%'
   ) THEN 'OK' ELSE 'FAIL: jalankan 061_report_bounds.sql' END AS status;
 
+-- 7ab. Larangan bekalan luput (063): process_supply[_multi] menolak
+--     kelompok dengan tarikh_luput < CURRENT_DATE.
+SELECT '7ab. NO_EXPIRED_SUPPLY' AS bahagian,
+  CASE WHEN (
+    SELECT COUNT(*) FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname IN ('process_supply', 'process_supply_multi')
+      AND p.prosrc LIKE '%telah luput%'
+  ) = 2 THEN 'OK' ELSE 'FAIL: jalankan 063_supply_expiry_guard.sql' END AS status;
+
+-- 7ac. Atribusi perekod disahkan (064): identiti staf diambil dari JWT
+--     pemanggil (auth.uid()), bukan daripada parameter klien.
+SELECT '7ac. ACTOR_ATTRIBUTION' AS bahagian,
+  CASE WHEN (
+    SELECT COUNT(*) FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname IN ('process_supply', 'process_supply_multi', 'add_assignment_with_dose', 'update_dose_with_history')
+      AND p.prosrc LIKE '%COALESCE(auth.uid()%'
+  ) = 4 THEN 'OK' ELSE 'FAIL: jalankan 064_supply_actor_attribution.sql' END AS status;
+
 -- ============================================================================
 -- 8. SEMAK KOLOM dose_history.dikemaskini_oleh
 -- ============================================================================

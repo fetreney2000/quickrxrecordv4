@@ -333,7 +333,45 @@ export function useAddAssignmentInline(patientId: string | null) {
       if (!rpcErr) return { id: newId as string };
       if (!rpcErr.message?.includes("Could not find the function")) throw rpcErr;
 
-      // Fallback: RPC belum deployed — manual 2-step insert
+      // Fallback: RPC belum deployed — manual 2-step insert.
+      // Cerminkan pengawal pelayan 041/058 di sini (kuota, pesakit aktif /
+      // belum digabungkan, item aktif); jika tidak, laluan fallback akan
+      // mencipta senyap apa yang pelayan akan tolak.
+      const { data: patientRow, error: patientErr } = await supabase
+        .from("patients")
+        .select("id, aktif, merged_into")
+        .eq("id", patientId!)
+        .maybeSingle();
+      if (patientErr) throw patientErr;
+      if (!patientRow) throw new Error("Pesakit tidak dijumpai.");
+      if (!patientRow.aktif || patientRow.merged_into) {
+        throw new Error("Pesakit tidak aktif — tugasan baharu tidak dibenarkan.");
+      }
+
+      const { data: itemRow, error: itemErr } = await supabase
+        .from("items")
+        .select("id, kuota, aktif")
+        .eq("id", data.itemId)
+        .maybeSingle();
+      if (itemErr) throw itemErr;
+      if (!itemRow) throw new Error("Item tidak dijumpai.");
+      if (!itemRow.aktif) {
+        throw new Error("Item tidak aktif — tugasan baharu tidak dibenarkan.");
+      }
+      if (itemRow.kuota != null && itemRow.kuota > 0) {
+        const { count, error: countErr } = await supabase
+          .from("patient_item_assignments")
+          .select("id", { count: "exact", head: true })
+          .eq("item_id", data.itemId)
+          .eq("aktif", true);
+        if (countErr) throw countErr;
+        if ((count ?? 0) >= itemRow.kuota) {
+          throw new Error(
+            `Kuota item telah penuh (${count}/${itemRow.kuota}) — tamatkan tugasan sedia ada dahulu.`
+          );
+        }
+      }
+
       const today = getTodayStrKL();
       const { data: assignment, error: assignErr } = await supabase
         .from("patient_item_assignments")
@@ -352,7 +390,9 @@ export function useAddAssignmentInline(patientId: string | null) {
       if (assignErr) throw assignErr;
 
       if (assignment) {
-        await supabase.from("dose_history").insert({
+        // Jangan telan ralat dose_history senyap — imbau tugasan supaya
+        // tidak wujud tugasan tanpa rekod dos awal.
+        const { error: doseErr } = await supabase.from("dose_history").insert({
           assignment_id: assignment.id,
           tarikh: today,
           dos: data.dos,
@@ -360,6 +400,20 @@ export function useAddAssignmentInline(patientId: string | null) {
           catatan: "Bekalan kali pertama (Dispen Pantas)",
           dikemaskini_oleh: profile?.id ?? null,
         });
+        if (doseErr) {
+          const { error: delErr } = await supabase
+            .from("patient_item_assignments")
+            .delete()
+            .eq("id", assignment.id);
+          if (delErr) {
+            console.error(
+              "[useAddAssignmentInline] fallback: gagal imbau tugasan",
+              assignment.id,
+              delErr
+            );
+          }
+          throw doseErr;
+        }
       }
       return assignment;
     },

@@ -119,6 +119,19 @@ export default function QuickDispensePage() {
   const [batchAllocations, setBatchAllocations] = useState<Record<string, number>>({});
   const userEditedRef = useRef(false);
 
+  // Reset per-item allocation state when switching items. Without this,
+  // manually edited allocations (keyed by the previous item's batch IDs)
+  // linger into the new item: the batch list shows 0s while the total shows
+  // the stale sum, and submit stays disabled until the user fixes it by hand.
+  // (Server tetap menolak batch asing — ini isu UX, bukan integriti.)
+  const selectedItemKey = selectedItem
+    ? `${selectedItem.assignment_id ?? ""}:${selectedItem.item_id ?? ""}`
+    : null;
+  useEffect(() => {
+    setBatchAllocations({});
+    userEditedRef.current = false;
+  }, [selectedItemKey]);
+
   useEffect(() => {
     if (selectableBatches.length === 0 || !quantity || parseInt(quantity) <= 0) {
       setBatchAllocations({});

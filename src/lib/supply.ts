@@ -247,22 +247,27 @@ async function runManualFallback(
   const batchIds = [...new Set(data.allocations.map((a) => a.batchId))];
   const { data: batches, error: readErr } = await supabase
     .from("item_batches")
-    .select("id, kuantiti, dilupuskan")
+    .select("id, kuantiti, dilupuskan, tarikh_luput")
     .in("id", batchIds);
 
   if (readErr) throw readErr;
 
-  const batchMap = new Map<string, { kuantiti: number; dilupuskan: boolean }>();
+  const batchMap = new Map<string, { kuantiti: number; dilupuskan: boolean; tarikh_luput: string }>();
   for (const b of batches ?? []) {
-    batchMap.set(b.id, { kuantiti: b.kuantiti, dilupuskan: b.dilupuskan });
+    batchMap.set(b.id, { kuantiti: b.kuantiti, dilupuskan: b.dilupuskan, tarikh_luput: b.tarikh_luput });
   }
 
   // Jejaki baki sepanjang validasi (alokasi mungkin menyentuh kelompok sama)
   const remaining = new Map<string, number>();
+  // Tarikh hari ini (KL) — selari dengan penapis UI dan semakan pelayan 063.
+  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kuala_Lumpur" });
   for (const alloc of data.allocations) {
     const batch = batchMap.get(alloc.batchId);
     if (!batch) throw new Error("Kelompok tidak dijumpai.");
     if (batch.dilupuskan) throw new Error("Kelompok ini telah dilupuskan.");
+    if (batch.tarikh_luput && batch.tarikh_luput < todayStr) {
+      throw new Error(`Kelompok ${alloc.batchId} telah luput — bekalan dari kelompok luput tidak dibenarkan.`);
+    }
     const left = remaining.has(alloc.batchId)
       ? (remaining.get(alloc.batchId) as number)
       : batch.kuantiti;

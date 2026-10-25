@@ -531,3 +531,13 @@ select:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Dialog mudah alih memenuhi skrin kecil — dipindah dari PatientDetailPage
+   (#22: elak suntikan <style> inline setiap render + mesra CSP). */
+@media (max-width: 640px) {
+  [role="dialog"] {
+    max-width: calc(100vw - 24px) !important;
+    overflow-y: auto;
+    max-height: calc(100dvh - 24px);
+  }
+}

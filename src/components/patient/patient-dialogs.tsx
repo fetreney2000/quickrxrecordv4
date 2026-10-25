@@ -116,8 +116,9 @@ export function DeactivateDialog({
             </p>
           </div>
           <div>
-            <Label style={labelStyle}>Sebab Nyahaktif *</Label>
+            <Label style={labelStyle} htmlFor="deactivate-sebab">Sebab Nyahaktif *</Label>
             <Input
+              id="deactivate-sebab"
               value={catatan}
               onChange={(e) => setCatatan(e.target.value)}
               placeholder="Nyatakan sebab nyahaktifkan pesakit"
@@ -241,10 +242,11 @@ export function AddAssignmentDialog({
           className="space-y-3 mt-2 min-w-0 w-full"
         >
           <div className="min-w-0">
-            <Label style={labelStyle}>Cari Item</Label>
+            <Label style={labelStyle} htmlFor="assign-cari">Cari Item</Label>
             <div className="relative">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               <Input
+                id="assign-cari"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pr-9"
@@ -386,8 +388,9 @@ export function AddAssignmentDialog({
           )}
 
           <div className="min-w-0">
-            <Label style={labelStyle}>Dos *</Label>
+            <Label style={labelStyle} htmlFor="assign-dos">Dos *</Label>
             <Input
+              id="assign-dos"
               value={dos}
               onChange={(e) => setDos(e.target.value.toUpperCase())}
               required
@@ -396,8 +399,9 @@ export function AddAssignmentDialog({
           </div>
 
           <div>
-            <Label style={labelStyle}>Catatan</Label>
+            <Label style={labelStyle} htmlFor="assign-catatan">Catatan</Label>
             <Input
+              id="assign-catatan"
               value={catatan}
               onChange={(e) => setCatatan(e.target.value)}
               style={inputBaseStyle}
@@ -486,6 +490,10 @@ export function SupplyDialog({
   const tempoh = tempohNilai.trim()
     ? `${tempohNilai.trim()} ${tempohUnit}`.trim()
     : "";
+  // #11: tempoh mesti nombor positif jika diisi ("abc Hari" ditolak).
+  const tempohNilaiValid =
+    !tempohNilai.trim() ||
+    (Number.isFinite(Number(tempohNilai)) && Number(tempohNilai) > 0);
 
   // Auto-select default duration and reset on close
   useEffect(() => {
@@ -528,7 +536,9 @@ export function SupplyDialog({
     [selectableBatches]
   );
   const qty = parseInt(kuantiti, 10);
-  const qtyOutOfRange = Number.isNaN(qty) || qty <= 0 || totalAllocated < qty;
+  const qtyOutOfRange = Number.isNaN(qty) || qty <= 0 || totalAllocated !== qty;
+  // #21: tugasan legasi dos=null — sekat bekalan, arah kemaskini dos dahulu.
+  const dosMissing = !(assignment.dos ?? "").trim();
   const latestSupply = supplyHistory[0];
   const latestSupplyDays = latestSupply ? parseDurationDays(latestSupply.tempoh_dibekal) : null;
   const daysSinceSupply = latestSupply ? calendarDaysSince(latestSupply.tarikh_dibekal) : null;
@@ -608,19 +618,26 @@ export function SupplyDialog({
           className="space-y-3 mt-2"
         >
           <div>
-            <Label style={labelStyle}>Dos</Label>
+            <Label style={labelStyle} htmlFor="supply-dos">Dos</Label>
             <Input
+              id="supply-dos"
               value={assignment.dos ?? ""}
               readOnly
               style={{ ...inputBaseStyle, opacity: 0.6, cursor: "default" }}
             />
+            {dosMissing && (
+              <p className="text-2xs mt-1" style={{ color: "#dc2626" }}>
+                Tiada dos direkodkan — kemaskini dos dahulu sebelum membekal.
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
-              <Label style={labelStyle}>Tempoh</Label>
+              <Label style={labelStyle} htmlFor="supply-tempoh">Tempoh</Label>
               <div className="flex gap-1.5">
                 <Input
+                  id="supply-tempoh"
                   value={tempohNilai}
                   onChange={(e) => setTempohNilai(e.target.value)}
                   onFocus={(e) => e.target.select()}
@@ -644,10 +661,16 @@ export function SupplyDialog({
                   ))}
                 </select>
               </div>
+              {!tempohNilaiValid && (
+                <p className="text-2xs mt-1" style={{ color: "#dc2626" }}>
+                  Tempoh mesti nombor positif.
+                </p>
+              )}
             </div>
             <div>
-              <Label style={labelStyle}>Kuantiti *</Label>
+              <Label style={labelStyle} htmlFor="supply-kuantiti">Kuantiti *</Label>
               <Input
+                id="supply-kuantiti"
                 type="number"
                 min={1}
                 value={kuantiti}
@@ -697,6 +720,7 @@ export function SupplyDialog({
                       min={0}
                       max={b.kuantiti}
                       value={batchAllocations[b.id] ?? 0}
+                      aria-label={`Alokasi untuk kelompok ${b.nombor_kelompok ?? b.id}`}
                       onChange={(e) => {
                         userEditedRef.current = true;
                         const val = Math.max(0, Math.min(b.kuantiti, parseInt(e.target.value) || 0));
@@ -727,8 +751,9 @@ export function SupplyDialog({
           </div>
 
           <div>
-            <Label style={labelStyle}>Catatan</Label>
+            <Label style={labelStyle} htmlFor="supply-catatan">Catatan</Label>
             <Input
+              id="supply-catatan"
               value={catatan}
               onChange={(e) => setCatatan(e.target.value)}
               style={inputBaseStyle}
@@ -747,7 +772,7 @@ export function SupplyDialog({
           </Button>
           <Button
             onClick={() => {
-              if (qtyOutOfRange) return;
+              if (qtyOutOfRange || !tempohNilaiValid || dosMissing) return;
               onSubmit({
                 dos: assignment.dos ?? "",
                 kuantiti: qty,
@@ -758,7 +783,7 @@ export function SupplyDialog({
                 catatan: catatan.trim(),
               });
             }}
-            disabled={qtyOutOfRange || isPending}
+            disabled={qtyOutOfRange || !tempohNilaiValid || dosMissing || isPending}
             title="Bekalkan ubat"
           >
             {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
@@ -835,6 +860,14 @@ export function UpdateDoseDialog({
     }
   }, [open, currentDose]);
 
+  // #12: normalisasi sebelum banding — sekat dos identik (elak baris
+  // dose_history berlebihan). onChange sudah uppercase; trim di sini
+  // menutup tampal dengan ruang.
+  const normalizedDos = dos.trim().toUpperCase();
+  const normalizedCurrent = (currentDose ?? "").trim().toUpperCase();
+  const isSameDose =
+    normalizedDos.length > 0 && normalizedDos === normalizedCurrent;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -868,23 +901,30 @@ export function UpdateDoseDialog({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (!dos.trim()) return;
+            if (!dos.trim() || isSameDose) return;
             onSubmit({ dos: dos.trim(), catatan: catatan.trim() });
           }}
           className="space-y-3 mt-2"
         >
           <div>
-            <Label style={labelStyle}>Dos Baharu *</Label>
+            <Label style={labelStyle} htmlFor="dos-baru">Dos Baharu *</Label>
             <Input
+              id="dos-baru"
               value={dos}
               onChange={(e) => setDos(e.target.value.toUpperCase())}
               required
               style={inputBaseStyle}
             />
+            {isSameDose && (
+              <p className="text-2xs mt-1" style={{ color: "#dc2626" }}>
+                Dos baharu sama dengan dos semasa.
+              </p>
+            )}
           </div>
           <div className="min-w-0">
-            <Label style={labelStyle}>Catatan</Label>
+            <Label style={labelStyle} htmlFor="dos-catatan">Catatan</Label>
             <Input
+              id="dos-catatan"
               value={catatan}
               onChange={(e) => setCatatan(e.target.value)}
               style={inputBaseStyle}
@@ -903,10 +943,10 @@ export function UpdateDoseDialog({
           </Button>
           <Button
             onClick={() => {
-              if (!dos.trim()) return;
+              if (!dos.trim() || isSameDose) return;
               onSubmit({ dos: dos.trim(), catatan: catatan.trim() });
             }}
-            disabled={!dos.trim() || isPending}
+            disabled={!dos.trim() || isSameDose || isPending}
             title="Simpan dos baharu"
           >
             {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}

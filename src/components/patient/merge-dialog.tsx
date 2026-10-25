@@ -64,13 +64,20 @@ export function MergeDialog({ open, onOpenChange, primaryPatient }: MergeDialogP
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [step, setStep] = useState<"search" | "confirm">("search");
+  // #14: debounce carian — satu request selepas pengguna berhenti menaip,
+  // bukan satu request setiap keystroke.
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(searchQuery), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
   // LOW-3: cache pesakit yang pernah dipaparkan, supaya cip "Dipilih" dan
   // senarai pengesahan tidak hilang apabila pertanyaan carian berubah.
   const [patientCache, setPatientCache] = useState<
     Map<string, { id: string; nama: string; nombor_kad_pengenalan: string | null; nombor_pendaftaran_hospital: string | null; aktif: boolean }>
   >(new Map());
 
-  const { data: searchResults = [], isLoading: searching } = useSearchPatients(searchQuery);
+  const { data: searchResults = [], isLoading: searching } = useSearchPatients(debouncedQuery);
   const mergeMutation = useMergePatients();
 
   useEffect(() => {
@@ -336,6 +343,7 @@ export function MergeDialog({ open, onOpenChange, primaryPatient }: MergeDialogP
                               type="checkbox"
                               checked={isSelected}
                               onChange={() => toggleSelect(p.id)}
+                              onClick={(e) => e.stopPropagation()}
                               className="w-3.5 h-3.5"
                               style={{ accentColor: "#7c3aed" }}
                             />

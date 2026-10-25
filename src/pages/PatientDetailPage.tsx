@@ -31,6 +31,7 @@ import {
   formatDate,
   formatMyKad,
   formatPhone,
+  digitsOnly,
   getInitials,
   toTitleCase,
   myKadToDob,
@@ -74,6 +75,7 @@ import {
   DeleteSupplyDialog,
 } from "@/components/patient/patient-dialogs-extra";
 import { MergeDialog } from "@/components/patient/merge-dialog";
+import { toast } from "sonner";
 import type { Patient } from "@/types";
 
 const ASSIGNMENT_PAGE_SIZE = 50;
@@ -87,6 +89,12 @@ export default function PatientDetailPage() {
   const { can } = useAuth();
   const setNavSource = useNavStore((s) => s.setNavSource);
   const canEdit = can("manage_patients");
+  // #5: asingkan kebenaran mengikut domain — hari ini 3 peranan bukan-klinik
+  // memegang kesemuanya (neutral tingkah laku), tetapi pemisahan masa depan
+  // tidak akan bocor/terlebih sekat.
+  const canMerge = can("merge_patients"); // gabung rekod pendua
+  const canSupply = can("manage_supply"); // bekal / decline / sejarah bekalan
+  const canAssign = can("manage_assignments"); // tambah / stop / dos tugasan
   const [isMobile, setIsMobile] = useState(false);
 
   // Determine breadcrumb from URL params
@@ -94,20 +102,31 @@ export default function PatientDetailPage() {
   const itemName = searchParams.get("item");
   const itemId = searchParams.get("itemId");
 
-  useEffect(() => { setNavSource("list"); }, [setNavSource]);
+  useEffect(() => { setNavSource(from === "search" ? "search" : from === "item" ? "default" : "list"); }, [from, setNavSource]);
+  // #22: matchMedia menggantikan resize listener — tiada setState setiap
+  // piksel; pelayar mencetus hanya apabila breakpoint berubah.
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
+    const mq = window.matchMedia("(max-width: 768px)");
+    const apply = (e: { matches: boolean }) => setIsMobile(e.matches);
+    apply(mq);
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
   }, []);
 
   const { data: patient, isLoading, isError, refetch } = usePatient(id);
-  const { data: assignments = [] } = usePatientAssignments(id);
-  const { data: itemsStats } = useItemsWithStats();
+  // #15: dedahkan ralat query sokongan — sebelum ini gagal senyap dengan
+  // default [] dan UI papar "Tiada item" yang mengelirukan tanpa retry.
+  const { data: assignments = [], isError: assignmentsError, refetch: refetchAssignments } = usePatientAssignments(id);
+  const { data: itemsStats, isError: itemsError, refetch: refetchItems } = useItemsWithStats();
   const itemsWithStats = itemsStats?.items ?? [];
   const quotaCountsStale = itemsStats?.countsStale ?? true;
-  const { data: itemForms = [] } = useItemForms();
+  const { data: itemForms = [], isError: formsError, refetch: refetchForms } = useItemForms();
+  const supportError = assignmentsError || itemsError || formsError;
+  const retrySupport = () => {
+    if (assignmentsError) refetchAssignments();
+    if (itemsError) refetchItems();
+    if (formsError) refetchForms();
+  };
   const assignmentIds = useMemo(() => assignments.map((a) => a.id), [assignments]);
   const { data: latestSupplyDates } = useLatestSupplyDates(assignmentIds);
   const { data: latestDosMap } = useLatestDoseHistoryDos(assignmentIds);
@@ -154,6 +173,11 @@ export default function PatientDetailPage() {
   const sortedAssignments = useMemo(() => [...assignments].sort((a, b) => { if (a.aktif !== b.aktif) return a.aktif ? -1 : 1; return new Date(b.tarikh_mula_guna).getTime() - new Date(a.tarikh_mula_guna).getTime(); }), [assignments]);
   const pagedAssignments = useMemo(() => { const from = assignmentPage * ASSIGNMENT_PAGE_SIZE; return sortedAssignments.slice(from, from + ASSIGNMENT_PAGE_SIZE); }, [sortedAssignments, assignmentPage]);
   const assignmentTotalPages = Math.max(1, Math.ceil(sortedAssignments.length / ASSIGNMENT_PAGE_SIZE));
+  // #9: apit halaman bila senarai mengecil (cth selepas merge/invalidate) —
+  // elak "Halaman 3 daripada 2" dengan senarai kosong.
+  useEffect(() => {
+    setAssignmentPage((p) => Math.min(p, assignmentTotalPages - 1));
+  }, [assignmentTotalPages]);
   const supplyAssignment = useMemo(() => {
     const a = assignments.find((x) => x.id === openSupply) ?? null;
     if (!a) return null;
@@ -169,7 +193,49 @@ export default function PatientDetailPage() {
 
   const startEdit = () => { if (!patient) return; setEditData({ nama: patient.nama, nombor_kad_pengenalan: patient.nombor_kad_pengenalan, nombor_pendaftaran_hospital: patient.nombor_pendaftaran_hospital, dokumen_lain: patient.dokumen_lain, nombor_telefon: patient.nombor_telefon, alamat: patient.alamat, catatan: patient.catatan }); setEditMode(true); };
   const cancelEdit = () => { setEditMode(false); setEditData({}); };
-  const saveEdit = () => { if (!editData.nama?.trim()) return; updatePatient.mutate({ ...editData, nama: toTitleCase(editData.nama ?? ""), nombor_kad_pengenalan: formatMyKad(editData.nombor_kad_pengenalan), nombor_telefon: formatPhone(editData.nombor_telefon), nombor_pendaftaran_hospital: editData.nombor_pendaftaran_hospital?.toUpperCase(), alamat: toTitleCase(editData.alamat) } as Partial<Patient>, { onSuccess: () => { setEditMode(false); setEditData({}); } }); };
+  const saveEdit = () => {
+    if (!editData.nama?.trim()) { toast.error("Nama pesakit diperlukan."); return; }
+    if (editKpError) { toast.error(editKpError); return; }
+    if (editPhoneError) { toast.error(editPhoneError); return; }
+    updatePatient.mutate({ ...editData, nama: toTitleCase(editData.nama ?? ""), nombor_kad_pengenalan: formatMyKad(editData.nombor_kad_pengenalan), nombor_telefon: formatPhone(editData.nombor_telefon), nombor_pendaftaran_hospital: editData.nombor_pendaftaran_hospital?.toUpperCase(), alamat: toTitleCase(editData.alamat) } as Partial<Patient>, { onSuccess: () => { setEditMode(false); setEditData({}); } });
+  };
+  // #13: validasi sebaris — cermin AddPatientDialog. KP kosong atau tepat
+  // 12 digit; telefon kosong atau 9–12 digit. Tanpa ini, formatMyKad
+  // memotong senyap (>12 digit) kemudian mutasi menolak via toast dengan
+  // editData yang sudah diubah.
+  const editKpDigits = digitsOnly(editData.nombor_kad_pengenalan);
+  const editKpError =
+    (editData.nombor_kad_pengenalan ?? "").trim() && editKpDigits.length !== 12
+      ? "No. KP mesti 12 digit."
+      : null;
+  const editPhoneDigits = digitsOnly(editData.nombor_telefon);
+  const editPhoneError =
+    (editData.nombor_telefon ?? "").trim() &&
+    (editPhoneDigits.length < 9 || editPhoneDigits.length > 12)
+      ? "No. telefon mesti 9–12 digit."
+      : null;
+  const isEditValid = !!editData.nama?.trim() && !editKpError && !editPhoneError;
+
+  // #7: pengawal aktif semasa submit — tugasan/pesakit boleh dinyahaktifkan
+  // serentak sementara dialog terbuka (butang pembuka yang tersembunyi tidak
+  // melindungi). Semak semula sebelum setiap mutasi.
+  const guardActiveAssignment = (assignmentId: string | null, aksi: string): boolean => {
+    const a = assignments.find((x) => x.id === assignmentId);
+    if (!a?.aktif) {
+      toast.error(`Tugasan telah ditamatkan. ${aksi} dibatalkan.`);
+      return false;
+    }
+    if (!patient?.aktif) {
+      toast.error("Pesakit telah dinyahaktifkan. Tindakan dibatalkan.");
+      return false;
+    }
+    return true;
+  };
+
+  // Destinasi Kembali mengikut konteks ketibaan: dari stok (/stok/:itemId
+  // dengan ?from=item) kembali ke sana, selainnya ke senarai pesakit.
+  const backTo = from === "item" && itemId ? `/stok/${itemId}` : "/pesakit";
+  const backTitle = from === "item" && itemName ? `Kembali ke ${itemName}` : "Kembali ke senarai";
 
   // Build breadcrumb items based on navigation source
   const breadcrumbItems = useMemo(() => {
@@ -231,17 +297,27 @@ export default function PatientDetailPage() {
         {isError && (
           <Button onClick={() => refetch()} title="Cuba semula">Cuba Semula</Button>
         )}
-        <Button variant="outline" onClick={() => navigate("/pesakit")} title="Kembali ke senarai pesakit">Kembali ke Senarai Pesakit</Button>
+        <Button variant="outline" onClick={() => navigate(backTo)} title={backTitle}>Kembali</Button>
       </div>
     </div>;
   }
 
   return (
     <div className="space-y-4" style={{ paddingBottom: isMobile ? 100 : 0 }}>
-      <style>{`@media (max-width: 640px) { [role="dialog"] { max-width: calc(100vw - 24px) !important; overflow-y: auto; max-height: calc(100dvh - 24px); } }`}</style>
       <div style={{ position: "absolute", top: -80, right: -80, width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle, rgba(24,119,242,0.08) 0%, transparent 70%)", filter: "blur(30px)", pointerEvents: "none", zIndex: 0 }} />
 
       <Breadcrumb items={breadcrumbItems} />
+
+      {supportError && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-2xl px-4 py-3" role="alert" style={{ background: "rgba(220,38,38,0.06)", border: "1px solid rgba(220,38,38,0.25)" }}>
+          <p className="text-xs font-medium" style={{ color: "#b91c1c" }}>
+            Gagal memuatkan data tugasan/item. Paparan mungkin tidak lengkap.
+          </p>
+          <Button size="sm" variant="outline" onClick={retrySupport} title="Cuba semula">
+            Cuba Semula
+          </Button>
+        </div>
+      )}
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
@@ -252,14 +328,14 @@ export default function PatientDetailPage() {
           </div>
         </div>
         <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
-          <Button variant="outline" onClick={() => navigate("/pesakit")} title="Kembali ke senarai" className="min-h-11"><ArrowLeft className="w-3.5 h-3.5" /> Kembali</Button>
-          {canEdit && patient.aktif && <Button variant="outline" onClick={() => setOpenMerge(true)} title="Gabung pesakit" className="min-h-11"><Merge className="w-3.5 h-3.5" /> Gabung</Button>}
+          <Button variant="outline" onClick={() => navigate(backTo)} title={backTitle} className="min-h-11"><ArrowLeft className="w-3.5 h-3.5" /> Kembali</Button>
+          {canMerge && patient.aktif && <Button variant="outline" onClick={() => setOpenMerge(true)} title="Gabung pesakit" className="min-h-11"><Merge className="w-3.5 h-3.5" /> Gabung</Button>}
           {canEdit && patient.aktif && <Button variant="destructive" onClick={() => setOpenDeactivate(true)} title="Nyahaktifkan pesakit" className="min-h-11 col-span-2 sm:col-span-1"><ShieldAlert className="w-3.5 h-3.5" /> Nyahaktif</Button>}
         </div>
       </div>
 
       <div><FoldableCard title={<span className="flex items-center gap-2 min-w-0"><User className="w-4 h-4 flex-shrink-0" style={{ color: "#1877f2" }} /> <span className="truncate">Maklumat Pesakit</span></span>}
-        headerExtra={canEdit && !editMode && patient.aktif ? <Button size="sm" variant="outline" onClick={startEdit} title="Edit maklumat pesakit"><Edit className="w-3.5 h-3.5" /> Edit</Button> : editMode ? <div className="flex items-center gap-2"><Button size="sm" variant="outline" onClick={cancelEdit} title="Batal edit">Batal</Button><Button size="sm" onClick={saveEdit} disabled={updatePatient.isPending} title="Simpan perubahan"><Save className="w-3.5 h-3.5" /> Simpan</Button></div> : null}>
+        headerExtra={canEdit && !editMode && patient.aktif ? <Button size="sm" variant="outline" onClick={startEdit} title="Edit maklumat pesakit"><Edit className="w-3.5 h-3.5" /> Edit</Button> : editMode ? <div className="flex items-center gap-2"><Button size="sm" variant="outline" onClick={cancelEdit} title="Batal edit">Batal</Button><Button size="sm" onClick={saveEdit} disabled={updatePatient.isPending || !isEditValid} title="Simpan perubahan"><Save className="w-3.5 h-3.5" /> Simpan</Button></div> : null}>
         {editMode ? <EditForm editData={editData} setEditData={setEditData} /> : <ViewInfo patient={patient} />}
       </FoldableCard></div>
 
@@ -271,8 +347,8 @@ export default function PatientDetailPage() {
       </div>
 
       <div><FoldableCard title={<span className="flex flex-wrap items-center gap-2"><Pill className="w-4 h-4 flex-shrink-0" style={{ color: "#1877f2" }} /> <span>Item Didaftarkan</span><Badge variant="green" className="text-2xs">{stats.active} aktif</Badge>{stats.inactive > 0 && <Badge variant="slate" className="text-2xs">{stats.inactive} tamat</Badge>}</span>}
-        headerExtra={canEdit && patient.aktif ? <Button size="sm" onClick={() => setOpenAddAssignment(true)} style={{ background: "linear-gradient(135deg, #1877f2, #0d5bd4)" }} title="Tambah item baharu untuk pesakit"><Plus className="w-3.5 h-3.5" /> Tambah Item</Button> : null}>
-        {assignments.length === 0 ? <div className="flex flex-col items-center justify-center py-12 gap-2" style={{ color: "var(--text-muted)" }}><Pill className="w-10 h-10 opacity-40" /><p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Tiada item didaftarkan</p>{canEdit && patient.aktif && <p className="text-xs">Klik "Tambah Item" untuk mula.</p>}</div> : <>
+        headerExtra={canAssign && patient.aktif ? <Button size="sm" onClick={() => setOpenAddAssignment(true)} style={{ background: "linear-gradient(135deg, #1877f2, #0d5bd4)" }} title="Tambah item baharu untuk pesakit"><Plus className="w-3.5 h-3.5" /> Tambah Item</Button> : null}>
+        {assignments.length === 0 ? <div className="flex flex-col items-center justify-center py-12 gap-2" style={{ color: "var(--text-muted)" }}><Pill className="w-10 h-10 opacity-40" /><p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Tiada item didaftarkan</p>{canAssign && patient.aktif && <p className="text-xs">Klik "Tambah Item" untuk mula.</p>}</div> : <>
           <div className="divide-y divide-[#f0f2f5]">{pagedAssignments.map((a) => <AssignmentItem key={a.id} assignment={a} expanded={expandedAssignment === a.id} onToggle={() => setExpandedAssignment(expandedAssignment === a.id ? null : a.id)} onSupply={() => setOpenSupply(a.id)} onUpdateDose={() => setOpenUpdateDose(a.id)} onStop={() => setOpenStopAssign(a.id)} onDecline={() => setOpenDecline(a.id)} onDeleteDeclination={(id) => setDeleteDeclinationId({ id, assignmentId: a.id })} onEditSupply={(s) => setEditSupplyRecord(s)}           onDeleteSupply={(idOrIds) => {
                                 const ids = Array.isArray(idOrIds) ? idOrIds : [idOrIds];
                                 if (ids.length === 1) {
@@ -281,29 +357,29 @@ export default function PatientDetailPage() {
                                   // LOW-4: satu transaksi atomik + satu toast ringkasan.
                                   bulkDeleteSupplyMut.mutate({ supplyIds: ids, assignmentId: a.id });
                                 }
-                              }} canEdit={canEdit && patient.aktif} formsMap={formsMap} lastSupplyAge={supplyAgeMap.get(a.id) ?? null} />)}</div>
+                              }} canSupply={canSupply && patient.aktif} canAssign={canAssign && patient.aktif} formsMap={formsMap} lastSupplyAge={supplyAgeMap.get(a.id) ?? null} />)}</div>
            {assignmentTotalPages > 1 && <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-[#f0f2f5]"><p className="text-xs" style={{ color: "var(--text-secondary)" }}>Halaman {assignmentPage + 1} daripada {assignmentTotalPages}</p><div className="flex items-center gap-1"><Button variant="outline" size="sm" disabled={assignmentPage === 0} onClick={() => setAssignmentPage((p) => Math.max(0, p - 1))} className="h-11 w-11 p-0 sm:h-8 sm:w-auto sm:px-2" style={{ opacity: assignmentPage === 0 ? 0.4 : 1 }} title="Halaman sebelumnya"><ChevronLeft className="w-3.5 h-3.5" /></Button><Button variant="outline" size="sm" disabled={assignmentPage >= assignmentTotalPages - 1} onClick={() => setAssignmentPage((p) => Math.min(assignmentTotalPages - 1, p + 1))} className="h-11 w-11 p-0 sm:h-8 sm:w-auto sm:px-2" style={{ opacity: assignmentPage >= assignmentTotalPages - 1 ? 0.4 : 1 }} title="Halaman seterusnya"><ChevronRight className="w-3.5 h-3.5" /></Button></div></div>}
         </>}
       </FoldableCard></div>
 
       <DeactivateDialog open={openDeactivate} onOpenChange={setOpenDeactivate} onConfirm={(catatan) => deactivatePatient.mutate({ catatan }, { onSuccess: () => setOpenDeactivate(false) })} isPending={deactivatePatient.isPending} patientName={patient.nama} />
       <AddAssignmentDialog open={openAddAssignment} onOpenChange={setOpenAddAssignment} items={itemsWithStats} activeItemIds={activeItemIds} countsStale={quotaCountsStale} onSubmit={(data) => addAssignment.mutate(data, { onSuccess: () => setOpenAddAssignment(false) })} isPending={addAssignment.isPending} formsMap={formsMap} />
-      {supplyAssignment && <SupplyDialog open={!!openSupply} onOpenChange={(o) => !o && setOpenSupply(null)} assignment={supplyAssignment} formsMap={formsMap} onSubmit={(data) => supplyMut.mutate({ ...data, assignmentId: supplyAssignment.id, itemId: supplyAssignment.item_id }, { onSuccess: () => setOpenSupply(null) })} isPending={supplyMut.isPending} />}
-      {updateDoseAssignment && <UpdateDoseDialog open={!!openUpdateDose} onOpenChange={(o) => !o && setOpenUpdateDose(null)} currentDose={updateDoseAssignment.dos} onSubmit={(data) => updateDoseMut.mutate({ ...data, assignmentId: updateDoseAssignment.id }, { onSuccess: () => setOpenUpdateDose(null) })} isPending={updateDoseMut.isPending} />}
-      <StopAssignmentDialog open={!!openStopAssign} onOpenChange={(o) => !o && setOpenStopAssign(null)} onSubmit={(sebab) => stopAssignment.mutate({ assignmentId: openStopAssign!, sebab }, { onSuccess: () => setOpenStopAssign(null) })} isPending={stopAssignment.isPending} />
-      <EditSupplyDialog supply={editSupplyRecord} onClose={() => setEditSupplyRecord(null)} onSubmit={(data) => updateSupplyMut.mutate({ ...data, assignmentId: editSupplyRecord!.assignment_id }, { onSuccess: () => setEditSupplyRecord(null) })} isPending={updateSupplyMut.isPending} />
-      <DeleteSupplyDialog target={deleteSupplyId} onClose={() => setDeleteSupplyId(null)} onConfirm={() => deleteSupplyMut.mutate({ supplyId: deleteSupplyId!.id, assignmentId: deleteSupplyId!.assignmentId }, { onSuccess: () => setDeleteSupplyId(null) })} isPending={deleteSupplyMut.isPending} />
+      {supplyAssignment && <SupplyDialog open={!!openSupply} onOpenChange={(o) => !o && setOpenSupply(null)} assignment={supplyAssignment} formsMap={formsMap} onSubmit={(data) => { if (!guardActiveAssignment(supplyAssignment.id, "Bekalan")) return; supplyMut.mutate({ ...data, assignmentId: supplyAssignment.id, itemId: supplyAssignment.item_id }, { onSuccess: () => setOpenSupply(null) }); }} isPending={supplyMut.isPending} />}
+      {updateDoseAssignment && <UpdateDoseDialog open={!!openUpdateDose} onOpenChange={(o) => !o && setOpenUpdateDose(null)} currentDose={updateDoseAssignment.dos} onSubmit={(data) => { if (!guardActiveAssignment(updateDoseAssignment.id, "Kemaskini dos")) return; updateDoseMut.mutate({ ...data, assignmentId: updateDoseAssignment.id }, { onSuccess: () => setOpenUpdateDose(null) }); }} isPending={updateDoseMut.isPending} />}
+      <StopAssignmentDialog open={!!openStopAssign} onOpenChange={(o) => !o && setOpenStopAssign(null)} onSubmit={(sebab) => { const id = openStopAssign; if (!id || !guardActiveAssignment(id, "Tamatkan tugasan")) return; stopAssignment.mutate({ assignmentId: id, sebab }, { onSuccess: () => setOpenStopAssign(null) }); }} isPending={stopAssignment.isPending} />
+      <EditSupplyDialog supply={editSupplyRecord} onClose={() => setEditSupplyRecord(null)} onSubmit={(data) => { const rec = editSupplyRecord; if (!rec || !guardActiveAssignment(rec.assignment_id, "Kemaskini bekalan")) return; updateSupplyMut.mutate({ ...data, assignmentId: rec.assignment_id }, { onSuccess: () => setEditSupplyRecord(null) }); }} isPending={updateSupplyMut.isPending} />
+      <DeleteSupplyDialog target={deleteSupplyId} onClose={() => setDeleteSupplyId(null)} onConfirm={() => { const t = deleteSupplyId; if (!t || !guardActiveAssignment(t.assignmentId, "Padam bekalan")) return; deleteSupplyMut.mutate({ supplyId: t.id, assignmentId: t.assignmentId }, { onSuccess: () => setDeleteSupplyId(null) }); }} isPending={deleteSupplyMut.isPending} />
       {openDecline && <DeclineSupplyDialog
         open={!!openDecline}
         onOpenChange={(o) => !o && setOpenDecline(null)}
         assignmentLabel={(() => { const a = assignments.find((x) => x.id === openDecline); return a ? formatItemDisplay(a.item, a.item?.id_bentuk ? formsMap.get(a.item.id_bentuk) : null) : ""; })()}
         isPending={declineMut.isPending}
-        onSubmit={(sebab, catatan, tempoh) => declineMut.mutate({ assignmentId: openDecline, sebab, tempoh, catatan }, { onSuccess: () => setOpenDecline(null) })}
+        onSubmit={(sebab, catatan, tempoh) => { if (!guardActiveAssignment(openDecline, "Tak Perlu Bekal")) return; declineMut.mutate({ assignmentId: openDecline, sebab, tempoh, catatan }, { onSuccess: () => setOpenDecline(null) }); }}
       />}
       <DeleteDeclinationDialog
         open={!!deleteDeclinationId}
         onClose={() => setDeleteDeclinationId(null)}
-        onConfirm={() => deleteDeclinationMut.mutate({ declinationId: deleteDeclinationId!.id, assignmentId: deleteDeclinationId!.assignmentId }, { onSuccess: () => setDeleteDeclinationId(null) })}
+        onConfirm={() => { const t = deleteDeclinationId; if (!t || !guardActiveAssignment(t.assignmentId, "Padam penolakan")) return; deleteDeclinationMut.mutate({ declinationId: t.id, assignmentId: t.assignmentId }, { onSuccess: () => setDeleteDeclinationId(null) }); }}
         isPending={deleteDeclinationMut.isPending}
       />
       <MergeDialog open={openMerge} onOpenChange={setOpenMerge} primaryPatient={patient} />
@@ -356,15 +432,26 @@ function ViewInfo({ patient }: { patient: PatientWithDeactivatedBy }) {
 }
 
 function EditForm({ editData, setEditData }: { editData: Partial<Patient>; setEditData: (v: Partial<Patient>) => void }) {
+  const kpDigits = digitsOnly(editData.nombor_kad_pengenalan);
+  const kpError =
+    (editData.nombor_kad_pengenalan ?? "").trim() && kpDigits.length !== 12
+      ? "No. KP mesti 12 digit."
+      : null;
+  const phoneDigits = digitsOnly(editData.nombor_telefon);
+  const phoneError =
+    (editData.nombor_telefon ?? "").trim() &&
+    (phoneDigits.length < 9 || phoneDigits.length > 12)
+      ? "No. telefon mesti 9–12 digit."
+      : null;
   return <div className="space-y-3">
-    <div><Label style={labelStyle}>Nama *</Label><Input value={editData.nama ?? ""} onChange={(e) => setEditData({ ...editData, nama: e.target.value })} onBlur={(e) => setEditData({ ...editData, nama: toTitleCase(e.target.value) })} style={inputBaseStyle} /></div>
+    <div><Label style={labelStyle} htmlFor="edit-nama">Nama *</Label><Input id="edit-nama" value={editData.nama ?? ""} onChange={(e) => setEditData({ ...editData, nama: e.target.value })} onBlur={(e) => setEditData({ ...editData, nama: toTitleCase(e.target.value) })} style={inputBaseStyle} /></div>
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-      <div><Label style={labelStyle}>No. Kad Pengenalan</Label><Input value={editData.nombor_kad_pengenalan ?? ""} onChange={(e) => setEditData({ ...editData, nombor_kad_pengenalan: e.target.value })} onBlur={(e) => setEditData({ ...editData, nombor_kad_pengenalan: formatMyKad(e.target.value) })} style={inputBaseStyle} /></div>
-      <div><Label style={labelStyle}>No. Pendaftaran Hospital</Label><Input value={editData.nombor_pendaftaran_hospital ?? ""} onChange={(e) => setEditData({ ...editData, nombor_pendaftaran_hospital: e.target.value })} onBlur={(e) => setEditData({ ...editData, nombor_pendaftaran_hospital: e.target.value.toUpperCase() })} style={inputBaseStyle} /></div>
-      <div><Label style={labelStyle}>Dokumen Lain</Label><Input value={editData.dokumen_lain ?? ""} onChange={(e) => setEditData({ ...editData, dokumen_lain: e.target.value })} style={inputBaseStyle} /></div>
-      <div><Label style={labelStyle}>No. Telefon</Label><Input value={editData.nombor_telefon ?? ""} onChange={(e) => setEditData({ ...editData, nombor_telefon: e.target.value })} onBlur={(e) => setEditData({ ...editData, nombor_telefon: formatPhone(e.target.value) })} style={inputBaseStyle} /></div>
+      <div><Label style={labelStyle} htmlFor="edit-kp">No. Kad Pengenalan</Label><Input id="edit-kp" value={editData.nombor_kad_pengenalan ?? ""} onChange={(e) => setEditData({ ...editData, nombor_kad_pengenalan: e.target.value })} onBlur={(e) => setEditData({ ...editData, nombor_kad_pengenalan: formatMyKad(e.target.value) })} aria-invalid={!!kpError} style={{ ...inputBaseStyle, borderColor: kpError ? "#dc2626" : undefined }} />{kpError && <p className="text-2xs mt-1" style={{ color: "#dc2626" }}>{kpError}</p>}</div>
+      <div><Label style={labelStyle} htmlFor="edit-hospital">No. Pendaftaran Hospital</Label><Input id="edit-hospital" value={editData.nombor_pendaftaran_hospital ?? ""} onChange={(e) => setEditData({ ...editData, nombor_pendaftaran_hospital: e.target.value })} onBlur={(e) => setEditData({ ...editData, nombor_pendaftaran_hospital: e.target.value.toUpperCase() })} style={inputBaseStyle} /></div>
+      <div><Label style={labelStyle} htmlFor="edit-dokumen">Dokumen Lain</Label><Input id="edit-dokumen" value={editData.dokumen_lain ?? ""} onChange={(e) => setEditData({ ...editData, dokumen_lain: e.target.value })} style={inputBaseStyle} /></div>
+      <div><Label style={labelStyle} htmlFor="edit-telefon">No. Telefon</Label><Input id="edit-telefon" value={editData.nombor_telefon ?? ""} onChange={(e) => setEditData({ ...editData, nombor_telefon: e.target.value })} onBlur={(e) => setEditData({ ...editData, nombor_telefon: formatPhone(e.target.value) })} aria-invalid={!!phoneError} style={{ ...inputBaseStyle, borderColor: phoneError ? "#dc2626" : undefined }} />{phoneError && <p className="text-2xs mt-1" style={{ color: "#dc2626" }}>{phoneError}</p>}</div>
     </div>
-    <div><Label style={labelStyle}>Alamat</Label><textarea value={editData.alamat ?? ""} onChange={(e) => setEditData({ ...editData, alamat: e.target.value })} onBlur={(e) => setEditData({ ...editData, alamat: toTitleCase(e.target.value) })} className="w-full text-sm" style={{ ...inputBaseStyle, height: 70, padding: '8px 12px', fontFamily: 'inherit', resize: 'vertical' }} rows={2} /></div>
-    <div><Label style={labelStyle}>Catatan</Label><textarea value={editData.catatan ?? ""} onChange={(e) => setEditData({ ...editData, catatan: e.target.value })} className="w-full text-sm" style={{ ...inputBaseStyle, height: 70, padding: '8px 12px', fontFamily: 'inherit', resize: 'vertical' }} rows={2} /></div>
+    <div><Label style={labelStyle} htmlFor="edit-alamat">Alamat</Label><textarea id="edit-alamat" value={editData.alamat ?? ""} onChange={(e) => setEditData({ ...editData, alamat: e.target.value })} onBlur={(e) => setEditData({ ...editData, alamat: toTitleCase(e.target.value) })} className="w-full text-sm" style={{ ...inputBaseStyle, height: 70, padding: '8px 12px', fontFamily: 'inherit', resize: 'vertical' }} rows={2} /></div>
+    <div><Label style={labelStyle} htmlFor="edit-catatan">Catatan</Label><textarea id="edit-catatan" value={editData.catatan ?? ""} onChange={(e) => setEditData({ ...editData, catatan: e.target.value })} className="w-full text-sm" style={{ ...inputBaseStyle, height: 70, padding: '8px 12px', fontFamily: 'inherit', resize: 'vertical' }} rows={2} /></div>
   </div>;
 }

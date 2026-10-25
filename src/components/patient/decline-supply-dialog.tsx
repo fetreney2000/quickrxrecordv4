@@ -64,6 +64,10 @@ export function DeclineSupplyDialog({
   const tempoh = tempohNilai.trim()
     ? `${tempohNilai.trim()} ${tempohUnit}`.trim()
     : "";
+  // #11: tempoh mesti nombor positif jika diisi.
+  const tempohNilaiValid =
+    !tempohNilai.trim() ||
+    (Number.isFinite(Number(tempohNilai)) && Number(tempohNilai) > 0);
 
   useEffect(() => {
     if (open) {
@@ -140,11 +144,12 @@ export function DeclineSupplyDialog({
         </div>
 
         <div className="mt-3">
-          <Label style={labelStyle}>
+          <Label style={labelStyle} htmlFor="decline-tempoh">
             Tempoh sepatutnya dibekal
           </Label>
           <div className="flex gap-1.5">
             <Input
+              id="decline-tempoh"
               value={tempohNilai}
               onChange={(e) => setTempohNilai(e.target.value)}
               onFocus={(e) => e.target.select()}
@@ -168,13 +173,19 @@ export function DeclineSupplyDialog({
               ))}
             </select>
           </div>
+          {!tempohNilaiValid && (
+            <p className="text-2xs mt-1" style={{ color: "#dc2626" }}>
+              Tempoh mesti nombor positif.
+            </p>
+          )}
         </div>
 
         <div className="mt-3">
-          <Label style={labelStyle}>
+          <Label style={labelStyle} htmlFor="decline-catatan">
             Catatan (pilihan)
           </Label>
           <Input
+            id="decline-catatan"
             value={catatan}
             onChange={(e) => setCatatan(e.target.value)}
           />
@@ -186,9 +197,10 @@ export function DeclineSupplyDialog({
           </Button>
           <Button
             onClick={() => {
+              if (!tempohNilaiValid) return;
               if (sebab.trim()) onSubmit(sebab.trim(), catatan.trim(), tempoh);
             }}
-            disabled={isPending}
+            disabled={isPending || !tempohNilaiValid}
             style={{ background: "linear-gradient(135deg, #f0932b, #e07a1f)" }}
           >
             {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}

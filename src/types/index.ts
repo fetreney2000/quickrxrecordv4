@@ -270,6 +270,7 @@ export interface SupplyActivityRow {
   kuantiti?: number | null;
   kakitangan_pembekal?: string | null;
   kakitangan_pembekal_profile?: { id: string; nama: string } | null;
+  batch?: Pick<ItemBatch, "id" | "nombor_kelompok"> | null;
   // Declination sahaja
   sebab?: string | null;
   tempoh?: string | null;

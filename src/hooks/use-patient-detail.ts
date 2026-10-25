@@ -127,7 +127,8 @@ export function usePatientAssignments(id: string | undefined) {
 export function useItemForms() {
   return useQuery({
     queryKey: ["item_forms"],
-    staleTime: 0,
+    // #20: rujukan jarang berubah — elak refetch setiap mount.
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("item_forms")
@@ -298,6 +299,7 @@ export function useAssignmentActivity(assignmentId: string | null) {
         kuantiti: s.kuantiti,
         kakitangan_pembekal: s.kakitangan_pembekal,
         kakitangan_pembekal_profile: s.kakitangan_pembekal_profile,
+        batch: s.batch ? { id: s.batch.id, nombor_kelompok: s.batch.nombor_kelompok } : null,
         catatan: s.catatan_bekalan,
       }));
 
@@ -423,7 +425,8 @@ export function useAvailableBatches(itemId: string | null) {
 export function useSupplyDurations() {
   return useQuery({
     queryKey: ["supply_durations"],
-    staleTime: 0,
+    // #20: rujukan jarang berubah — elak refetch setiap mount.
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("supply_durations")
@@ -629,15 +632,16 @@ export function useAddAssignment(patientId: string | undefined) {
         .select("kuota")
         .eq("id", data.item_id)
         .maybeSingle();
-      if (quotaItem?.kuota != null && quotaItem.kuota > 0) {
+      const quota = quotaItem?.kuota ?? null;
+      if (quota != null && quota > 0) {
         const { count: activeCount } = await supabase
           .from("patient_item_assignments")
           .select("id", { count: "exact", head: true })
           .eq("item_id", data.item_id)
           .eq("aktif", true);
-        if ((activeCount ?? 0) >= quotaItem.kuota) {
+        if ((activeCount ?? 0) >= quota) {
           throw new Error(
-            `Kuota item telah penuh (${activeCount}/${quotaItem.kuota}) — tamatkan tugasan sedia ada dahulu.`
+            `Kuota item telah penuh (${activeCount}/${quota}) — tamatkan tugasan sedia ada dahulu.`
           );
         }
       }
@@ -656,7 +660,37 @@ export function useAddAssignment(patientId: string | undefined) {
         })
         .select("id")
         .single();
-      if (assignError) throw assignError;
+      if (assignError) {
+        // #16: terjemah penolakan kuota pelayan (lumba yang melepasi semakan
+        // pra-tulis) kepada mesej mesra, bukan ralat Postgres mentah.
+        const msg = (assignError.message ?? "").toLowerCase();
+        if (msg.includes("kuota") || msg.includes("quota")) {
+          throw new Error(
+            "Kuota item telah penuh — tamatkan tugasan sedia ada dahulu."
+          );
+        }
+        throw assignError;
+      }
+
+      // #16: semakan lepas-tulis menutup lumba baca-dahulu-tulis-kemudian —
+      // dua tambah serentak yang melepasi semakan pra-tulis akan dikesan di
+      // sini; pemasukan sendiri diundur sebelum dose_history ditulis.
+      if (quota != null && quota > 0 && assignment) {
+        const { count: postCount } = await supabase
+          .from("patient_item_assignments")
+          .select("id", { count: "exact", head: true })
+          .eq("item_id", data.item_id)
+          .eq("aktif", true);
+        if ((postCount ?? 0) > quota) {
+          await supabase
+            .from("patient_item_assignments")
+            .delete()
+            .eq("id", assignment.id);
+          throw new Error(
+            `Kuota item telah penuh (${quota}) — tamatkan tugasan sedia ada dahulu.`
+          );
+        }
+      }
 
       if (assignment && data.dos) {
         await supabase.from("dose_history").insert({
@@ -796,17 +830,14 @@ export function useSupplyMedicationMulti(patientId: string | undefined) {
     }) => runSupplyMulti(data, profile?.id ?? null),
     onSuccess: (_data, vars) => {
       toast.success("Ubat berjaya dibekalkan.");
+      // #20: had kepada kunci yang terjejas di halaman ini. Kunci silang
+      // (Dispen Pantas/papan pemuka/transaksi) dibuang — halaman tersebut
+      // guna staleTime 0 dan refetch sendiri semasa mount.
       queryClient.invalidateQueries({ queryKey: ["assignments", patientId] });
       queryClient.invalidateQueries({ queryKey: ["supply-history", vars.assignmentId] });
       queryClient.invalidateQueries({ queryKey: ["assignment-activity", vars.assignmentId] });
       queryClient.invalidateQueries({ queryKey: ["latest-supply-dates"] });
       queryClient.invalidateQueries({ queryKey: ["batches", vars.itemId] });
-      queryClient.invalidateQueries({ queryKey: ["transaction-history", vars.itemId] });
-      // Cross-invalidate kunci yang digunakan oleh Dispen Pantas + papan pemuka
-      queryClient.invalidateQueries({ queryKey: ["patient-assignments", patientId] });
-      queryClient.invalidateQueries({ queryKey: ["frequent-items"] });
-      queryClient.invalidateQueries({ queryKey: ["pantas-batches"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
     },
     onError: (err: any) => {
       toast.error(err?.message || "Gagal membekalkan ubat.");

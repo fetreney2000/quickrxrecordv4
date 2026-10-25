@@ -97,8 +97,9 @@ export function StopAssignmentDialog({
             </p>
           </div>
           <div>
-            <Label style={labelStyle}>Sebab Tamat *</Label>
+            <Label style={labelStyle} htmlFor="stop-sebab">Sebab Tamat *</Label>
             <Input
+              id="stop-sebab"
               value={sebab}
               maxLength={200}
               onChange={(e) => setSebab(e.target.value)}
@@ -181,10 +182,31 @@ export function EditSupplyDialog({
     }
   }, [supply]);
 
+  // Defaultkan unit tempoh bila senarai dimuat dan unit semasa tiada —
+  // selaras dengan SupplyDialog. Elak submit "30 " / "30 UnitAsing".
+  useEffect(() => {
+    if (
+      durations.length > 0 &&
+      tempohUnit &&
+      !durations.some((d) => d.nama === tempohUnit)
+    ) {
+      setTempohUnit(durations[0]?.nama ?? "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [durations]);
+
   // Combine tempoh value + unit
   const tempoh = tempohNilai.trim()
     ? `${tempohNilai.trim()} ${tempohUnit}`.trim()
     : "";
+  // Sekat simpan bila nilai diisi tetapi unit tiada dalam senarai
+  // (tetingkap sebelum senarai dimuat, atau data legasi).
+  const tempohUnitValid =
+    !tempohNilai.trim() || durations.some((d) => d.nama === tempohUnit);
+  // #11: tempoh mesti nombor positif jika diisi.
+  const tempohNilaiValid =
+    !tempohNilai.trim() ||
+    (Number.isFinite(Number(tempohNilai)) && Number(tempohNilai) > 0);
 
   if (!supply) return null;
 
@@ -213,6 +235,7 @@ export function EditSupplyDialog({
         <form
           onSubmit={(e) => {
             e.preventDefault();
+            if (!tempohUnitValid || !tempohNilaiValid) return;
             onSubmit({
               supplyId: supply.id,
               dos: dos.trim(),
@@ -224,8 +247,9 @@ export function EditSupplyDialog({
           className="space-y-3 mt-2"
         >
           <div>
-            <Label style={labelStyle}>Dos</Label>
+            <Label style={labelStyle} htmlFor="editsupply-dos">Dos</Label>
             <Input
+              id="editsupply-dos"
               value={dos}
               readOnly
               style={{ ...inputBaseStyle, background: "var(--bg-secondary)", cursor: "not-allowed" }}
@@ -233,9 +257,10 @@ export function EditSupplyDialog({
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
-              <Label style={labelStyle}>Tempoh</Label>
+              <Label style={labelStyle} htmlFor="editsupply-tempoh">Tempoh</Label>
               <div className="flex gap-1.5">
                 <Input
+                  id="editsupply-tempoh"
                   value={tempohNilai}
                   onChange={(e) => setTempohNilai(e.target.value)}
                   style={{ ...inputBaseStyle, flex: 1 }}
@@ -257,10 +282,16 @@ export function EditSupplyDialog({
                   ))}
                 </select>
               </div>
+              {!tempohNilaiValid && (
+                <p className="text-2xs mt-1" style={{ color: "#dc2626" }}>
+                  Tempoh mesti nombor positif.
+                </p>
+              )}
             </div>
             <div>
-              <Label style={labelStyle}>Kuantiti</Label>
+              <Label style={labelStyle} htmlFor="editsupply-kuantiti">Kuantiti</Label>
               <Input
+                id="editsupply-kuantiti"
                 type="number"
                 min={1}
                 value={kuantiti}
@@ -270,8 +301,9 @@ export function EditSupplyDialog({
             </div>
           </div>
           <div>
-            <Label style={labelStyle}>Catatan</Label>
+            <Label style={labelStyle} htmlFor="editsupply-catatan">Catatan</Label>
             <Input
+              id="editsupply-catatan"
               value={catatan}
               onChange={(e) => setCatatan(e.target.value)}
               style={inputBaseStyle}
@@ -287,16 +319,17 @@ export function EditSupplyDialog({
             Batal
           </Button>
           <Button
-            onClick={() =>
+            onClick={() => {
+              if (!tempohUnitValid || !tempohNilaiValid) return;
               onSubmit({
                 supplyId: supply.id,
                 dos: dos.trim(),
                 kuantiti: Math.max(1, kuantiti),
                 tempoh: tempoh.trim(),
                 catatan: catatan.trim(),
-              })
-            }
-            disabled={isPending}
+              });
+            }}
+            disabled={isPending || !tempohUnitValid || !tempohNilaiValid}
           >
             {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             Simpan

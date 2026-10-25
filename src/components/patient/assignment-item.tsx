@@ -41,7 +41,8 @@ interface AssignmentItemProps {
   onDeleteDeclination: (id: string) => void;
   onEditSupply: (s: { id: string; assignment_id: string; dos: string; kuantiti: number; tempoh_dibekal: string | null; catatan_bekalan: string | null; }) => void;
   onDeleteSupply: (id: string | string[]) => void;
-  canEdit: boolean;
+  canSupply: boolean;
+  canAssign: boolean;
   formsMap: Map<string, string>;
   lastSupplyAge: string | null;
 }
@@ -52,11 +53,20 @@ function SortableHeader({ label, sortKey, currentSort, onSort }: { label: string
   const isActive = currentSort?.key === sortKey;
   const dir = isActive ? currentSort!.dir : null;
   return (
-    <th aria-sort={isActive ? (dir === "asc" ? "ascending" : "descending") : undefined} onClick={() => onSort(sortKey)} className="text-left text-xs font-semibold uppercase tracking-wider px-2 py-1.5 cursor-pointer select-none hover:bg-muted/50 transition-colors" style={{ color: "var(--text-secondary)" }}>
-      <span className="flex items-center gap-1">
-        {label}
-        {isActive ? (dir === "asc" ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ChevronDown className="w-3 h-3 opacity-30" />}
-      </span>
+    <th aria-sort={isActive ? (dir === "asc" ? "ascending" : "descending") : undefined} className="text-left text-xs font-semibold uppercase tracking-wider px-2 py-1.5 select-none hover:bg-muted/50 transition-colors" style={{ color: "var(--text-secondary)" }}>
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        title={`Isih mengikut ${label}`}
+        aria-label={isActive ? `Isih mengikut ${label}, diisih ${dir === "asc" ? "menaik" : "menurun"}` : `Isih mengikut ${label}`}
+        className="flex items-center gap-1 bg-transparent border-0 p-0 cursor-pointer"
+        style={{ color: "inherit", font: "inherit", textTransform: "inherit", letterSpacing: "inherit" }}
+      >
+        <span className="flex items-center gap-1">
+          {label}
+          {isActive ? (dir === "asc" ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ChevronDown className="w-3 h-3 opacity-30" />}
+        </span>
+      </button>
     </th>
   );
 }
@@ -108,8 +118,8 @@ function groupSupplyRecords(rows: SupplyActivityRow[]): SupplyActivityRow[] {
         ...first,
         kuantiti: group.reduce((sum, r) => sum + (r.kuantiti ?? 0), 0),
         batches: group.map((r) => ({
-          batchId: (r as any).batch?.id ?? null,
-          nombor_kelompok: (r as any).batch?.nombor_kelompok ?? null,
+          batchId: r.batch?.id ?? null,
+          nombor_kelompok: r.batch?.nombor_kelompok ?? null,
           kuantiti: r.kuantiti ?? 0,
         })),
         _allIds: group.map((r) => r.id),
@@ -123,12 +133,16 @@ function groupSupplyRecords(rows: SupplyActivityRow[]): SupplyActivityRow[] {
   return result;
 }
 
-export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpdateDose, onStop, onDecline, onDeleteDeclination, onEditSupply, onDeleteSupply, canEdit, formsMap, lastSupplyAge }: AssignmentItemProps) {
+export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpdateDose, onStop, onDecline, onDeleteDeclination, onEditSupply, onDeleteSupply, canSupply, canAssign, formsMap, lastSupplyAge }: AssignmentItemProps) {
   const navigate = useNavigate();
   const { profile } = useAuth();
   // LOW-5: pemadaman penolakan dikhaskan untuk Pentadbir (pelayan 048
   // menguatkuasakan perkara sama — semakan di sini menyembunyikan butang).
-  const canDeleteDeclination = canEdit && profile?.peranan === "Pentadbir";
+  const canDeleteDeclination = canSupply && profile?.peranan === "Pentadbir";
+  // Sejarah bekalan/penolakan hanya boleh diubah selagi tugasan aktif —
+  // selaras dengan butang Bekal/Kemaskini/Tak-Perlu/Tamat (baris 211).
+  // Rekod bekalan di bawah kebenaran bekalan (manage_supply).
+  const canMutateHistory = canSupply && assignment.aktif;
   const [doseSort, setDoseSort] = useState<{ key: string; dir: SortDir } | null>(null);
   const [supplySort, setSupplySort] = useState<{ key: string; dir: SortDir } | null>(null);
   const [dosePage, setDosePage] = useState(0);
@@ -190,9 +204,15 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 flex-wrap">
             <div className="min-w-0">
-              <p className="text-sm font-bold truncate" style={{ color: "var(--text-primary)", cursor: "pointer" }} onClick={(e) => { e.stopPropagation(); if (item?.id) navigate(`/stok/${item.id}`); }}>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); if (item?.id) navigate(`/stok/${item.id}`); }}
+                title={item?.id ? `Lihat ${formatItemDisplay(item, formName)} di inventori` : undefined}
+                className="min-w-0 max-w-full text-sm font-bold truncate bg-transparent border-0 p-0 text-left cursor-pointer"
+                style={{ color: "var(--text-primary)" }}
+              >
                 {formatItemDisplay(item, formName)}
-              </p>
+              </button>
               <div className="flex items-center gap-2 mt-0.5 text-xs flex-wrap" style={{ color: "var(--text-secondary)" }}>
                 {item?.kod_item && <span className="font-mono">{item.kod_item}</span>}
                 {assignment.dos && <span>· Dos: <strong style={{ color: "var(--text-primary)" }}>{assignment.dos}</strong></span>}
@@ -208,12 +228,12 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                 {assignment.aktif && lastSupplyAge !== null && <><span className="text-2xs mr-1" style={{ color: "var(--text-secondary)" }}>Bekalan Terakhir:</span><SupplyAgeBadge label={lastSupplyAge} /></>}
               </div>
             </div>
-            {canEdit && assignment.aktif && (
+            {(canSupply || canAssign) && assignment.aktif && (
               <div className="flex items-center gap-1.5 flex-shrink-0">
-                <Button size="sm" title="Bekal ubat kepada pesakit" onClick={(e) => { e.stopPropagation(); onSupply(); }} className="h-7 px-2"><Package className="w-3 h-3" /><span className="hidden sm:inline">Bekal</span></Button>
-                <Button size="sm" variant="outline" title="Kemaskini dos" onClick={(e) => { e.stopPropagation(); onUpdateDose(); }} className="h-7 px-2"><Edit className="w-3 h-3" /><span className="hidden sm:inline">Kemaskini Dos</span></Button>
-                <Button size="sm" variant="outline" title="Ubat Tidak Perlu Dibekalkan" onClick={(e) => { e.stopPropagation(); onDecline(); }} className="h-7 px-2" style={{ color: "#f0932b" }}><AlertCircle className="w-3 h-3" /><span className="hidden sm:inline">Tak Perlu Bekal</span></Button>
-                <Button size="sm" variant="outline" title="Tamatkan tugasan item" onClick={(e) => { e.stopPropagation(); onStop(); }} className="h-7 px-2" style={{ color: "#dc2626" }}><X className="w-3 h-3" /><span className="hidden sm:inline">Tamat</span></Button>
+                {canSupply && <Button size="sm" title="Bekal ubat kepada pesakit" onClick={(e) => { e.stopPropagation(); onSupply(); }} className="h-7 px-2"><Package className="w-3 h-3" /><span className="hidden sm:inline">Bekal</span></Button>}
+                {canAssign && <Button size="sm" variant="outline" title="Kemaskini dos" onClick={(e) => { e.stopPropagation(); onUpdateDose(); }} className="h-7 px-2"><Edit className="w-3 h-3" /><span className="hidden sm:inline">Kemaskini Dos</span></Button>}
+                {canSupply && <Button size="sm" variant="outline" title="Ubat Tidak Perlu Dibekalkan" onClick={(e) => { e.stopPropagation(); onDecline(); }} className="h-7 px-2" style={{ color: "#f0932b" }}><AlertCircle className="w-3 h-3" /><span className="hidden sm:inline">Tak Perlu Bekal</span></Button>}
+                {canAssign && <Button size="sm" variant="outline" title="Tamatkan tugasan item" onClick={(e) => { e.stopPropagation(); onStop(); }} className="h-7 px-2" style={{ color: "#dc2626" }}><X className="w-3 h-3" /><span className="hidden sm:inline">Tamat</span></Button>}
               </div>
             )}
           </div>
@@ -277,7 +297,7 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                       <th className="text-left text-xs font-semibold uppercase tracking-wider px-2 py-1.5" style={{ color: "var(--text-secondary)" }}>Tempoh</th>
                       <SortableHeader label="Direkod oleh" sortKey="kakitangan_pembekal" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       <SortableHeader label="Catatan" sortKey="catatan" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
-                      {canEdit && <th className="text-left text-xs font-semibold uppercase tracking-wider px-2 py-1.5" style={{ color: "var(--text-secondary)" }}>Tindakan</th>}
+                      {canMutateHistory && <th className="text-left text-xs font-semibold uppercase tracking-wider px-2 py-1.5" style={{ color: "var(--text-secondary)" }}>Tindakan</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -331,7 +351,7 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                               </span>
                             ) : row.catatan || "—"}
                         </td>
-                        {canEdit && <td className="px-2 py-1.5">
+                        {canMutateHistory && <td className="px-2 py-1.5">
                           {row.kind === "declination" ? (
                             <div className="flex items-center gap-1">
                               {canDeleteDeclination && (
@@ -344,9 +364,8 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                               <button title="Padam rekod bekalan" onClick={(e) => {
                                 e.stopPropagation();
                                 if (isMerged) {
-                                  for (const id of (row as GroupedSupplyRow)._allIds) {
-                                    onDeleteSupply(id);
-                                  }
+                                  // Hantar sekali gus supaya induk guna laluan bulk atomik.
+                                  onDeleteSupply((row as GroupedSupplyRow)._allIds);
                                 } else {
                                   onDeleteSupply(row.id);
                                 }

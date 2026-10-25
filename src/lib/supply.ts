@@ -10,6 +10,7 @@
  *   - Kegagalan pertengahan mengimbangi (compensate) baris yang telah ditulis
  */
 import { supabase } from "@/lib/supabase";
+import { uuid } from "@/lib/utils";
 
 export interface SupplyAllocation {
   batchId: string;
@@ -278,6 +279,9 @@ async function runManualFallback(
   }
 
   // Validasi lulus — tulis. Semak ralat setiap tulisan; imbau pada kegagalan.
+  // Setiap transaksi manual berkongsi satu kumpulan_id (migrasi 065) supaya
+  // klien mengumpulkan kaki-kakinya secara deterministik.
+  const manualGroupId = uuid();
   const applied: AppliedWrite[] = [];
   for (const alloc of data.allocations) {
     const snapshot = batchMap.get(alloc.batchId);
@@ -319,10 +323,58 @@ async function runManualFallback(
         batch_id: alloc.batchId,
         kakitangan_pembekal: profileId,
         catatan_bekalan: data.catatan || null,
-      })
+        // Jika lajur belum wujud (migrasi 065 belum dijalankan), PostgREST
+        // menolak dengan ralat lajur — cuba semula tanpa lajur supaya
+        // bekalan tidak tersekat semasa pelancaran bergilir.
+        kumpulan_id: manualGroupId,
+      } as Record<string, unknown>)
       .select("id")
       .single();
     if (sErr) {
+      const missingGroupCol =
+        (sErr as { message?: string }).message?.includes("kumpulan_id") ?? false;
+      if (missingGroupCol) {
+        const { data: retrySupply, error: retryErr } = await supabase
+          .from("supply_records")
+          .insert({
+            assignment_id: data.assignmentId,
+            dos: data.dos,
+            tempoh_dibekal: data.tempoh,
+            kuantiti: alloc.kuantiti,
+            batch_id: alloc.batchId,
+            kakitangan_pembekal: profileId,
+            catatan_bekalan: data.catatan || null,
+          })
+          .select("id")
+          .single();
+        if (retryErr) {
+          const cleaned = await compensate(applied);
+          throw cleanFailError(retryErr, cleaned);
+        }
+        // Teruskan aliran biasa dengan rekod gantian.
+        const { error: txErr2 } = await supabase.from("inventory_transactions").insert({
+          item_id: data.itemId,
+          batch_id: alloc.batchId,
+          jenis: "keluar",
+          kuantiti: alloc.kuantiti,
+          rujukan_id: retrySupply.id,
+          rujukan_type: "supply",
+          catatan: data.catatan || null,
+        });
+        if (txErr2) {
+          const cleaned = await compensate([
+            ...applied,
+            { supplyId: retrySupply.id, batchId: alloc.batchId, qty: alloc.kuantiti },
+          ]);
+          throw cleanFailError(txErr2, cleaned);
+        }
+        applied.push({
+          supplyId: retrySupply.id,
+          batchId: alloc.batchId,
+          qty: alloc.kuantiti,
+        });
+        continue;
+      }
       const cleaned = await compensate(applied);
       throw cleanFailError(sErr, cleaned);
     }

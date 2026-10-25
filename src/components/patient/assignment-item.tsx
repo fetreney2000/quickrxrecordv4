@@ -44,7 +44,8 @@ interface AssignmentItemProps {
   canSupply: boolean;
   canAssign: boolean;
   formsMap: Map<string, string>;
-  lastSupplyAge: string | null;
+  /** #6: umur aktiviti terakhir (bekalan ATAU "Tak Perlu Bekal"). */
+  lastActivityAge: string | null;
 }
 
 type SortDir = "asc" | "desc";
@@ -83,36 +84,29 @@ interface BatchInfo {
 interface GroupedSupplyRow extends SupplyActivityRow {
   batches: BatchInfo[];
   _allIds: string[];
+  _kumpulanId: string;
 }
 
+/**
+ * Kumpulkan baris bekalan secara deterministik mengikut `kumpulan_id`
+ * (migrasi 065). Semua kaki satu transaksi multi-kelompok berkongsi UUID
+ * yang sama — tiada lagi tekaan berasaskan masa (±5s) yang boleh menggabung
+ * palsu bekalan berasingan atau memisahkan transaksi yang tulisnya lewat.
+ *
+ * Baris legasi tanpa kumpulan_id (NULL) tidak digabungkan — dipapar sebagai
+ * baris tunggal untuk mengelakkan gabungan palsu.
+ */
 function groupSupplyRecords(rows: SupplyActivityRow[]): SupplyActivityRow[] {
+  const groupOrder: string[] = [];
+  const groups = new Map<string, SupplyActivityRow[]>();
   const result: SupplyActivityRow[] = [];
-  let i = 0;
-  while (i < rows.length) {
-    const row = rows[i];
-    if (row.kind !== "supply") {
-      result.push(row);
-      i++;
-      continue;
-    }
-    const group: SupplyActivityRow[] = [row];
-    let j = i + 1;
-    while (j < rows.length && rows[j].kind === "supply") {
-      const prev = rows[j - 1];
-      const curr = rows[j];
-      const sameCore =
-        prev.dos === curr.dos &&
-        prev.tempoh_dibekal === curr.tempoh_dibekal &&
-        prev.kakitangan_pembekal === curr.kakitangan_pembekal &&
-        prev.catatan === curr.catatan;
-      if (!sameCore) break;
-      const t1 = new Date(prev.tarikh).getTime();
-      const t2 = new Date(curr.tarikh).getTime();
-      if (Math.abs(t2 - t1) > 5000) break;
-      group.push(curr);
-      j++;
-    }
-    if (group.length > 1) {
+
+  const flushGroup = (kumpulanId: string) => {
+    const group = groups.get(kumpulanId);
+    if (!group || group.length === 0) return;
+    if (group.length === 1) {
+      result.push(group[0]);
+    } else {
       const first = group[0];
       const merged: GroupedSupplyRow = {
         ...first,
@@ -123,17 +117,42 @@ function groupSupplyRecords(rows: SupplyActivityRow[]): SupplyActivityRow[] {
           kuantiti: r.kuantiti ?? 0,
         })),
         _allIds: group.map((r) => r.id),
+        _kumpulanId: kumpulanId,
       };
       result.push(merged);
-    } else {
-      result.push(row);
     }
-    i = j;
+    groups.delete(kumpulanId);
+  };
+
+  for (const row of rows) {
+    // Hanya bekalan dengan kumpulan_id sah layak digabungkan. Penolakan
+    // (declination) dan baris legasi (NULL) sentiasa dikekalkan berasingan —
+    // sebarang baris sedia ada dalam kumpulan lain disiram dahulu supaya
+    // susunan tarikh terpelihara.
+    if (row.kind !== "supply" || !row.kumpulanId) {
+      for (const key of [...groupOrder]) {
+        if (groups.has(key)) {
+          flushGroup(key);
+          groupOrder.splice(groupOrder.indexOf(key), 1);
+        }
+      }
+      result.push(row);
+      continue;
+    }
+    const key = row.kumpulanId;
+    if (!groups.has(key)) {
+      groups.set(key, []);
+      groupOrder.push(key);
+    }
+    groups.get(key)!.push(row);
+  }
+  for (const key of groupOrder) {
+    if (groups.has(key)) flushGroup(key);
   }
   return result;
 }
 
-export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpdateDose, onStop, onDecline, onDeleteDeclination, onEditSupply, onDeleteSupply, canSupply, canAssign, formsMap, lastSupplyAge }: AssignmentItemProps) {
+export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpdateDose, onStop, onDecline, onDeleteDeclination, onEditSupply, onDeleteSupply, canSupply, canAssign, formsMap, lastActivityAge }: AssignmentItemProps) {
   const navigate = useNavigate();
   const { profile } = useAuth();
   // LOW-5: pemadaman penolakan dikhaskan untuk Pentadbir (pelayan 048
@@ -147,33 +166,58 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
   const [supplySort, setSupplySort] = useState<{ key: string; dir: SortDir } | null>(null);
   const [dosePage, setDosePage] = useState(0);
   const [supplyPage, setSupplyPage] = useState(0);
-  const { data: doseHistory = [], isLoading: doseLoading } = useDoseHistory(expanded ? assignment.id : null);
-  const { data: supplyHistory = [], isLoading: supplyLoading } = useAssignmentActivity(expanded ? assignment.id : null);
+  const { data: doseHistory = [], isLoading: doseLoading, isError: doseError, refetch: refetchDose } = useDoseHistory(expanded ? assignment.id : null);
+  const { data: supplyHistory = [], isLoading: supplyLoading, isError: supplyError, refetch: refetchSupply } = useAssignmentActivity(expanded ? assignment.id : null);
   const groupedSupplyHistory = useMemo(() => groupSupplyRecords(supplyHistory), [supplyHistory]);
   const item = assignment.item;
   const formName = item?.id_bentuk ? formsMap.get(item.id_bentuk) : null;
 
   const sortedDose = useMemo(() => {
     if (!doseSort) return doseHistory;
+    // #2: nilai isihan mengikut makna paparan — tarikh sebagai cap masa,
+    // perekod mengikut nama profil (bukan UUID), bukan rentetan mentah.
+    const getDoseSortValue = (d: (typeof doseHistory)[number], key: string): string | number => {
+      if (key === "tarikh") {
+        const t = new Date((d as { tarikh?: string }).tarikh ?? "").getTime();
+        return Number.isNaN(t) ? 0 : t;
+      }
+      if (key === "perekod" || key === "dikemaskini_oleh") {
+        return (d as DoseHistoryWithProfile).dikemaskini_oleh_profile?.nama ?? "";
+      }
+      const v = (d as unknown as Record<string, unknown>)[key];
+      return typeof v === "number" ? v : String(v ?? "");
+    };
     const sorted = [...doseHistory].sort((a, b) => {
-      const key = doseSort.key;
-      const av = (a as any)[key] ?? "";
-      const bv = (b as any)[key] ?? "";
-      if (typeof av === "string" && typeof bv === "string") return av.localeCompare(bv);
-      return 0;
+      const av = getDoseSortValue(a, doseSort.key);
+      const bv = getDoseSortValue(b, doseSort.key);
+      if (typeof av === "number" && typeof bv === "number") return av - bv;
+      return String(av).localeCompare(String(bv), "ms");
     });
     return doseSort.dir === "asc" ? sorted : sorted.reverse();
   }, [doseHistory, doseSort]);
 
   const sortedSupply = useMemo(() => {
     if (!supplySort) return groupedSupplyHistory;
+    // #2: sama seperti dos — tarikh sebagai cap masa, perekod mengikut nama
+    // (bekalan: kakitangan_pembekal_profile; penolakan: direkod_oleh_profile).
+    const getSupplySortValue = (r: SupplyActivityRow, key: string): string | number => {
+      if (key === "tarikh") {
+        const t = new Date(r.tarikh).getTime();
+        return Number.isNaN(t) ? 0 : t;
+      }
+      if (key === "kuantiti") return Number(r.kuantiti ?? 0);
+      if (key === "perekod" || key === "kakitangan_pembekal") {
+        if (r.kind === "supply") return r.kakitangan_pembekal_profile?.nama ?? "";
+        return r.direkod_oleh_profile?.nama ?? "";
+      }
+      const v = (r as unknown as Record<string, unknown>)[key];
+      return typeof v === "number" ? v : String(v ?? "");
+    };
     const sorted = [...groupedSupplyHistory].sort((a, b) => {
-      const key = supplySort.key;
-      let av: any = (a as any)[key] ?? "";
-      let bv: any = (b as any)[key] ?? "";
-      if (key === "kuantiti") { av = Number(av); bv = Number(bv); return supplySort.dir === "asc" ? av - bv : bv - av; }
-      if (typeof av === "string" && typeof bv === "string") return av.localeCompare(bv);
-      return 0;
+      const av = getSupplySortValue(a, supplySort.key);
+      const bv = getSupplySortValue(b, supplySort.key);
+      if (typeof av === "number" && typeof bv === "number") return av - bv;
+      return String(av).localeCompare(String(bv), "ms");
     });
     return supplySort.dir === "asc" ? sorted : sorted.reverse();
   }, [groupedSupplyHistory, supplySort]);
@@ -225,7 +269,7 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
               </div>
               <div className="flex items-center gap-2 mt-1">
                 {assignment.aktif ? <Badge variant="green" className="text-2xs">Aktif</Badge> : <Badge variant="slate" className="text-2xs">Tidak Aktif</Badge>}
-                {assignment.aktif && lastSupplyAge !== null && <><span className="text-2xs mr-1" style={{ color: "var(--text-secondary)" }}>Bekalan Terakhir:</span><SupplyAgeBadge label={lastSupplyAge} /></>}
+                {assignment.aktif && lastActivityAge !== null && <><span className="text-2xs mr-1" style={{ color: "var(--text-secondary)" }}>Aktiviti Terakhir:</span><SupplyAgeBadge label={lastActivityAge} /></>}
               </div>
             </div>
             {(canSupply || canAssign) && assignment.aktif && (
@@ -251,14 +295,14 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
       {expanded && (
         <div className="ml-12 mt-2 space-y-2">
           <FoldableCard title={<span className="flex items-center gap-2"><Calendar className="w-3.5 h-3.5" style={{ color: "#1877f2" }} /> Sejarah Dos{doseHistory.length > 0 && <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-md" style={{ background: "var(--bg-accent-blue)", color: "#1877f2" }}>{doseHistory.length}</span>}</span>} defaultOpen={true}>
-            {doseLoading ? <div className="flex items-center gap-2 py-3"><Loader2 className="w-3 h-3 animate-spin" style={{ color: "#1877f2" }} /><span className="text-2xs" style={{ color: "var(--text-secondary)" }}>Memuatkan...</span></div> : doseHistory.length === 0 ? <p className="text-2xs py-2" style={{ color: "var(--text-muted)" }}>Tiada sejarah dos.</p> : <>
+            {doseLoading ? <div className="flex items-center gap-2 py-3"><Loader2 className="w-3 h-3 animate-spin" style={{ color: "#1877f2" }} /><span className="text-2xs" style={{ color: "var(--text-secondary)" }}>Memuatkan...</span></div> : doseError ? <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl px-3 py-2.5" role="alert" style={{ background: "rgba(220,38,38,0.06)", border: "1px solid rgba(220,38,38,0.25)" }}><p className="text-2xs font-medium" style={{ color: "#b91c1c" }}>Gagal memuatkan sejarah dos. Paparan mungkin tidak lengkap.</p><Button size="sm" variant="outline" onClick={() => refetchDose()} title="Cuba semula" className="h-7 text-2xs">Cuba Semula</Button></div> : doseHistory.length === 0 ? <p className="text-2xs py-2" style={{ color: "var(--text-muted)" }}>Tiada sejarah dos.</p> : <>
               <div className="overflow-x-auto mt-1">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b" style={{ borderColor: "var(--border-light)" }}>
                       <SortableHeader label="Tarikh & Masa" sortKey="tarikh" currentSort={doseSort} onSort={(k) => { setDosePage(0); toggleSort("dose", k); }} />
                       <SortableHeader label="Dos" sortKey="dos" currentSort={doseSort} onSort={(k) => { setDosePage(0); toggleSort("dose", k); }} />
-                      <SortableHeader label="Dikemaskini Oleh" sortKey="dikemaskini_oleh" currentSort={doseSort} onSort={(k) => { setDosePage(0); toggleSort("dose", k); }} />
+                      <SortableHeader label="Dikemaskini Oleh" sortKey="perekod" currentSort={doseSort} onSort={(k) => { setDosePage(0); toggleSort("dose", k); }} />
                       <SortableHeader label="Catatan" sortKey="catatan" currentSort={doseSort} onSort={(k) => { setDosePage(0); toggleSort("dose", k); }} />
                     </tr>
                   </thead>
@@ -285,7 +329,7 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
           </FoldableCard>
 
           <FoldableCard title={<span className="flex items-center gap-2"><Package className="w-3.5 h-3.5" style={{ color: "#1877f2" }} /> Sejarah Bekalan{groupedSupplyHistory.length > 0 && <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-md" style={{ background: "var(--bg-accent-blue)", color: "#1877f2" }}>{groupedSupplyHistory.length}</span>}</span>} defaultOpen={true}>
-            {supplyLoading ? <div className="flex items-center gap-2 py-3"><Loader2 className="w-3 h-3 animate-spin" style={{ color: "#1877f2" }} /><span className="text-2xs" style={{ color: "var(--text-secondary)" }}>Memuatkan...</span></div> : groupedSupplyHistory.length === 0 ? <p className="text-2xs py-2" style={{ color: "var(--text-muted)" }}>Tiada sejarah bekalan.</p> : <>
+            {supplyLoading ? <div className="flex items-center gap-2 py-3"><Loader2 className="w-3 h-3 animate-spin" style={{ color: "#1877f2" }} /><span className="text-2xs" style={{ color: "var(--text-secondary)" }}>Memuatkan...</span></div> : supplyError ? <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl px-3 py-2.5" role="alert" style={{ background: "rgba(220,38,38,0.06)", border: "1px solid rgba(220,38,38,0.25)" }}><p className="text-2xs font-medium" style={{ color: "#b91c1c" }}>Gagal memuatkan sejarah bekalan. Paparan mungkin tidak lengkap.</p><Button size="sm" variant="outline" onClick={() => refetchSupply()} title="Cuba semula" className="h-7 text-2xs">Cuba Semula</Button></div> : groupedSupplyHistory.length === 0 ? <p className="text-2xs py-2" style={{ color: "var(--text-muted)" }}>Tiada sejarah bekalan.</p> : <>
               <div className="overflow-x-auto mt-1">
                 <table className="w-full text-xs">
                   <thead>
@@ -295,7 +339,7 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                       <SortableHeader label="Dos" sortKey="dos" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       <SortableHeader label="Kuantiti" sortKey="kuantiti" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       <th className="text-left text-xs font-semibold uppercase tracking-wider px-2 py-1.5" style={{ color: "var(--text-secondary)" }}>Tempoh</th>
-                      <SortableHeader label="Direkod oleh" sortKey="kakitangan_pembekal" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
+                      <SortableHeader label="Direkod oleh" sortKey="perekod" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       <SortableHeader label="Catatan" sortKey="catatan" currentSort={supplySort} onSort={(k) => { setSupplyPage(0); toggleSort("supply", k); }} />
                       {canMutateHistory && <th className="text-left text-xs font-semibold uppercase tracking-wider px-2 py-1.5" style={{ color: "var(--text-secondary)" }}>Tindakan</th>}
                     </tr>
@@ -360,7 +404,12 @@ export function AssignmentItem({ assignment, expanded, onToggle, onSupply, onUpd
                             </div>
                           ) : (
                             <div className="flex items-center gap-1">
-                              <button title="Edit rekod bekalan" onClick={(e) => { e.stopPropagation(); onEditSupply({ id: row.id, assignment_id: assignment.id, dos: row.dos ?? "", kuantiti: row.kuantiti ?? 0, tempoh_dibekal: row.tempoh_dibekal ?? null, catatan_bekalan: row.catatan ?? null }); }} className="hover:opacity-70" style={{ color: "#1877f2" }}><Edit className="w-3 h-3" /></button>
+                              {!isMerged && (
+                                <button title="Edit rekod bekalan" onClick={(e) => { e.stopPropagation(); onEditSupply({ id: row.id, assignment_id: assignment.id, dos: row.dos ?? "", kuantiti: row.kuantiti ?? 0, tempoh_dibekal: row.tempoh_dibekal ?? null, catatan_bekalan: row.catatan ?? null }); }} className="hover:opacity-70" style={{ color: "#1877f2" }}><Edit className="w-3 h-3" /></button>
+                              )}
+                              {isMerged && (
+                                <span title="Rekod bergabung tidak boleh disunting — padam dan bekal semula jika perlu" className="inline-flex cursor-not-allowed opacity-30" style={{ color: "var(--text-muted)" }} aria-label="Rekod bergabung tidak boleh disunting"><Edit className="w-3 h-3" /></span>
+                              )}
                               <button title="Padam rekod bekalan" onClick={(e) => {
                                 e.stopPropagation();
                                 if (isMerged) {

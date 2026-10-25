@@ -25,12 +25,12 @@ import {
 import { cn, formatDate, formatItemDisplay, formatMyKad, getTodayStrKL, toDateInputValue, computeFefoAllocation } from "@/lib/utils";
 import {
   useAvailableBatches,
+  useItemSearchWithStats,
   useSupplyHistory,
   useSupplyDurations,
   useLastDeclination,
   type AssignmentWithItem,
 } from "@/hooks/use-patient-detail";
-import type { Item } from "@/types";
 
 const labelStyle: React.CSSProperties = {
   fontSize: 12,
@@ -157,19 +157,14 @@ export function DeactivateDialog({
 export function AddAssignmentDialog({
   open,
   onOpenChange,
-  items,
   activeItemIds,
-  countsStale,
   onSubmit,
   isPending,
   formsMap,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
-  items: (Item & { active_assignments?: number })[];
   activeItemIds: Set<string>;
-  /** HIGH-2: kiraan tidak dapat disahkan — item berkuota disekat sementara. */
-  countsStale?: boolean;
   onSubmit: (data: { item_id: string; dos: string; catatan: string }) => void;
   isPending: boolean;
   formsMap: Map<string, string>;
@@ -178,26 +173,37 @@ export function AddAssignmentDialog({
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [dos, setDos] = useState("");
   const [catatan, setCatatan] = useState("");
+  // #7: debounce carian pelayan — satu pertanyaan setiap 300ms, bukan setiap
+  // keystroke, dan hanya 50 item dimuat (bukan keseluruhan katalog).
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Hanya tanya pelayan semasa dialog dibuka — halaman butiran tidak lagi
+  // memuatkan katalog di latar.
+  const {
+    data: searchResult,
+    isLoading: searching,
+    isError: searchError,
+    refetch: refetchSearch,
+  } = useItemSearchWithStats(open ? debouncedSearch : "");
+  // Jangan panggil hook bersyarat — bekukan hasil semasa dialog tertutup.
+  const items = open ? (searchResult?.items ?? []) : [];
+  const countsStale = searchResult?.countsStale ?? false;
+  const truncated = searchResult?.truncated ?? false;
+  const searchStale = search !== debouncedSearch;
 
   useEffect(() => {
     if (!open) {
       setSearch("");
+      setDebouncedSearch("");
       setSelectedItemId(null);
       setDos("");
       setCatatan("");
     }
   }, [open]);
-
-  const filtered = items.filter((i) => {
-    if (!search.trim()) return true;
-    const term = search.toLowerCase();
-    return (
-      i.nama_item.toLowerCase().includes(term) ||
-      i.kod_item.toLowerCase().includes(term) ||
-      (i.nama_dagangan ?? "").toLowerCase().includes(term) ||
-      (i.kekuatan ?? "").toLowerCase().includes(term)
-    );
-  });
 
   const selectedItem = items.find((i) => i.id === selectedItemId);
   const isAlreadyActive = selectedItemId
@@ -271,20 +277,40 @@ export function AddAssignmentDialog({
             </div>
           )}
 
-          {/* Item list */}
+          {/* Item list — carian pelayan (#7), had 50 */}
           <div
             className="border rounded-xl overflow-y-auto min-w-0 w-full max-w-full"
             style={{ borderColor: "var(--border-medium)", maxHeight: "min(320px, 34dvh)" }}
           >
-            {filtered.length === 0 ? (
+            {searching || searchStale ? (
+              <div className="flex items-center justify-center gap-2 text-xs py-6" style={{ color: "var(--text-secondary)" }}>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Mencari...
+              </div>
+            ) : searchError ? (
+              <div className="text-center text-xs py-6 space-y-2" style={{ color: "#991b1b" }}>
+                <p>Gagal memuatkan senarai item.</p>
+                <Button size="sm" variant="outline" onClick={() => refetchSearch()} title="Cuba semula" className="min-h-9">
+                  Cuba Semula
+                </Button>
+              </div>
+            ) : items.length === 0 ? (
               <div
                 className="text-center text-xs py-6"
                 style={{ color: "var(--text-muted)" }}
               >
-                Tiada item dijumpai.
+                {debouncedSearch.trim()
+                  ? "Tiada item dijumpai. Cuba kata kunci lain."
+                  : "Tiada item aktif. Taip untuk mencari."}
               </div>
             ) : (
-              filtered.map((i) => {
+              <>
+                {truncated && (
+                  <p className="text-2xs px-3 py-1.5" style={{ color: "var(--text-secondary)", background: "rgba(24,119,242,0.04)" }}>
+                    Memaparkan 50 item pertama — taip untuk menyempitkan carian.
+                  </p>
+                )}
+                {items.map((i) => {
                 const active = activeItemIds.has(i.id);
                 const kuota = i.kuota;
                 const activeCount = i.active_assignments ?? 0;
@@ -365,7 +391,8 @@ export function AddAssignmentDialog({
                     </div>
                   </button>
                 );
-              })
+              })}
+              </>
             )}
           </div>
 

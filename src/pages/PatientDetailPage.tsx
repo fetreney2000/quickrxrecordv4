@@ -17,6 +17,12 @@ import {
   Activity,
   Calendar,
   Merge,
+  IdCard,
+  Building2,
+  FileText,
+  Phone,
+  MapPin,
+  ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,8 +58,7 @@ import {
   useDeleteSupplyRecord,
   useUpdateSupplyRecord,
   useBulkDeleteSupplyRecords,
-  useItemsWithStats,
-  useLatestSupplyDates,
+  useLatestActivityDates,
   useLatestDoseHistoryDos,
   useDeclineSupply,
   useDeleteDeclination,
@@ -117,26 +122,26 @@ export default function PatientDetailPage() {
   // #15: dedahkan ralat query sokongan — sebelum ini gagal senyap dengan
   // default [] dan UI papar "Tiada item" yang mengelirukan tanpa retry.
   const { data: assignments = [], isError: assignmentsError, refetch: refetchAssignments } = usePatientAssignments(id);
-  const { data: itemsStats, isError: itemsError, refetch: refetchItems } = useItemsWithStats();
-  const itemsWithStats = itemsStats?.items ?? [];
-  const quotaCountsStale = itemsStats?.countsStale ?? true;
+  // #7: katalog item tidak lagi dimuat di latar — dialog tambah item membuat
+  // carian pelayan sendiri (had 50) semasa dibuka.
   const { data: itemForms = [], isError: formsError, refetch: refetchForms } = useItemForms();
-  const supportError = assignmentsError || itemsError || formsError;
+  const supportError = assignmentsError || formsError;
   const retrySupport = () => {
     if (assignmentsError) refetchAssignments();
-    if (itemsError) refetchItems();
     if (formsError) refetchForms();
   };
   const assignmentIds = useMemo(() => assignments.map((a) => a.id), [assignments]);
-  const { data: latestSupplyDates } = useLatestSupplyDates(assignmentIds);
+  const { data: latestActivityDates } = useLatestActivityDates(assignmentIds);
   const { data: latestDosMap } = useLatestDoseHistoryDos(assignmentIds);
-  const supplyAgeMap = useMemo(() => {
+  // #6: lencana mencerminkan aktiviti terakhir (bekalan ATAU "Tak Perlu Bekal"),
+  // bukan bekalan sebenar terakhir sahaja.
+  const activityAgeMap = useMemo(() => {
     const map = new Map<string, string | null>();
     for (const a of assignments) {
-      map.set(a.id, formatSupplyAge(latestSupplyDates?.get(a.id)));
+      map.set(a.id, formatSupplyAge(latestActivityDates?.get(a.id)));
     }
     return map;
-  }, [assignments, latestSupplyDates]);
+  }, [assignments, latestActivityDates]);
   const updatePatient = useUpdatePatient(id);
   const deactivatePatient = useDeactivatePatient(id);
   const addAssignment = useAddAssignment(id);
@@ -178,6 +183,13 @@ export default function PatientDetailPage() {
   useEffect(() => {
     setAssignmentPage((p) => Math.min(p, assignmentTotalPages - 1));
   }, [assignmentTotalPages]);
+  // #8: bersihkan tugasan terbuka yang telah hilang (cth selepas gabungan /
+  // tamat / padam) — elak panel sejarah tergantung pada ID yang tidak wujud.
+  useEffect(() => {
+    if (expandedAssignment && !assignments.some((a) => a.id === expandedAssignment)) {
+      setExpandedAssignment(null);
+    }
+  }, [assignments, expandedAssignment]);
   const supplyAssignment = useMemo(() => {
     const a = assignments.find((x) => x.id === openSupply) ?? null;
     if (!a) return null;
@@ -234,15 +246,21 @@ export default function PatientDetailPage() {
 
   // Destinasi Kembali mengikut konteks ketibaan: dari stok (/stok/:itemId
   // dengan ?from=item) kembali ke sana, selainnya ke senarai pesakit.
-  const backTo = from === "item" && itemId ? `/stok/${itemId}` : "/pesakit";
-  const backTitle = from === "item" && itemName ? `Kembali ke ${itemName}` : "Kembali ke senarai";
+  // #8: sahkan itemId ialah UUID sebelum membina pautan — tolak nilai
+  // rawak/manual supaya tidak menavigasi ke /stok/xyz yang tidak sah.
+  const validItemId =
+    itemId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(itemId)
+      ? itemId
+      : null;
+  const backTo = from === "item" && validItemId ? `/stok/${validItemId}` : "/pesakit";
+  const backTitle = from === "item" && itemName && validItemId ? `Kembali ke ${itemName}` : "Kembali ke senarai";
 
   // Build breadcrumb items based on navigation source
   const breadcrumbItems = useMemo(() => {
     const items: { label: string; href?: string }[] = [];
-    if (from === "item" && itemName && itemId) {
+    if (from === "item" && itemName && validItemId) {
       items.push({ label: "Senarai Inventori", href: "/stok" });
-      items.push({ label: itemName, href: `/stok/${itemId}` });
+      items.push({ label: itemName, href: `/stok/${validItemId}` });
     } else if (from === "search") {
       // From search: just show patient name
     } else {
@@ -251,7 +269,7 @@ export default function PatientDetailPage() {
     }
     if (patient) items.push({ label: patient.nama });
     return items;
-  }, [from, itemName, itemId, patient]);
+  }, [from, itemName, validItemId, patient]);
 
   if (isLoading) {
     return (
@@ -357,13 +375,13 @@ export default function PatientDetailPage() {
                                   // LOW-4: satu transaksi atomik + satu toast ringkasan.
                                   bulkDeleteSupplyMut.mutate({ supplyIds: ids, assignmentId: a.id });
                                 }
-                              }} canSupply={canSupply && patient.aktif} canAssign={canAssign && patient.aktif} formsMap={formsMap} lastSupplyAge={supplyAgeMap.get(a.id) ?? null} />)}</div>
+                              }} canSupply={canSupply && patient.aktif} canAssign={canAssign && patient.aktif} formsMap={formsMap} lastActivityAge={activityAgeMap.get(a.id) ?? null} />)}</div>
            {assignmentTotalPages > 1 && <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-[#f0f2f5]"><p className="text-xs" style={{ color: "var(--text-secondary)" }}>Halaman {assignmentPage + 1} daripada {assignmentTotalPages}</p><div className="flex items-center gap-1"><Button variant="outline" size="sm" disabled={assignmentPage === 0} onClick={() => setAssignmentPage((p) => Math.max(0, p - 1))} className="h-11 w-11 p-0 sm:h-8 sm:w-auto sm:px-2" style={{ opacity: assignmentPage === 0 ? 0.4 : 1 }} title="Halaman sebelumnya"><ChevronLeft className="w-3.5 h-3.5" /></Button><Button variant="outline" size="sm" disabled={assignmentPage >= assignmentTotalPages - 1} onClick={() => setAssignmentPage((p) => Math.min(assignmentTotalPages - 1, p + 1))} className="h-11 w-11 p-0 sm:h-8 sm:w-auto sm:px-2" style={{ opacity: assignmentPage >= assignmentTotalPages - 1 ? 0.4 : 1 }} title="Halaman seterusnya"><ChevronRight className="w-3.5 h-3.5" /></Button></div></div>}
         </>}
       </FoldableCard></div>
 
       <DeactivateDialog open={openDeactivate} onOpenChange={setOpenDeactivate} onConfirm={(catatan) => deactivatePatient.mutate({ catatan }, { onSuccess: () => setOpenDeactivate(false) })} isPending={deactivatePatient.isPending} patientName={patient.nama} />
-      <AddAssignmentDialog open={openAddAssignment} onOpenChange={setOpenAddAssignment} items={itemsWithStats} activeItemIds={activeItemIds} countsStale={quotaCountsStale} onSubmit={(data) => addAssignment.mutate(data, { onSuccess: () => setOpenAddAssignment(false) })} isPending={addAssignment.isPending} formsMap={formsMap} />
+      <AddAssignmentDialog open={openAddAssignment} onOpenChange={setOpenAddAssignment} activeItemIds={activeItemIds} onSubmit={(data) => addAssignment.mutate(data, { onSuccess: () => setOpenAddAssignment(false) })} isPending={addAssignment.isPending} formsMap={formsMap} />
       {supplyAssignment && <SupplyDialog open={!!openSupply} onOpenChange={(o) => !o && setOpenSupply(null)} assignment={supplyAssignment} formsMap={formsMap} onSubmit={(data) => { if (!guardActiveAssignment(supplyAssignment.id, "Bekalan")) return; supplyMut.mutate({ ...data, assignmentId: supplyAssignment.id, itemId: supplyAssignment.item_id }, { onSuccess: () => setOpenSupply(null) }); }} isPending={supplyMut.isPending} />}
       {updateDoseAssignment && <UpdateDoseDialog open={!!openUpdateDose} onOpenChange={(o) => !o && setOpenUpdateDose(null)} currentDose={updateDoseAssignment.dos} onSubmit={(data) => { if (!guardActiveAssignment(updateDoseAssignment.id, "Kemaskini dos")) return; updateDoseMut.mutate({ ...data, assignmentId: updateDoseAssignment.id }, { onSuccess: () => setOpenUpdateDose(null) }); }} isPending={updateDoseMut.isPending} />}
       <StopAssignmentDialog open={!!openStopAssign} onOpenChange={(o) => !o && setOpenStopAssign(null)} onSubmit={(sebab) => { const id = openStopAssign; if (!id || !guardActiveAssignment(id, "Tamatkan tugasan")) return; stopAssignment.mutate({ assignmentId: id, sebab }, { onSuccess: () => setOpenStopAssign(null) }); }} isPending={stopAssignment.isPending} />
@@ -390,15 +408,15 @@ export default function PatientDetailPage() {
 function ViewInfo({ patient }: { patient: PatientWithDeactivatedBy }) {
   return <div className="space-y-3">
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-      <InfoField icon={User} label="No. Kad Pengenalan" value={patient.nombor_kad_pengenalan ? formatMyKad(patient.nombor_kad_pengenalan) : null} />
-      <InfoField icon={User} label="No. Pendaftaran Hospital" value={patient.nombor_pendaftaran_hospital} />
-      <InfoField icon={User} label="Dokumen Lain" value={patient.dokumen_lain} />
-      <InfoField icon={User} label="No. Telefon" value={patient.nombor_telefon ? formatPhone(patient.nombor_telefon) : null} />
+      <InfoField icon={IdCard} label="No. Kad Pengenalan" value={patient.nombor_kad_pengenalan ? formatMyKad(patient.nombor_kad_pengenalan) : null} />
+      <InfoField icon={Building2} label="No. Pendaftaran Hospital" value={patient.nombor_pendaftaran_hospital} />
+      <InfoField icon={FileText} label="Dokumen Lain" value={patient.dokumen_lain} />
+      <InfoField icon={Phone} label="No. Telefon" value={patient.nombor_telefon ? formatPhone(patient.nombor_telefon) : null} />
     </div>
-    <InfoField icon={User} label="Tarikh Daftar" value={formatDate(patient.tarikh_daftar)} />
+    <InfoField icon={Calendar} label="Tarikh Daftar" value={formatDate(patient.tarikh_daftar)} />
     <InfoField icon={User} label="Didaftarkan Oleh" value={patient.didaftar_oleh_profile?.nama ?? "—"} />
-    <InfoField icon={User} label="Alamat" value={patient.alamat} block />
-    <InfoField icon={User} label="Catatan" value={patient.catatan} block />
+    <InfoField icon={MapPin} label="Alamat" value={patient.alamat} block />
+    <InfoField icon={ClipboardList} label="Catatan" value={patient.catatan} block />
     {!patient.aktif && (
       <div
         className="rounded-xl p-3 space-y-2"

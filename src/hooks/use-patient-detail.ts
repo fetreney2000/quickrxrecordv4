@@ -178,6 +178,8 @@ export function useDoseHistory(assignmentId: string | null) {
 export interface SupplyRecordWithJoins extends SupplyRecord {
   batch: Pick<ItemBatch, "id" | "nombor_kelompok" | "tarikh_luput"> | null;
   kakitangan_pembekal_profile: Pick<Profile, "id" | "nama"> | null;
+  /** Didedahkan secara eksplisit supaya pengumpulan deterministik tidak bergantung pada `*`. */
+  kumpulan_id?: string | null;
 }
 
 export function useSupplyHistory(assignmentId: string | null) {
@@ -294,6 +296,7 @@ export function useAssignmentActivity(assignmentId: string | null) {
         id: s.id,
         tarikh: s.tarikh_dibekal,
         laba_tarikh: false,
+        kumpulanId: (s as SupplyRecordWithJoins).kumpulan_id ?? null,
         dos: s.dos,
         tempoh_dibekal: s.tempoh_dibekal,
         kuantiti: s.kuantiti,
@@ -342,30 +345,56 @@ export function useLastDeclination(assignmentId: string | null) {
 }
 
 //= ===========================================================================
-// 4b. Latest supply date per assignment (for weeks-since badge)
+// 4b. Latest activity date per assignment (for weeks-since badge)
+// #6: lencana sebelum ini hanya mengambil supply_records — pesakit yang baru
+// datang tetapi "Tak Perlu Bekal" kelihatan tertinggal. Kini ambil maksimum
+// (bekalan sebenar ATAU penolakan) supaya lencana mencerminkan lawatan
+// terakhir, bukan bekalan sebenar terakhir.
 // ============================================================================
-export function useLatestSupplyDates(assignmentIds: string[]) {
+export function useLatestActivityDates(assignmentIds: string[]) {
   return useQuery({
-    queryKey: ["latest-supply-dates", assignmentIds],
+    queryKey: ["latest-activity-dates", assignmentIds],
     enabled: assignmentIds.length > 0,
     staleTime: 0,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("supply_records")
-        .select("assignment_id, tarikh_dibekal")
-        .in("assignment_id", assignmentIds)
-        .is("voided_at", null)
-        .order("tarikh_dibekal", { ascending: false });
-      if (error) throw error;
+      const [suppliesRes, declinationsRes] = await Promise.all([
+        supabase
+          .from("supply_records")
+          .select("assignment_id, tarikh_dibekal")
+          .in("assignment_id", assignmentIds)
+          .is("voided_at", null)
+          .order("tarikh_dibekal", { ascending: false }),
+        supabase
+          .from("supply_declinations")
+          .select("assignment_id, tarikh")
+          .in("assignment_id", assignmentIds)
+          .order("tarikh", { ascending: false }),
+      ]);
+      if (suppliesRes.error) throw suppliesRes.error;
+      if (declinationsRes.error) throw declinationsRes.error;
       const map = new Map<string, string>();
-      for (const row of data ?? []) {
-        if (!map.has(row.assignment_id)) {
-          map.set(row.assignment_id, row.tarikh_dibekal);
+      const consider = (assignmentId: string, tarikh: string) => {
+        const prev = map.get(assignmentId);
+        if (!prev || new Date(tarikh).getTime() > new Date(prev).getTime()) {
+          map.set(assignmentId, tarikh);
+        }
+      };
+      for (const row of suppliesRes.data ?? []) {
+        if (row.assignment_id && row.tarikh_dibekal) consider(row.assignment_id, row.tarikh_dibekal);
+      }
+      for (const row of declinationsRes.data ?? []) {
+        if (row.assignment_id && (row as { tarikh?: string }).tarikh) {
+          consider(row.assignment_id, (row as { tarikh: string }).tarikh);
         }
       }
       return map;
     },
   });
+}
+
+// Kekal untuk keserasian — kini hanya alias kepada aktiviti terakhir.
+export function useLatestSupplyDates(assignmentIds: string[]) {
+  return useLatestActivityDates(assignmentIds);
 }
 
 // ============================================================================
@@ -439,7 +468,7 @@ export function useSupplyDurations() {
 }
 
 // ============================================================================
-// 7. Items with active assignment counts
+// 7. Items with active assignment counts (penuh — dikekalkan untuk keserasian)
 // ============================================================================
 export function useItemsWithStats() {
   return useQuery({
@@ -474,6 +503,55 @@ export function useItemsWithStats() {
           active_assignments: countMap.get(item.id) ?? 0,
         })),
         countsStale,
+      };
+    },
+  });
+}
+
+// ============================================================================
+// 7b. Carian item pelayan untuk dialog tambah tugasan (#7)
+// Sebelum ini dialog menerima keseluruhan katalog aktif dan menapis di klien —
+// rosak pada skala (ribuan item dimuat setiap kali halaman butiran dibuka).
+// Kini carian dibuat di pelayan dengan had 50 dan kiraan kuota yang tepat
+// untuk item yang dipaparkan sahaja.
+// ============================================================================
+export function useItemSearchWithStats(query: string) {
+  const term = query.trim();
+  return useQuery({
+    queryKey: ["items-search-with-stats", term],
+    staleTime: 30 * 1000,
+    queryFn: async () => {
+      const escaped = escapeLikeTerm(term);
+      let builder = supabase.from("items").select(ITEM_COLUMNS).eq("aktif", true);
+      if (escaped) {
+        builder = builder.or(
+          `nama_item.ilike.%${escaped}%,kod_item.ilike.%${escaped}%,nama_dagangan.ilike.%${escaped}%,kekuatan.ilike.%${escaped}%`
+        );
+      }
+      const { data: items, error } = await builder
+        .order("nama_item", { ascending: true })
+        .limit(50);
+      if (error) throw error;
+
+      const { data: counts, error: countErr } = await supabase.rpc(
+        "count_active_assignments"
+      );
+      const countsStale = !!countErr;
+      if (countErr) {
+        // eslint-disable-next-line no-console
+        console.warn("RPC count_active_assignments failed", countErr);
+      }
+      const countMap = new Map<string, number>();
+      ((counts as any[]) ?? []).forEach((c) =>
+        countMap.set(c.item_id, Number(c.active_count))
+      );
+      return {
+        items: (((items as Item[]) ?? []).map((item) => ({
+          ...item,
+          active_assignments: countMap.get(item.id) ?? 0,
+        })) as (Item & { active_assignments?: number })[]),
+        countsStale,
+        truncated: (items?.length ?? 0) >= 50,
       };
     },
   });
@@ -836,7 +914,7 @@ export function useSupplyMedicationMulti(patientId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ["assignments", patientId] });
       queryClient.invalidateQueries({ queryKey: ["supply-history", vars.assignmentId] });
       queryClient.invalidateQueries({ queryKey: ["assignment-activity", vars.assignmentId] });
-      queryClient.invalidateQueries({ queryKey: ["latest-supply-dates"] });
+      queryClient.invalidateQueries({ queryKey: ["latest-activity-dates"] });
       queryClient.invalidateQueries({ queryKey: ["batches", vars.itemId] });
     },
     onError: (err: any) => {
@@ -879,7 +957,7 @@ export function useDeleteSupplyRecord(patientId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ["assignments", patientId] });
       queryClient.invalidateQueries({ queryKey: ["supply-history", vars.assignmentId] });
       queryClient.invalidateQueries({ queryKey: ["assignment-activity", vars.assignmentId] });
-      queryClient.invalidateQueries({ queryKey: ["latest-supply-dates"] });
+      queryClient.invalidateQueries({ queryKey: ["latest-activity-dates"] });
       queryClient.invalidateQueries({ queryKey: ["batches"] });
       queryClient.invalidateQueries({ queryKey: ["pantas-batches"] });
       queryClient.invalidateQueries({ queryKey: ["items-with-stats"] });
@@ -936,7 +1014,7 @@ export function useBulkDeleteSupplyRecords(patientId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ["assignments", patientId] });
       queryClient.invalidateQueries({ queryKey: ["supply-history", data.assignmentId] });
       queryClient.invalidateQueries({ queryKey: ["assignment-activity", data.assignmentId] });
-      queryClient.invalidateQueries({ queryKey: ["latest-supply-dates"] });
+      queryClient.invalidateQueries({ queryKey: ["latest-activity-dates"] });
       queryClient.invalidateQueries({ queryKey: ["batches"] });
       queryClient.invalidateQueries({ queryKey: ["pantas-batches"] });
       queryClient.invalidateQueries({ queryKey: ["items-with-stats"] });
@@ -994,7 +1072,7 @@ export function useUpdateSupplyRecord(patientId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ["assignments", patientId] });
       queryClient.invalidateQueries({ queryKey: ["supply-history", vars.assignmentId] });
       queryClient.invalidateQueries({ queryKey: ["assignment-activity", vars.assignmentId] });
-      queryClient.invalidateQueries({ queryKey: ["latest-supply-dates"] });
+      queryClient.invalidateQueries({ queryKey: ["latest-activity-dates"] });
       queryClient.invalidateQueries({ queryKey: ["batches"] });
       queryClient.invalidateQueries({ queryKey: ["pantas-batches"] });
       queryClient.invalidateQueries({ queryKey: ["items-with-stats"] });
@@ -1041,6 +1119,8 @@ export function useDeclineSupply(patientId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ["assignment-activity", vars.assignmentId] });
       queryClient.invalidateQueries({ queryKey: ["declinations", vars.assignmentId] });
       queryClient.invalidateQueries({ queryKey: ["last-declination", vars.assignmentId] });
+      // #6: lencana aktiviti mesti segar semula selepas penolakan direkod.
+      queryClient.invalidateQueries({ queryKey: ["latest-activity-dates"] });
     },
     onError: (err: any) => {
       toast.error(err?.message || "Gagal merekod. Sila cuba lagi.");
@@ -1065,6 +1145,8 @@ export function useDeleteDeclination(patientId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ["assignment-activity", vars.assignmentId] });
       queryClient.invalidateQueries({ queryKey: ["declinations", vars.assignmentId] });
       queryClient.invalidateQueries({ queryKey: ["last-declination", vars.assignmentId] });
+      // #6: lencana aktiviti mesti segar semula selepas penolakan dipadam.
+      queryClient.invalidateQueries({ queryKey: ["latest-activity-dates"] });
     },
     onError: (err: any) => {
       // LOW-5: RLS 048 hanya membenarkan Pentadbir memadam — terjemahkan 42501.

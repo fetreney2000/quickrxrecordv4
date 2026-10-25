@@ -155,7 +155,10 @@ export function EditSupplyDialog({
   isPending: boolean;
 }) {
   const [dos, setDos] = useState("");
-  const [kuantiti, setKuantiti] = useState(1);
+  // #5: gunakan rentetan supaya medan boleh dikosongkan semasa menaip —
+  // versi nombor sebelum ini (`parseInt(...) || 1`) mengunci nilai kepada 1
+  // dan pengguna tidak dapat memadam medan. Pengesahan dibuat semasa hantar.
+  const [kuantiti, setKuantiti] = useState("");
   const [tempohNilai, setTempohNilai] = useState("");
   const [tempohUnit, setTempohUnit] = useState("");
   const [catatan, setCatatan] = useState("");
@@ -166,7 +169,7 @@ export function EditSupplyDialog({
   useEffect(() => {
     if (supply) {
       setDos(supply.dos);
-      setKuantiti(supply.kuantiti);
+      setKuantiti(String(supply.kuantiti ?? ""));
       setCatatan(supply.catatan_bekalan ?? "");
       // Parse tempoh_dibekal (e.g. "30 Hari" → value="30", unit="Hari")
       const existingTempoh = supply.tempoh_dibekal ?? "";
@@ -207,6 +210,14 @@ export function EditSupplyDialog({
   const tempohNilaiValid =
     !tempohNilai.trim() ||
     (Number.isFinite(Number(tempohNilai)) && Number(tempohNilai) > 0);
+  // #5: kuantiti mesti integer >= 1. Semakan stok peningkatan dikuatkuasakan
+  // pelayan (023 menyemak baki sebelum menambah); klien hanya menyekat input
+  // tidak sah supaya tiada panggilan RPC yang sia-sia.
+  const kuantitiNum = Number(kuantiti);
+  const kuantitiValid =
+    kuantiti.trim() !== "" &&
+    Number.isInteger(kuantitiNum) &&
+    kuantitiNum >= 1;
 
   if (!supply) return null;
 
@@ -235,11 +246,11 @@ export function EditSupplyDialog({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (!tempohUnitValid || !tempohNilaiValid) return;
+            if (!tempohUnitValid || !tempohNilaiValid || !kuantitiValid) return;
             onSubmit({
               supplyId: supply.id,
               dos: dos.trim(),
-              kuantiti: Math.max(1, kuantiti),
+              kuantiti: kuantitiNum,
               tempoh: tempoh.trim(),
               catatan: catatan.trim(),
             });
@@ -289,15 +300,23 @@ export function EditSupplyDialog({
               )}
             </div>
             <div>
-              <Label style={labelStyle} htmlFor="editsupply-kuantiti">Kuantiti</Label>
+              <Label style={labelStyle} htmlFor="editsupply-kuantiti">Kuantiti *</Label>
               <Input
                 id="editsupply-kuantiti"
                 type="number"
                 min={1}
+                step={1}
                 value={kuantiti}
-                onChange={(e) => setKuantiti(parseInt(e.target.value) || 1)}
-                style={inputBaseStyle}
+                onChange={(e) => setKuantiti(e.target.value)}
+                onFocus={(e) => e.target.select()}
+                aria-invalid={!kuantitiValid}
+                style={{ ...inputBaseStyle, borderColor: kuantitiValid ? undefined : "#dc2626" }}
               />
+              {!kuantitiValid && (
+                <p className="text-2xs mt-1" style={{ color: "#dc2626" }}>
+                  Kuantiti mesti nombor bulat sekurang-kurangnya 1.
+                </p>
+              )}
             </div>
           </div>
           <div>
@@ -320,16 +339,16 @@ export function EditSupplyDialog({
           </Button>
           <Button
             onClick={() => {
-              if (!tempohUnitValid || !tempohNilaiValid) return;
+              if (!tempohUnitValid || !tempohNilaiValid || !kuantitiValid) return;
               onSubmit({
                 supplyId: supply.id,
                 dos: dos.trim(),
-                kuantiti: Math.max(1, kuantiti),
+                kuantiti: kuantitiNum,
                 tempoh: tempoh.trim(),
                 catatan: catatan.trim(),
               });
             }}
-            disabled={isPending || !tempohUnitValid || !tempohNilaiValid}
+            disabled={isPending || !tempohUnitValid || !tempohNilaiValid || !kuantitiValid}
           >
             {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             Simpan

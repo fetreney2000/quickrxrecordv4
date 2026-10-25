@@ -231,7 +231,7 @@ export function useQuickSupplyMulti(patientId: string | null) {
       queryClient.invalidateQueries({ queryKey: ["pantas-batches"] });
       queryClient.invalidateQueries({ queryKey: ["supply-history"] });
       queryClient.invalidateQueries({ queryKey: ["assignment-activity"] });
-      queryClient.invalidateQueries({ queryKey: ["latest-supply-dates"] });
+      queryClient.invalidateQueries({ queryKey: ["latest-activity-dates"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
     },
     onError: (err: any) => {

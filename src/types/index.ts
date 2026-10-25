@@ -134,6 +134,8 @@ export interface SupplyRecord {
   batch_id: string | null;
   kakitangan_pembekal: string;
   catatan_bekalan: string | null;
+  /** ID kumpulan bekalan — semua kaki satu transaksi multi-kelompok berkongsi nilai yang sama (migrasi 065). */
+  kumpulan_id?: string | null;
   created_at: string;
 }
 
@@ -264,6 +266,8 @@ export interface SupplyActivityRow {
   id: string;
   tarikh: string;
   laba_tarikh: boolean;
+  // ID kumpulan bekalan (migrasi 065) — pengumpulan deterministik menggantikan heuristik masa.
+  kumpulanId?: string | null;
   // Supply sahaja
   dos?: string | null;
   tempoh_dibekal?: string | null;
